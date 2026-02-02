@@ -1,5 +1,8 @@
 import { Home, PlusCircle, ClipboardList, MessageCircle, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useMessageStore } from "@/stores/messageStore";
+import { useAuthStore } from "@/stores/authStore";
+import { useEffect } from "react";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -44,6 +47,33 @@ const navItems: NavItem[] = [
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { currentUser } = useAuthStore();
+  const { totalUnreadCount, loadConversations, loadUnreadCount } = useMessageStore();
+
+  // Load conversations to get unread count on mount
+  useEffect(() => {
+    if (currentUser?.id) {
+      loadConversations(currentUser.id);
+    }
+  }, [currentUser?.id, loadConversations]);
+
+  // Poll for unread count updates every 30 seconds
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const interval = setInterval(() => {
+      loadUnreadCount(currentUser.id);
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [currentUser?.id, loadUnreadCount]);
+
+  // Refresh unread count when navigating away from messages page
+  useEffect(() => {
+    if (currentUser?.id && location.pathname !== '/messages' && location.pathname !== '/chat') {
+      loadUnreadCount(currentUser.id);
+    }
+  }, [location.pathname, currentUser?.id, loadUnreadCount]);
 
   // Don't show on detail pages
   if (location.pathname.includes("/service/")) {
@@ -61,9 +91,9 @@ const BottomNav = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center justify-center gap-0.5 w-full h-full transition-all duration-200 ${
-                isPost 
-                  ? "relative -mt-4" 
+              className={`relative flex flex-col items-center justify-center gap-0.5 w-full h-full transition-all duration-200 ${
+                isPost
+                  ? "-mt-4"
                   : ""
               }`}
             >
@@ -87,9 +117,9 @@ const BottomNav = () => {
                 </span>
               )}
               {/* Notification badge for messages */}
-              {item.path === "/messages" && (
-                <span className="absolute top-2 right-1/4 w-4 h-4 bg-accent rounded-full text-[10px] font-bold text-accent-foreground flex items-center justify-center">
-                  2
+              {item.path === "/messages" && totalUnreadCount > 0 && (
+                <span className="absolute top-1 right-6 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-lg border-2 border-card animate-pulse">
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                 </span>
               )}
             </button>

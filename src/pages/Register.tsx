@@ -28,8 +28,14 @@ const Register = () => {
             return;
         }
 
-        if (password.length < 6) {
-            setError("密码长度至少为 6 位");
+        if (password.length < 8) {
+            setError("密码长度至少为 8 位");
+            setLoading(false);
+            return;
+        }
+
+        if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+            setError("密码必须包含字母和数字");
             setLoading(false);
             return;
         }

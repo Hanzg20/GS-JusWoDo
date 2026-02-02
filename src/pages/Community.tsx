@@ -23,6 +23,15 @@ const Community = () => {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [scope, setScope] = useState<'nearby' | 'city'>('city');
 
+    // DEBUG: Check user node
+    useEffect(() => {
+        console.log('Community: User State', {
+            id: currentUser?.id,
+            nodeId: currentUser?.nodeId,
+            scope
+        });
+    }, [currentUser, scope]);
+
     useEffect(() => {
         const typeFilter = activeFilter === 'all' ? undefined : activeFilter;
         fetchFeed({

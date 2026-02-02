@@ -112,6 +112,21 @@ const Header = () => {
             <MapPin className="w-4 h-4 text-muted-foreground" />
           </Button>
 
+          {/* Notification Bell Icon with Badge (Desktop only) */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative rounded-full w-9 h-9 hidden md:flex"
+            onClick={() => navigate('/messages')}
+          >
+            <Bell className="w-4 h-4 text-muted-foreground" />
+            {totalUnreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+                {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+              </span>
+            )}
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full w-9 h-9">

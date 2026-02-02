@@ -63,7 +63,25 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         try {
             const repo = repositoryFactory.getMessageRepository();
             const conversations = await repo.getConversations(userId);
-            set({ conversations, isLoading: false });
+            console.log('[MessageStore] Loaded conversations:', conversations.length);
+            console.log('[MessageStore] Conversation details:', conversations.map(c => ({
+                id: c.id,
+                otherUserName: c.otherUserName,
+                otherUserAvatar: c.otherUserAvatar,
+                participantA: c.participantA,
+                participantB: c.participantB,
+                unreadCount: c.unreadCount
+            })));
+
+            // Calculate total unread count from all conversations
+            const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+            console.log('[MessageStore] Total unread count:', totalUnread);
+
+            set({
+                conversations,
+                totalUnreadCount: totalUnread,
+                isLoading: false
+            });
             // Start global subscription for other conversations
             get().subscribeToGlobalEvents(userId);
         } catch (error: any) {
@@ -166,14 +184,36 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
     subscribeToActiveConversation: () => {
         const { activeConversationId } = get();
-        if (!activeConversationId) return;
+        if (!activeConversationId) {
+            if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                console.warn('[MessageStore] Cannot subscribe: no active conversation');
+            }
+            return;
+        }
 
+        if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+            console.log('[MessageStore] Subscribing to active conversation:', activeConversationId);
+        }
         const repo = repositoryFactory.getMessageRepository();
         const unsubscribe = repo.subscribeToMessages(activeConversationId, (newMessage) => {
+            if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                console.log('[MessageStore] Received new message via callback:', {
+                    id: newMessage.id,
+                    senderId: newMessage.senderId,
+                    content: newMessage.content.substring(0, 50)
+                });
+            }
+
             set(state => {
                 // Avoid duplicates
                 if (state.messages.find(m => m.id === newMessage.id)) {
+                    if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                        console.log('[MessageStore] Duplicate message ignored:', newMessage.id);
+                    }
                     return state;
+                }
+                if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                    console.log('[MessageStore] Adding new message to store');
                 }
                 return { messages: [...state.messages, newMessage] };
             });
@@ -203,28 +243,28 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     },
 
     updateMessageReadStatus: (messageIds: string[], isRead: boolean) => {
-        set(state => ({
-            messages: state.messages.map(msg =>
-                messageIds.includes(msg.id) ? { ...msg, isRead } : msg
-            )
-        }));
-
-        // Update unread count in conversations
         set(state => {
-            const updatedConversations = state.conversations.map(conv => {
-                const unreadInConv = state.messages.filter(
-                    msg => msg.conversationId === conv.id && !msg.isRead
-                ).length;
-                return { ...conv, unreadCount: unreadInConv };
-            });
-
-            const newTotalUnread = updatedConversations.reduce(
-                (sum, conv) => sum + (conv.unreadCount || 0), 0
+            // First, update the messages
+            const updatedMessages = state.messages.map(msg =>
+                messageIds.includes(msg.id) ? { ...msg, isRead } : msg
             );
 
+            // Get current user from auth store (we can't use get() inside set())
+            // So we'll recalculate unread from conversations loaded from server
+            // For now, just refresh conversations to get accurate count
+            const newTotalUnread = state.totalUnreadCount - (isRead ? messageIds.length : -messageIds.length);
+
+            if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                console.log('[MessageStore] Updated read status:', {
+                    updatedMessageIds: messageIds,
+                    isRead,
+                    newTotalUnread
+                });
+            }
+
             return {
-                conversations: updatedConversations,
-                totalUnreadCount: newTotalUnread
+                messages: updatedMessages,
+                totalUnreadCount: Math.max(0, newTotalUnread)
             };
         });
     },

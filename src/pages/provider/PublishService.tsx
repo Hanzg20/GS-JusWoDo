@@ -13,6 +13,7 @@ import { useCommunity } from "@/context/CommunityContext";
 import { toast } from "sonner";
 import { PricingModel } from "@/types/domain";
 import { Switch } from "@/components/ui/switch";
+import LocationPicker from "@/components/LocationPicker";
 
 type ServiceType = 'SERVICE' | 'CONSULTATION' | 'RENTAL';
 
@@ -28,6 +29,7 @@ const PublishService = () => {
     const [description, setDescription] = useState("");
     const [images, setImages] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [location, setLocation] = useState<{ lat: number; lng: number; address?: string; serviceRadiusKm?: number } | null>(null);
 
     // Pricing state
     const [pricingModel, setPricingModel] = useState<PricingModel>('HOURLY');
@@ -76,10 +78,18 @@ const PublishService = () => {
                 nodeId: activeNodeId, // 使用当前活动的社区节点
                 status: 'PUBLISHED' as const,
                 tags: [],
-                location: { fullAddress: "Ottawa, ON" },
+                location: location ? {
+                    coordinates: { lat: location.lat, lng: location.lng },
+                    fullAddress: location.address || `${location.lat}, ${location.lng}`
+                } : { fullAddress: "Ottawa, ON" },
+                latitude: location?.lat,
+                longitude: location?.lng,
                 rating: 5,
                 reviewCount: 0,
-                isPromoted: false
+                isPromoted: false,
+                metadata: {
+                    serviceRadiusKm: location?.serviceRadiusKm || 10
+                }
             };
 
             const itemData = {
@@ -188,12 +198,13 @@ const PublishService = () => {
 
             <div className="space-y-3">
                 <label className="text-sm font-semibold flex items-center gap-2">
-                    <MapPin className="w-4 h-4" /> 服务区域
+                    <MapPin className="w-4 h-4" /> 服务位置与范围
                 </label>
-                <input
-                    type="text"
-                    placeholder="例如：Kanata Lakes 周边 10km"
-                    className="w-full p-4 rounded-xl border bg-muted/30 focus:bg-background focus:border-primary outline-none transition-all"
+                <LocationPicker
+                    value={location || undefined}
+                    onChange={setLocation}
+                    showRadiusSelector={true}
+                    defaultRadius={10}
                 />
             </div>
 

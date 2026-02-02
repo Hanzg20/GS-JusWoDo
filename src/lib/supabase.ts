@@ -1,7 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Define configuration
+const getSupabaseConfig = () => {
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+
+    // PROD Environment
+    if (hostname === 'justwedo.com' || hostname === 'www.justwedo.com') {
+        const url = import.meta.env.VITE_SUPABASE_URL_PROD;
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY_PROD;
+        if (url && key) {
+            console.log('🚀 Supabase: Connected to PRODUCTION');
+            return { url, key };
+        }
+    }
+
+    // TEST/DEV Environment (Default)
+    // Used for hh.jinbean.com, localhost, and fallback
+    const url = import.meta.env.VITE_SUPABASE_URL_TEST || import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY_TEST || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    console.log('🧪 Supabase: Connected to TEST/DEV');
+    return { url, key };
+};
+
+const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseConfig();
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Missing Supabase environment variables. Please check your .env file.');

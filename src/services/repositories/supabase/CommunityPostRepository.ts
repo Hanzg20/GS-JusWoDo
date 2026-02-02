@@ -102,13 +102,13 @@ export class SupabaseCommunityPostRepository {
             .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: false });
 
-        if (options.nodeId) query = query.eq('node_id', options.nodeId);
-
-        // Handle "Nearby" vs "City" scope via radius filtering (simplified for now)
-        if (options.scope === 'nearby' && options.nodeId) {
-            // Future: Implement PostGIS st_dwithin check here
-            // For now, it stays at the node_id level as a strict 'nearby' definition
-            query = query.eq('node_id', options.nodeId);
+        // Handle "Nearby" vs "City" scope
+        if (options.scope === 'city') {
+            // "City" = Show EVERYTHING (All nodes + Global)
+            // No strict node_id filter applied
+        } else if (options.nodeId) {
+            // "Nearby" (default) = Strictly same node + Global posts
+            query = query.or(`node_id.eq.${options.nodeId},node_id.is.null`);
         }
 
         if (options.postType && options.postType !== 'LATEST') {

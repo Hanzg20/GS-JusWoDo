@@ -69,13 +69,53 @@ export const useAuthStore = create<AuthState>()(
 
                     if (session?.user) {
                         // Fetch user profile from database
-                        const { data: profile, error } = await supabase
+                        let { data: profile, error } = await supabase
                             .from('user_profiles')
                             .select('*')
                             .eq('id', session.user.id)
                             .single();
 
-                        if (error) {
+                        // If profile doesn't exist, create it (for phone/OAuth login)
+                        if (error && error.code === 'PGRST116') {
+                            console.log('📝 Creating user_profiles for new user:', session.user.id);
+
+                            // Generate default name
+                            let defaultName = 'Neighbor';
+                            if (session.user.user_metadata?.name || session.user.user_metadata?.full_name) {
+                                defaultName = session.user.user_metadata.name || session.user.user_metadata.full_name;
+                            } else if (session.user.email) {
+                                defaultName = session.user.email.split('@')[0];
+                            } else if (session.user.phone) {
+                                defaultName = `User_${session.user.phone.slice(-4)}`;
+                            }
+
+                            // Create user_profiles
+                            const { data: newProfile, error: insertError } = await supabase
+                                .from('user_profiles')
+                                .insert({
+                                    id: session.user.id,
+                                    email: session.user.email || null,
+                                    phone: session.user.phone || null,
+                                    name: defaultName,
+                                    node_id: 'NODE_LEES',
+                                    avatar: session.user.user_metadata?.avatar_url ||
+                                           session.user.user_metadata?.picture ||
+                                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
+                                    roles: ['BUYER'],
+                                    beans_balance: 0
+                                })
+                                .select()
+                                .single();
+
+                            if (insertError) {
+                                console.error('❌ Error creating user profile:', insertError);
+                                set({ currentUser: null, isLoading: false });
+                                return;
+                            }
+
+                            profile = newProfile;
+                            console.log('✅ Successfully created user_profiles for:', session.user.id);
+                        } else if (error) {
                             console.error('❌ Error fetching user profile:', error);
                             set({ currentUser: null, isLoading: false });
                             return;
@@ -119,21 +159,14 @@ export const useAuthStore = create<AuthState>()(
 
 // Subscribe to Supabase auth state changes
 onAuthStateChange(async (session) => {
-    // Only logout if we definitely don't have a Supabase session AND we aren't in a Demo/Mock state
-    // We check if the current user ID looks like a real UUID (Supabase style) or a demo ID (u1, p1)
     const store = useAuthStore.getState();
-    const currentUserId = store.currentUser?.id;
-    const isDemoUser = currentUserId === 'u1' ||
-        currentUserId === 'p1' ||
-        currentUserId === '99999999-9999-9999-9999-999999999999' || // Demo Buyer
-        currentUserId === 'e1507f9e-7343-4474-a1da-301a213943ec';   // Demo Seller
 
     if (session?.user) {
-        if (!currentUserId || !isDemoUser) {
-            await store.initializeAuth();
-        }
+        // User logged in - initialize/refresh auth state
+        await store.initializeAuth();
     } else {
-        if (currentUserId && !isDemoUser) {
+        // User logged out - clear state
+        if (store.currentUser) {
             store.logout();
         }
     }

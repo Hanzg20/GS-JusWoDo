@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -39,10 +40,18 @@ import MapDiscovery from "./pages/MapDiscovery";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import { CommunityProvider } from "./context/CommunityContext";
+import { useConfigStore } from "./stores/configStore";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  const { initializeLanguage } = useConfigStore();
+
+  // Initialize language on first run
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
+
   // 🚀 App Initializing...
   // console.log('   - Supabase URL Set:', !!import.meta.env.VITE_SUPABASE_URL);
   // console.log('   - Use Mock Data:', import.meta.env.VITE_USE_MOCK_DATA);
@@ -67,6 +76,7 @@ const App = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/chat" element={<Chat />} />
+              <Route path="/messages" element={<Chat />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/orders/:id" element={<OrderDetail />} />
               <Route path="/checkout" element={<Checkout />} />

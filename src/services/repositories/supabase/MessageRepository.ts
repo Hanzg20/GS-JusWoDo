@@ -18,7 +18,62 @@ export class SupabaseMessageRepository implements IMessageRepository {
             .order('last_message_at', { ascending: false });
 
         if (error) throw error;
-        return (data || []).map(this.mapConversation);
+
+        console.log(`[getConversations] Found ${data?.length || 0} conversations for user ${userId}`);
+
+        // Enrich conversations with user info and latest message
+        const enrichedConversations = await Promise.all(
+            (data || []).map(async (conv) => {
+                const otherUserId = conv.participant_a === userId ? conv.participant_b : conv.participant_a;
+
+                // Get other user's profile
+                const { data: userProfile } = await supabase
+                    .from('user_profiles')
+                    .select('name, avatar')
+                    .eq('id', otherUserId)
+                    .maybeSingle();
+
+                // Get latest message preview
+                const { data: latestMessage } = await supabase
+                    .from('messages')
+                    .select('content, message_type')
+                    .eq('conversation_id', conv.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                // Get unread count
+                const { count: unreadCount } = await supabase
+                    .from('messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('conversation_id', conv.id)
+                    .eq('is_read', false)
+                    .neq('sender_id', userId);
+
+                return {
+                    ...this.mapConversation(conv),
+                    otherUserName: userProfile?.name || 'User',
+                    otherUserAvatar: userProfile?.avatar,
+                    lastMessagePreview: latestMessage ? this.formatMessagePreview(latestMessage) : undefined,
+                    unreadCount: unreadCount || 0
+                };
+            })
+        );
+
+        return enrichedConversations;
+    }
+
+    private formatMessagePreview(message: any): string {
+        if (message.message_type === 'QUOTE') {
+            return '💰 Quote';
+        } else if (message.message_type === 'SYSTEM') {
+            return '📢 ' + message.content;
+        } else if (message.message_type === 'IMAGE') {
+            return '📷 Image';
+        } else if (message.message_type === 'FILE') {
+            return '📎 File';
+        }
+        return message.content || 'New message';
     }
 
     async getMessages(conversationId: string): Promise<Message[]> {
@@ -33,6 +88,15 @@ export class SupabaseMessageRepository implements IMessageRepository {
     }
 
     async sendMessage(conversationId: string, senderId: string, content: string, messageType: string = 'TEXT', metadata: Record<string, any> = {}): Promise<Message> {
+        if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+            console.log('[📤 Send Message] Sending:', {
+                conversationId,
+                senderId,
+                contentPreview: content.substring(0, 50),
+                messageType
+            });
+        }
+
         const { data, error } = await supabase
             .from('messages')
             .insert({
@@ -45,7 +109,14 @@ export class SupabaseMessageRepository implements IMessageRepository {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('[❌ Send Message] Error:', error);
+            throw error;
+        }
+
+        if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+            console.log('[✅ Send Message] Message sent successfully:', data.id);
+        }
         return this.mapMessage(data);
     }
 
@@ -86,6 +157,10 @@ export class SupabaseMessageRepository implements IMessageRepository {
     }
 
     subscribeToMessages(conversationId: string, callback: (message: Message) => void): () => void {
+        if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+            console.log(`[🔵 Realtime] Setting up subscription for conversation: ${conversationId}`);
+        }
+
         const channel = supabase
             .channel(`messages:${conversationId}`)
             .on(
@@ -97,12 +172,30 @@ export class SupabaseMessageRepository implements IMessageRepository {
                     filter: `conversation_id=eq.${conversationId}`
                 },
                 (payload) => {
+                    if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                        console.log('[✅ Realtime] New message received via subscription:', payload.new);
+                    }
                     callback(this.mapMessage(payload.new));
                 }
             )
-            .subscribe();
+            .subscribe((status, err) => {
+                if (status === 'SUBSCRIBED') {
+                    if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                        console.log(`[✅ Realtime] Successfully subscribed to conversation: ${conversationId}`);
+                    }
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error(`[❌ Realtime] Subscription error for conversation ${conversationId}:`, err);
+                } else if (status === 'TIMED_OUT') {
+                    console.error(`[⏱️ Realtime] Subscription timed out for conversation: ${conversationId}`);
+                } else if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                    console.log(`[🔵 Realtime] Subscription status: ${status}`);
+                }
+            });
 
         return () => {
+            if (import.meta.env.VITE_DEBUG_MODE === 'true') {
+                console.log(`[🔴 Realtime] Unsubscribing from conversation: ${conversationId}`);
+            }
             supabase.removeChannel(channel);
         };
     }

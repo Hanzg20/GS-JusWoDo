@@ -180,7 +180,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
 
             const [post, comments] = await Promise.all([
                 repo.getById(id),
-                repo.getComments(id)
+                repo.getCommentsWithReplies(id)
             ]);
 
             if (post) {
@@ -287,39 +287,87 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
     addComment: async (authorId: string, input: CreateCommentInput) => {
         const repo = repositoryFactory.getCommunityPostRepository();
         const newComment = await repo.createComment(authorId, input);
-        set(state => ({
-            currentPostComments: [...state.currentPostComments, newComment],
-            // Update comment count in post
-            posts: state.posts.map(p =>
-                p.id === input.postId
-                    ? { ...p, commentCount: p.commentCount + 1 }
-                    : p
-            ),
-            currentPost: state.currentPost?.id === input.postId
-                ? { ...state.currentPost, commentCount: state.currentPost.commentCount + 1 }
-                : state.currentPost
-        }));
+
+        set(state => {
+            let updatedComments = [...state.currentPostComments];
+
+            if (input.parentCommentId) {
+                // Find parent and add reply
+                const addReplyToParent = (comments: CommunityComment[]): boolean => {
+                    for (const comment of comments) {
+                        if (comment.id === input.parentCommentId) {
+                            comment.replies = [...(comment.replies || []), newComment];
+                            return true;
+                        }
+                        if (comment.replies && comment.replies.length > 0) {
+                            if (addReplyToParent(comment.replies)) return true;
+                        }
+                    }
+                    return false;
+                };
+                addReplyToParent(updatedComments);
+            } else {
+                // Add as root comment
+                updatedComments.push(newComment);
+            }
+
+            return {
+                currentPostComments: updatedComments,
+                // Update comment count in post
+                posts: state.posts.map(p =>
+                    p.id === input.postId
+                        ? { ...p, commentCount: p.commentCount + 1 }
+                        : p
+                ),
+                currentPost: state.currentPost?.id === input.postId
+                    ? { ...state.currentPost, commentCount: state.currentPost.commentCount + 1 }
+                    : state.currentPost
+            };
+        });
         return newComment;
     },
 
     deleteComment: async (commentId: string) => {
-        const comment = get().currentPostComments.find(c => c.id === commentId);
+        // Find comment to get postId (needed for count update)
+        const findComment = (comments: CommunityComment[]): CommunityComment | undefined => {
+            for (const c of comments) {
+                if (c.id === commentId) return c;
+                if (c.replies) {
+                    const found = findComment(c.replies);
+                    if (found) return found;
+                }
+            }
+        };
+        const comment = findComment(get().currentPostComments);
         if (!comment) return;
 
         const repo = repositoryFactory.getCommunityPostRepository();
         await repo.deleteComment(commentId);
-        set(state => ({
-            currentPostComments: state.currentPostComments.filter(c => c.id !== commentId),
-            // Update comment count in post
-            posts: state.posts.map(p =>
-                p.id === comment.postId
-                    ? { ...p, commentCount: Math.max(0, p.commentCount - 1) }
-                    : p
-            ),
-            currentPost: state.currentPost?.id === comment.postId
-                ? { ...state.currentPost, commentCount: Math.max(0, state.currentPost.commentCount - 1) }
-                : state.currentPost
-        }));
+
+        set(state => {
+            const removeComment = (comments: CommunityComment[]): CommunityComment[] => {
+                return comments.filter(c => {
+                    if (c.id === commentId) return false;
+                    if (c.replies) {
+                        c.replies = removeComment(c.replies);
+                    }
+                    return true;
+                });
+            };
+
+            return {
+                currentPostComments: removeComment([...state.currentPostComments]),
+                // Update comment count in post
+                posts: state.posts.map(p =>
+                    p.id === comment.postId
+                        ? { ...p, commentCount: Math.max(0, p.commentCount - 1) }
+                        : p
+                ),
+                currentPost: state.currentPost?.id === comment.postId
+                    ? { ...state.currentPost, commentCount: Math.max(0, state.currentPost.commentCount - 1) }
+                    : state.currentPost
+            };
+        });
     },
 
     likeComment: async (commentId: string, userId: string) => {

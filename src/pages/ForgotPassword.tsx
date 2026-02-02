@@ -41,14 +41,28 @@ const ForgotPassword = () => {
             }, 1000);
 
         } catch (err: any) {
-            const msg = err.message.includes('rate_limit')
-                ? '操作太频繁，请稍后再试'
-                : err.message.includes('not found')
-                    ? '该邮箱尚未注册'
-                    : "发送失败，请检查邮箱地址";
+            console.error('Reset password error:', err);
+
+            let msg = "发送失败，请检查邮箱地址";
+
+            // Check for rate limit (429 or specific text)
+            if (err.status === 429 ||
+                err.message?.toLowerCase().includes('rate limit') ||
+                err.message?.toLowerCase().includes('rate_limit') ||
+                err.message?.includes('security purposes')) {
+                msg = '发送频率过高，请等待 1 小时后再试';
+            }
+            // Check for user not found
+            else if (err.message?.toLowerCase().includes('not found')) {
+                msg = '该邮箱尚未注册';
+            }
+            // Fallback: show specific error if available to help debugging
+            else if (err.message) {
+                msg = `发送失败: ${err.message}`;
+            }
+
             setError(msg);
             toast.error(msg);
-            console.error(err);
         } finally {
             setLoading(false);
         }

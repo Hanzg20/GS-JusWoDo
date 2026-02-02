@@ -13,6 +13,8 @@ import { Order, CartItem } from '@/types/orders';
 export interface IAuthRepository {
     login(email: string, password: string): Promise<User | null>;
     signInWithOtp(email: string): Promise<void>; // New: Magic Link/OTP
+    signInWithGoogle(): Promise<void>; // New: Google OAuth
+    signInWithApple(): Promise<void>; // New: Apple OAuth
     resetPasswordForEmail(email: string): Promise<void>; // New: Password reset
     updatePassword(newPassword: string): Promise<void>; // New: Update password
     logout(): Promise<void>;
@@ -166,6 +168,7 @@ export interface ICommunityPostRepository {
 
     // Comments
     getComments(postId: string): Promise<CommunityComment[]>;
+    getCommentsWithReplies(postId: string): Promise<CommunityComment[]>;
     createComment(authorId: string, input: CreateCommentInput): Promise<CommunityComment>;
     deleteComment(id: string): Promise<void>;
     likeComment(commentId: string, userId: string): Promise<void>;

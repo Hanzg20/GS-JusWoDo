@@ -57,6 +57,30 @@ export class SupabaseAuthRepository implements IAuthRepository {
         return this.getUserProfile(user.id);
     }
 
+    async signInWithGoogle(): Promise<void> {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                }
+            }
+        });
+        if (error) throw error;
+    }
+
+    async signInWithApple(): Promise<void> {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'apple',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) throw error;
+    }
+
     async register(email: string, password: string, name: string, nodeId?: string): Promise<User | null> {
         const { data, error } = await supabase.auth.signUp({
             email,
