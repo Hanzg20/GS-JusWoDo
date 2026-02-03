@@ -41,6 +41,7 @@ import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import { CommunityProvider } from "./context/CommunityContext";
 import { useConfigStore } from "./stores/configStore";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
             <MobileBottomNav />
+            <PWAInstallPrompt />
           </CommunityProvider>
         </BrowserRouter>
       </TooltipProvider>
