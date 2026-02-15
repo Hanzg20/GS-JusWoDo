@@ -135,7 +135,7 @@ export class SupabaseListingRepository implements IListingRepository {
         radius?: number
     }): Promise<ListingMaster[]> {
         if (options.isSemantic && options.query) {
-            // 1. Generate embedding using Edge Function
+            // 1. Generate embedding using Edge Function for the query string
             const { data: embeddingData, error: embeddingError } = await supabase.functions.invoke('generate-embedding', {
                 body: { text: options.query }
             });
@@ -145,13 +145,14 @@ export class SupabaseListingRepository implements IListingRepository {
                 return this.search({ ...options, isSemantic: false });
             }
 
-            // 2. Similarity search using pgvector RPC
+            // 2. Similarity search using the UNIFIED pgvector RPC
             const { data, error } = await supabase.rpc('match_listings', {
                 query_embedding: embeddingData.embedding,
-                match_threshold: 0.3, // Lower threshold for pilot to see more results
-                match_count: 20,
+                match_threshold: 0.3,
+                match_count: 50,
                 filter_node_id: options.nodeId,
-                filter_category_id: options.categoryId
+                filter_category_id: options.categoryId,
+                filter_type: options.type
             });
 
             if (error) throw error;
@@ -179,7 +180,16 @@ export class SupabaseListingRepository implements IListingRepository {
             }
 
             if (options.nodeId) qb = qb.eq('node_id', options.nodeId);
-            if (options.categoryId) qb = qb.eq('category_id', options.categoryId);
+
+            if (options.categoryId) {
+                if (options.categoryId.endsWith('0000')) {
+                    const prefix = options.categoryId.substring(0, 3);
+                    qb = qb.like('category_id', `${prefix}%`);
+                } else {
+                    qb = qb.eq('category_id', options.categoryId);
+                }
+            }
+
             if (options.type) qb = qb.eq('type', options.type);
 
             const { data, error } = await qb.order('created_at', { ascending: false });
@@ -190,29 +200,8 @@ export class SupabaseListingRepository implements IListingRepository {
     }
 
     async create(listing: Omit<ListingMaster, 'id' | 'createdAt' | 'updatedAt'>): Promise<ListingMaster> {
-        // 1. Generate embedding for the listing (optional, gracefully handles CORS/network issues)
-        const embeddingText = `${listing.titleZh} ${listing.titleEn || ''} ${listing.descriptionZh || ''} ${listing.descriptionEn || ''}`;
-        let embedding: number[] | undefined;
-
-        try {
-            // Add timeout to prevent blocking on CORS/network issues
-            const embeddingPromise = supabase.functions.invoke('generate-embedding', {
-                body: { text: embeddingText }
-            });
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Embedding timeout')), 3000)
-            );
-
-            const result = await Promise.race([embeddingPromise, timeoutPromise]) as any;
-            if (result?.data?.embedding) embedding = result.data.embedding;
-        } catch (e) {
-            // Silently skip embedding on failure - not critical for listing creation
-            console.warn('[ListingRepo] Embedding generation skipped:', e instanceof Error ? e.message : 'Unknown error');
-        }
-
-        // 2. Insert with embedding
+        // Embeddings are now handled server-side via Supabase Webhooks
         const dbRow = this.mapToDb(listing);
-        if (embedding) dbRow.embedding = embedding;
 
         const { data, error } = await supabase
             .from('listing_masters')
@@ -225,32 +214,8 @@ export class SupabaseListingRepository implements IListingRepository {
     }
 
     async update(id: string, data: Partial<ListingMaster>): Promise<ListingMaster> {
-        // 1. If title or description changed, regenerate embedding
-        let embedding: number[] | undefined;
-        if (data.titleZh || data.titleEn || data.descriptionZh || data.descriptionEn) {
-            // We need full text, but Partial might only have changed fields.
-            // For simplicity in pilot, we'll just use what's available or fetch first.
-            const current = await this.getById(id);
-            if (current) {
-                const updatedTitleZh = data.titleZh || current.titleZh;
-                const updatedTitleEn = data.titleEn || current.titleEn;
-                const updatedDescZh = data.descriptionZh || current.descriptionZh;
-                const updatedDescEn = data.descriptionEn || current.descriptionEn;
-
-                const embeddingText = `${updatedTitleZh} ${updatedTitleEn || ''} ${updatedDescZh || ''} ${updatedDescEn || ''}`;
-                try {
-                    const { data: embeddingData, error: embeddingError } = await supabase.functions.invoke('generate-embedding', {
-                        body: { text: embeddingText }
-                    });
-                    if (!embeddingError) embedding = embeddingData.embedding;
-                } catch (e) {
-                    console.error('Failed to update embedding:', e);
-                }
-            }
-        }
-
+        // Embeddings are now handled server-side via Supabase Webhooks
         const dbRow = this.mapToDb(data);
-        if (embedding) dbRow.embedding = embedding;
 
         const { data: updatedData, error } = await supabase
             .from('listing_masters')

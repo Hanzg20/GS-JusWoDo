@@ -511,8 +511,27 @@ const Checkout = () => {
                                 </div>
                             )}
 
+                            {/* Liability Waiver */}
+                            <div className="bg-muted/30 p-4 rounded-2xl mb-6">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input type="checkbox" className="mt-1 w-4 h-4 rounded border-gray-400 text-primary focus:ring-primary group-hover:border-primary transition-colors" id="waiver-check" />
+                                    <span className="text-xs text-muted-foreground font-medium leading-relaxed select-none">
+                                        {language === 'zh'
+                                            ? '我同意免责声明：平台仅作为中介，不承担服务或租赁过程中产生的财产损失、人身伤害等连带责任。'
+                                            : 'I agree to the Release of Liability: The platform acts as an intermediary and is not liable for damages or injuries arising from this service/rental.'}
+                                    </span>
+                                </label>
+                            </div>
+
                             <Button
-                                onClick={handlePlaceOrder}
+                                onClick={() => {
+                                    const waiver = document.getElementById('waiver-check') as HTMLInputElement;
+                                    if (!waiver?.checked) {
+                                        toast.error(language === 'zh' ? '请先同意免责声明' : 'Please agree to the liability waiver');
+                                        return;
+                                    }
+                                    handlePlaceOrder();
+                                }}
                                 disabled={processing}
                                 className="w-full h-16 rounded-2xl text-lg font-black uppercase tracking-widest shadow-warm btn-action"
                             >

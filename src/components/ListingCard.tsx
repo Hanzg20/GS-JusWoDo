@@ -188,9 +188,14 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
 
                     {/* Footer: Price Focus */}
                     <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/40">
-                        <div className="flex items-center gap-1 text-[9px] sm:text-xs text-muted-foreground font-bold">
-                            <MapPin className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
-                            <span className="truncate max-w-[50px] sm:max-w-none">{item.location.city}</span>
+                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-bold bg-muted/30 px-2 py-0.5 rounded-full">
+                            <MapPin className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-primary/60" />
+                            <span className="truncate max-w-[60px] sm:max-w-none">{item.location.city}</span>
+                            {item.distanceMeters !== undefined && (
+                                <span className="ml-0.5 text-primary/80">
+                                    • {(item.distanceMeters / 1000).toFixed(1)}km
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex items-baseline gap-0.5">

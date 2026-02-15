@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
@@ -6,12 +7,12 @@ import { useAuthStore } from "@/stores/authStore";
 import { useCommunity } from "@/context/CommunityContext";
 import { useConfigStore } from "@/stores/configStore";
 import { TodayStories } from "@/components/home/TodayStories";
-import { IndustryIconGrid } from "@/components/home/IndustryIconGrid";
+import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
 import { PopularInCommunity } from "@/components/home/PopularInCommunity";
 import { LocationSelector } from "@/components/home/LocationSelector";
 import { PromoBanner } from "@/components/home/PromoBanner";
 import { TaskBoard } from "@/components/home/TaskBoard";
-import { ArrowRight, Sparkles, TrendingUp, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, TrendingUp, Clock, MapPin } from "lucide-react";
 import { SmartSearchBar } from "@/components/SmartSearchBar";
 import { Link, useNavigate } from "react-router-dom";
 import { ListingMaster } from "@/types/domain";
@@ -20,6 +21,14 @@ import { SkeletonCard } from "@/components/ui/SkeletonCard";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+
+// Bento Components
+import { BentoGrid } from "@/components/home/BentoGrid";
+import { BentoHero } from "@/components/home/BentoHero";
+import { BentoCategories } from "@/components/home/BentoCategories";
+import { BentoProfile } from "@/components/home/BentoProfile";
+import { BentoPromo } from "@/components/home/BentoPromo";
+import { StoriesSection } from "@/components/home/StoriesSection";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -131,78 +140,34 @@ const Index = () => {
     }
   };
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5 pb-20">
+      <SEO /> {/* Default Homepage SEO */}
       <Header />
 
-      {/* Hero Section with Glassmorphism */}
-      {/* Hero Section - Compact & Active */}
-      <div className="relative bg-background border-b border-border shadow-sm overflow-hidden">
-        {/* Animated Background - Enhanced Mesh Gradient */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
-          <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-accent/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,transparent_0%,rgba(var(--background),0.8)_100%)]" />
-        </div>
+      {/* Bento Grid Layout - Hero Area */}
+      <div className="pt-4 pb-8 bg-gradient-to-b from-background to-secondary/5">
+        <BentoGrid>
+          {/* Main Hero: Search & Stats (2x2) */}
+          <BentoHero />
 
-        <div className="container relative py-3 sm:py-4 px-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:gap-4">
+          {/* Categories List (1x2) */}
+          <BentoCategories />
 
-            {/* Top Row: Location & Stats (Compact) */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2 sm:gap-3">
-                <LocationSelector />
-              </div>
-              <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-secondary/30 px-2 sm:px-3 py-1 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="hidden md:inline">{t.liveUpdates}</span>
-              </div>
-            </motion.div>
-
-            {/* Middle Row: Search (Prominent but concise) */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              className="w-full max-w-4xl mx-auto relative z-10"
-            >
-              <SmartSearchBar />
-              {/* Floating AI badge - Closer integration */}
-              <div className="absolute -top-2 sm:-top-3 right-0 md:-right-4">
-                <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 bg-gradient-to-r from-primary/10 to-accent/10 text-primary border-primary/20 shadow-sm backdrop-blur-md">
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 text-primary" />
-                  {t.aiSearch}
-                </Badge>
-              </div>
-            </motion.div>
-
-            {/* Bottom Row: Industry Icons Only */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="pt-1 sm:pt-2"
-            >
-              <IndustryIconGrid />
-            </motion.div>
+          {/* Right Column: Profile & Promo (1x1 + 1x1) */}
+          <div className="flex flex-col gap-4 lg:col-span-1 lg:row-span-2 h-full">
+            <BentoProfile />
+            <BentoPromo />
           </div>
-        </div>
+
+          {/* Full Width Stories (4x1) */}
+          <StoriesSection />
+        </BentoGrid>
       </div>
 
-      {/* Promotional Banner - Elegant Carousel */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        <PromoBanner />
-      </motion.div>
-
-      <main className="container max-w-7xl py-4 sm:py-8 px-4 sm:px-6 space-y-8 sm:space-y-16">
+      <main className="container max-w-7xl px-4 sm:px-6 space-y-8 sm:space-y-16">
         {/* Popular In Community - Enhanced Card Design */}
         {nearbyHotServices.length > 0 && (
           <motion.section
@@ -216,16 +181,7 @@ const Index = () => {
           </motion.section>
         )}
 
-        {/* Today Stories with enhanced styling */}
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={sectionVariants}
-          className="py-1"
-        >
-          <TodayStories />
-        </motion.section>
+
 
         {/* Task Board with gradient background */}
         <motion.section

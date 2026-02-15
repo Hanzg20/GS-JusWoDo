@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { useParams, useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -57,8 +58,10 @@ const CategoryListing = () => {
         return type.toLowerCase();
     };
 
+
     return (
         <div className="min-h-screen bg-background pb-20">
+            <SEO title={getPageTitle(type)} />
             <Header />
 
             {/* Search Header */}

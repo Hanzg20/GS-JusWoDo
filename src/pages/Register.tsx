@@ -212,9 +212,17 @@ const Register = () => {
                         <Link to="/login" className="text-primary font-bold hover:underline ml-1">直接登录</Link>
                     </p>
 
-                    <div className="text-[10px] text-muted-foreground text-center leading-tight opacity-60">
-                        点击注册即代表您同意我们的 <br />
-                        <span className="underline cursor-pointer">服务条款</span> 与 <span className="underline cursor-pointer">隐私政策</span>
+                    <div className="flex items-start gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            required
+                            id="tos-consent"
+                            className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <label htmlFor="tos-consent" className="text-xs text-muted-foreground leading-tight opacity-80 select-none cursor-pointer">
+                            我已阅读并同意 <Link to="/legal/terms" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>服务条款</Link> 与 <Link to="/legal/privacy" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>隐私政策</Link>，并理解平台仅作为信息中介。
+                            <br /><span className="text-[10px] opacity-70">I agree to the <Link to="/legal/terms" target="_blank" className="underline hover:text-primary" onClick={(e) => e.stopPropagation()}>Terms</Link> & <Link to="/legal/privacy" target="_blank" className="underline hover:text-primary" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link> and acknowledge the platform acts as an intermediary.</span>
+                        </label>
                     </div>
                 </form>
             </div>

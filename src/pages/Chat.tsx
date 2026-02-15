@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "@/components/Header";
-import { Search, MoreVertical, Phone, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin } from "lucide-react";
+import { Search, MoreVertical, Phone, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck } from "lucide-react";
 import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrderStore } from "@/stores/orderStore";
@@ -243,7 +243,12 @@ const Chat = () => {
                 )}>
                     {activeConversationId ? (
                         <>
-                            {/* Enhanced Chat Header */}
+                            <div className="bg-amber-50/80 border-b border-amber-200/50 px-4 py-1.5 flex items-center justify-center text-[10px] font-bold text-amber-800 text-center">
+                                <ShieldCheck className="w-3 h-3 mr-1.5" />
+                                {currentUser?.settings?.language === 'zh'
+                                    ? '安全提示：为了您的资金安全，请勿脱离平台进行交易。私下转账无法享受平台担保。'
+                                    : 'Safety Tip: Keep payments inside the app to be protected by Escrow. Never transfer money externally.'}
+                            </div>
                             <div className="px-4 py-3 border-b border-border/40 bg-gradient-to-r from-muted/5 to-primary/5">
                                 <div className="flex items-center justify-between">
                                     {/* Back button for mobile */}
@@ -275,9 +280,13 @@ const Chat = () => {
                                             {activeOrder && (
                                                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border-2 border-card flex items-center justify-center">
                                                     {currentUser?.id === activeOrder.buyerId ? (
-                                                        <Store className="w-3 h-3 text-amber-600" title="Seller" />
+                                                        <div title="Seller">
+                                                            <Store className="w-3 h-3 text-amber-600" />
+                                                        </div>
                                                     ) : (
-                                                        <ShoppingBag className="w-3 h-3 text-blue-600" title="Buyer" />
+                                                        <div title="Buyer">
+                                                            <ShoppingBag className="w-3 h-3 text-blue-600" />
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}
@@ -440,101 +449,101 @@ const Chat = () => {
                                                 ) : (
                                                     /* Regular Message */
                                                     <div className={cn("flex flex-col mb-3", isMe ? 'items-end' : 'items-start')}>
-                                                <div className={cn(
-                                                    "max-w-[85%] sm:max-w-[70%] group relative",
-                                                )}>
-                                                    <div className={cn(
-                                                        "px-3 py-2 rounded-2xl shadow-sm text-sm",
-                                                        isMe
-                                                            ? 'bg-gradient-to-br from-primary via-primary to-primary/80 text-primary-foreground rounded-tr-none'
-                                                            : 'bg-white border border-border/50 text-foreground rounded-tl-none',
-                                                        isQuote && 'bg-orange-50 border-orange-200 text-orange-950 rounded-2xl'
-                                                    )}>
-                                                        {isQuote ? (
-                                                            <div className="space-y-2">
-                                                                <div className="flex items-center gap-2 border-b border-orange-200 pb-1.5 mb-1.5">
-                                                                    <DollarSign className="w-4 h-4 text-orange-600" />
-                                                                    <span className="font-bold text-base">Custom Quote</span>
-                                                                </div>
-                                                                <div className="bg-white/50 p-2 rounded-lg border border-orange-200">
-                                                                    <p className="text-lg font-black text-orange-600">${(msg.metadata?.amount / 100).toFixed(2)}</p>
-                                                                    <p className="text-[10px] text-orange-800 opacity-70 italic">{msg.metadata?.description || 'Service price adjustment'}</p>
-                                                                </div>
-                                                                {!isMe && (
-                                                                    <Button size="sm" className="w-full h-8 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-xs" onClick={() => navigate(`/orders/${msg.metadata?.orderId}`)}>
-                                                                        Review & Approve
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        ) : isImage ? (
-                                                            <div className="space-y-1">
-                                                                <img
-                                                                    src={msg.metadata?.imageUrl || msg.content}
-                                                                    alt="Shared image"
-                                                                    className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                                                    onClick={() => window.open(msg.metadata?.imageUrl || msg.content, '_blank')}
-                                                                    loading="lazy"
-                                                                />
-                                                            </div>
-                                                        ) : isLocation ? (
-                                                            <div className="space-y-2 min-w-[200px]">
-                                                                <div className="flex items-center gap-2">
-                                                                    <MapPin className="w-4 h-4" />
-                                                                    <span className="font-bold text-xs">位置分享</span>
-                                                                </div>
-                                                                {msg.metadata?.lat && msg.metadata?.lng && (
-                                                                    <a
-                                                                        href={`https://www.google.com/maps/search/?api=1&query=${msg.metadata.lat},${msg.metadata.lng}`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="block"
-                                                                    >
+                                                        <div className={cn(
+                                                            "max-w-[85%] sm:max-w-[70%] group relative",
+                                                        )}>
+                                                            <div className={cn(
+                                                                "px-3 py-2 rounded-2xl shadow-sm text-sm",
+                                                                isMe
+                                                                    ? 'bg-gradient-to-br from-primary via-primary to-primary/80 text-primary-foreground rounded-tr-none'
+                                                                    : 'bg-white border border-border/50 text-foreground rounded-tl-none',
+                                                                isQuote && 'bg-orange-50 border-orange-200 text-orange-950 rounded-2xl'
+                                                            )}>
+                                                                {isQuote ? (
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center gap-2 border-b border-orange-200 pb-1.5 mb-1.5">
+                                                                            <DollarSign className="w-4 h-4 text-orange-600" />
+                                                                            <span className="font-bold text-base">Custom Quote</span>
+                                                                        </div>
+                                                                        <div className="bg-white/50 p-2 rounded-lg border border-orange-200">
+                                                                            <p className="text-lg font-black text-orange-600">${(msg.metadata?.amount / 100).toFixed(2)}</p>
+                                                                            <p className="text-[10px] text-orange-800 opacity-70 italic">{msg.metadata?.description || 'Service price adjustment'}</p>
+                                                                        </div>
+                                                                        {!isMe && (
+                                                                            <Button size="sm" className="w-full h-8 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-xs" onClick={() => navigate(`/orders/${msg.metadata?.orderId}`)}>
+                                                                                Review & Approve
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                ) : isImage ? (
+                                                                    <div className="space-y-1">
                                                                         <img
-                                                                            src={`https://staticmap.openstreetmap.de/staticmap.php?center=${msg.metadata.lat},${msg.metadata.lng}&zoom=14&size=280x120&markers=${msg.metadata.lat},${msg.metadata.lng},red-pushpin`}
-                                                                            alt="Location map"
-                                                                            className="w-full rounded-lg border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
+                                                                            src={msg.metadata?.imageUrl || msg.content}
+                                                                            alt="Shared image"
+                                                                            className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                                            onClick={() => window.open(msg.metadata?.imageUrl || msg.content, '_blank')}
                                                                             loading="lazy"
                                                                         />
-                                                                    </a>
-                                                                )}
-                                                                <p className="text-xs opacity-90">
-                                                                    {msg.metadata?.address || msg.content}
-                                                                </p>
-                                                                {msg.metadata?.lat && msg.metadata?.lng && (
-                                                                    <a
-                                                                        href={`https://www.google.com/maps/search/?api=1&query=${msg.metadata.lat},${msg.metadata.lng}`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-                                                                    >
-                                                                        在地图中查看 <ChevronRight className="w-3 h-3" />
-                                                                    </a>
+                                                                    </div>
+                                                                ) : isLocation ? (
+                                                                    <div className="space-y-2 min-w-[200px]">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <MapPin className="w-4 h-4" />
+                                                                            <span className="font-bold text-xs">位置分享</span>
+                                                                        </div>
+                                                                        {msg.metadata?.lat && msg.metadata?.lng && (
+                                                                            <a
+                                                                                href={`https://www.google.com/maps/search/?api=1&query=${msg.metadata.lat},${msg.metadata.lng}`}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="block"
+                                                                            >
+                                                                                <img
+                                                                                    src={`https://staticmap.openstreetmap.de/staticmap.php?center=${msg.metadata.lat},${msg.metadata.lng}&zoom=14&size=280x120&markers=${msg.metadata.lat},${msg.metadata.lng},red-pushpin`}
+                                                                                    alt="Location map"
+                                                                                    className="w-full rounded-lg border border-border/30 hover:border-primary/50 transition-colors cursor-pointer"
+                                                                                    loading="lazy"
+                                                                                />
+                                                                            </a>
+                                                                        )}
+                                                                        <p className="text-xs opacity-90">
+                                                                            {msg.metadata?.address || msg.content}
+                                                                        </p>
+                                                                        {msg.metadata?.lat && msg.metadata?.lng && (
+                                                                            <a
+                                                                                href={`https://www.google.com/maps/search/?api=1&query=${msg.metadata.lat},${msg.metadata.lng}`}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                                                                            >
+                                                                                在地图中查看 <ChevronRight className="w-3 h-3" />
+                                                                            </a>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                                                 )}
                                                             </div>
-                                                        ) : (
-                                                            <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                                                        )}
-                                                    </div>
-                                                    <div className={cn(
-                                                        "flex items-center gap-1.5 mt-1 px-1",
-                                                        isMe ? 'flex-row-reverse' : 'flex-row'
-                                                    )}>
-                                                        <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter opacity-50">
-                                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                        {isMe && (
-                                                            <div className="flex items-center" title={msg.isRead ? "Read" : "Delivered"}>
-                                                                <CheckCheck
-                                                                    className={cn(
-                                                                        "w-3.5 h-3.5 transition-colors",
-                                                                        msg.isRead ? "text-blue-500" : "text-muted-foreground/50"
-                                                                    )}
-                                                                />
+                                                            <div className={cn(
+                                                                "flex items-center gap-1.5 mt-1 px-1",
+                                                                isMe ? 'flex-row-reverse' : 'flex-row'
+                                                            )}>
+                                                                <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter opacity-50">
+                                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                                {isMe && (
+                                                                    <div className="flex items-center" title={msg.isRead ? "Read" : "Delivered"}>
+                                                                        <CheckCheck
+                                                                            className={cn(
+                                                                                "w-3.5 h-3.5 transition-colors",
+                                                                                msg.isRead ? "text-blue-500" : "text-muted-foreground/50"
+                                                                            )}
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
                                                 )}
                                             </div>
                                         );

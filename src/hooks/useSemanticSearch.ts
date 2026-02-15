@@ -55,7 +55,7 @@ export const useSemanticSearch = (
 
                 // Step 2: Perform vector similarity search
                 const { data: searchResults, error: searchError } = await supabase.rpc(
-                    'search_listings',
+                    'match_listings',
                     {
                         query_embedding: queryEmbedding,
                         match_threshold: threshold,
@@ -96,7 +96,18 @@ export const useSemanticSearch = (
                 .limit(limit);
 
             if (!textSearchError && data) {
-                setResults(data.map(item => ({ ...item, similarity: 0.5 })));
+                // Map DB results to domain objects if needed, though they match mostly
+                setResults(data.map(item => ({
+                    ...item,
+                    titleZh: item.title_zh,
+                    titleEn: item.title_en,
+                    descriptionZh: item.description_zh,
+                    descriptionEn: item.description_en,
+                    providerId: item.provider_id,
+                    categoryId: item.category_id,
+                    nodeId: item.node_id,
+                    similarity: 0.5
+                })));
             }
         } catch (err) {
             console.error('Text search fallback failed:', err);

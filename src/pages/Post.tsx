@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, ChefHat, Sparkles, Package, Camera, MapPin, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import BottomNav from "@/components/BottomNav";
 
 type Category = "food" | "service" | "task";
 
@@ -86,11 +85,10 @@ const Post = () => {
                     setCategory(cat.id);
                     setStep(2);
                   }}
-                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all ${
-                    category === cat.id
+                  className={`w-full flex items-center gap-4 p-5 rounded-2xl border-2 transition-all ${category === cat.id
                       ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/30"
-                  }`}
+                    }`}
                 >
                   <div className="text-primary">{cat.icon}</div>
                   <div className="text-left flex-1">
@@ -293,8 +291,6 @@ const Post = () => {
           </div>
         )}
       </div>
-
-      <BottomNav />
     </div>
   );
 };

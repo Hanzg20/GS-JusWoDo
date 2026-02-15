@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import Header from "@/components/Header";
@@ -68,8 +69,14 @@ const Community = () => {
         enabled: true,
     });
 
+
+
     return (
         <div className="min-h-screen bg-background" ref={pullToRefresh.containerRef}>
+            <SEO
+                title={language === 'zh' ? '社区动态' : 'Community Feed'}
+                description={language === 'zh' ? '看看邻居们都在聊什么 - 渥太华本地社区动态' : 'See what neighbors are talking about - Ottawa local community feed'}
+            />
             {/* 下拉刷新指示器 */}
             <PullToRefreshIndicator
                 pullDistance={pullToRefresh.pullDistance}

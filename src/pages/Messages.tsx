@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Search, Bell, ChevronRight, Image, MapPin } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 interface Conversation {
   id: string;
@@ -199,11 +198,10 @@ const Messages = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  activeTab === tab.id
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === tab.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -260,8 +258,6 @@ const Messages = () => {
           ))}
         </div>
       </div>
-
-      <BottomNav />
     </div>
   );
 };

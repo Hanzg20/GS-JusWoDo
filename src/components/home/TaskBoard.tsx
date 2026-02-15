@@ -80,7 +80,9 @@ export function TaskBoard() {
       navigate(`/task/${taskId}`);
     } else {
       // TODO: 显示认证引导弹窗
-      alert("Become a verified provider to accept tasks. Click OK to learn more.");
+      alert(language === 'zh'
+        ? "请先完成能人认证再接单。点击确定了解详情。"
+        : "Become a verified provider to accept tasks. Click OK to learn more.");
       navigate("/become-provider");
     }
   };
@@ -161,7 +163,7 @@ function TaskCard({ task, isVerifiedProvider, onClick, delay }: TaskCardProps) {
     >
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/20 opacity-50" />
-      
+
       {/* Hover glow effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -172,7 +174,7 @@ function TaskCard({ task, isVerifiedProvider, onClick, delay }: TaskCardProps) {
           <h3 className="font-bold text-base sm:text-lg text-foreground leading-snug line-clamp-2 flex-1 group-hover:text-primary transition-colors duration-300">
             {task.title}
           </h3>
-          
+
           {/* Verification Badge - Always visible */}
           {!isVerifiedProvider && (
             <div className="flex-shrink-0 bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1 whitespace-nowrap">

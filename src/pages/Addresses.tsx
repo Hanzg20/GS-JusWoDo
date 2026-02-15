@@ -6,9 +6,13 @@ import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const Addresses = () => {
     const navigate = useNavigate();
@@ -16,6 +20,14 @@ const Addresses = () => {
     const { language } = useConfigStore();
     const userRepository = repositoryFactory.getUserRepository();
     const queryClient = useQueryClient();
+
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [newAddress, setNewAddress] = useState({
+        label: "",
+        fullAddress: "",
+        city: "",
+        zip: ""
+    });
 
     const { data: addresses, isLoading } = useQuery({
         queryKey: ['user-addresses', currentUser?.id],
@@ -39,6 +51,39 @@ const Addresses = () => {
         }
     });
 
+    const addMutation = useMutation({
+        mutationFn: (data: any) => {
+            if (!currentUser) throw new Error("No user");
+            return userRepository.addAddress({
+                userId: currentUser.id,
+                label: data.label,
+                address: {
+                    fullAddress: data.fullAddress,
+                    city: data.city,
+                    zip: data.zip
+                },
+                isDefault: (addresses?.length || 0) === 0 // Set as default if it's the first address
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['user-addresses', currentUser?.id] });
+            toast.success(language === 'zh' ? '地址已添加' : 'Address added');
+            setIsAddDialogOpen(false);
+            setNewAddress({ label: "", fullAddress: "", city: "", zip: "" });
+        },
+        onError: () => {
+            toast.error(language === 'zh' ? '添加失败，请重试' : 'Failed to add address');
+        }
+    });
+
+    const handleAddAddress = () => {
+        if (!newAddress.label || !newAddress.fullAddress) {
+            toast.error(language === 'zh' ? '请填写标签和地址' : 'Please fill in label and address');
+            return;
+        }
+        addMutation.mutate(newAddress);
+    };
+
     const t = {
         title: language === 'zh' ? '地址簿' : 'Address Book',
         add: language === 'zh' ? '新增地址' : 'Add New Address',
@@ -47,6 +92,16 @@ const Addresses = () => {
         noAddress: language === 'zh' ? '暂无保存地址' : 'No addresses saved yet',
         deleteConfirm: language === 'zh' ? '确定删除吗？' : 'Delete this address?',
         loading: language === 'zh' ? '加载中...' : 'Loading...',
+        addressLabel: language === 'zh' ? '地址标签' : 'Address Label',
+        labelPlaceholder: language === 'zh' ? '如：家、公司' : 'e.g. Home, Work',
+        fullAddress: language === 'zh' ? '完整地址' : 'Full Address',
+        addressPlaceholder: language === 'zh' ? '街道、门牌号' : 'Street and number',
+        city: language === 'zh' ? '城市' : 'City',
+        postalCode: language === 'zh' ? '邮政编码' : 'Postal Code',
+        save: language === 'zh' ? '保存' : 'Save',
+        cancel: language === 'zh' ? '取消' : 'Cancel',
+        addDialogTitle: language === 'zh' ? '新增收货地址' : 'Add New Address',
+        addDialogDesc: language === 'zh' ? '添加常用地址，下单更便捷' : 'Save your address for faster checkout'
     };
 
     return (
@@ -84,8 +139,8 @@ const Addresses = () => {
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     className={`p-6 rounded-[32px] border transition-all ${addr.isDefault
-                                            ? 'bg-primary/5 border-primary shadow-sm'
-                                            : 'bg-card border-muted-foreground/10'
+                                        ? 'bg-primary/5 border-primary shadow-sm'
+                                        : 'bg-card border-muted-foreground/10'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between mb-4">
@@ -141,10 +196,69 @@ const Addresses = () => {
                     )}
                 </div>
 
-                <Button className="w-full h-14 mt-10 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black shadow-xl shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                    <Plus className="w-5 h-5" />
-                    {t.add}
-                </Button>
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="w-full h-14 mt-10 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black shadow-xl shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                            <Plus className="w-5 h-5" />
+                            {t.add}
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-[32px] max-w-md border-none shadow-2xl">
+                        <DialogHeader className="pt-4">
+                            <DialogTitle className="text-2xl font-black tracking-tight">{t.addDialogTitle}</DialogTitle>
+                            <DialogDescription className="font-medium">{t.addDialogDesc}</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-6 py-6">
+                            <div className="space-y-3">
+                                <Label className="text-[10px] uppercase tracking-widest text-muted-foreground px-1">{t.addressLabel}</Label>
+                                <Input
+                                    placeholder={t.labelPlaceholder}
+                                    className="h-14 px-6 rounded-2xl border-none bg-muted/50 font-bold shadow-inner focus-visible:ring-primary"
+                                    value={newAddress.label}
+                                    onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <Label className="text-[10px] uppercase tracking-widest text-muted-foreground px-1">{t.fullAddress}</Label>
+                                <Input
+                                    placeholder={t.addressPlaceholder}
+                                    className="h-14 px-6 rounded-2xl border-none bg-muted/50 font-bold shadow-inner focus-visible:ring-primary"
+                                    value={newAddress.fullAddress}
+                                    onChange={(e) => setNewAddress({ ...newAddress, fullAddress: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground px-1">{t.city}</Label>
+                                    <Input
+                                        placeholder="Ottawa"
+                                        className="h-14 px-6 rounded-2xl border-none bg-muted/50 font-bold shadow-inner focus-visible:ring-primary"
+                                        value={newAddress.city}
+                                        onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground px-1">{t.postalCode}</Label>
+                                    <Input
+                                        placeholder="K1A 0B1"
+                                        className="h-14 px-6 rounded-2xl border-none bg-muted/50 font-bold shadow-inner focus-visible:ring-primary"
+                                        value={newAddress.zip}
+                                        onChange={(e) => setNewAddress({ ...newAddress, zip: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="pb-4">
+                            <Button
+                                className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-sm shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                                onClick={handleAddAddress}
+                                disabled={addMutation.isPending}
+                            >
+                                {addMutation.isPending ? t.loading : t.save}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <Footer />

@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ImageUploader from '@/components/common/ImageUploader';
 import { useAuthStore } from '@/stores/authStore';
 import SkuListEditor from './SkuListEditor';
+import LocationPicker from '@/components/LocationPicker';
 
 interface FormFieldRendererProps {
     field: FieldDefinition;
@@ -146,14 +147,12 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
                 );
 
             case 'location':
-                // Simple text input for now, can be enhanced with map picker
                 return (
-                    <Input
-                        type="text"
-                        value={value || ''}
-                        onChange={(e) => onChange(e.target.value)}
-                        placeholder={field.placeholder || '例如：Kanata Lakes'}
-                        className={error ? 'border-red-500' : ''}
+                    <LocationPicker
+                        value={typeof value === 'object' ? value : undefined}
+                        onChange={onChange}
+                        showRadiusSelector={field.name === 'location' || field.name === 'pickupLocation'}
+                        defaultRadius={10}
                     />
                 );
 

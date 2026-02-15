@@ -1,4 +1,4 @@
-import { Search, X, TrendingUp, Sparkles, Clock, Loader2, Trash2 } from "lucide-react";
+import { Search, X, TrendingUp, Sparkles, Loader2, Trash2, Clock, Grid, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -7,10 +7,16 @@ import { useSemanticSearch } from "@/hooks/useSemanticSearch";
 import { useConfigStore } from "@/stores/configStore";
 import { useSearchHistory } from "@/stores/searchHistoryStore";
 import { ListingMaster } from "@/types/domain";
+import { CategoryMenu } from "@/components/search/CategoryMenu";
 
-export function SmartSearchBar() {
+interface SmartSearchBarProps {
+  isCompact?: boolean;
+}
+
+export function SmartSearchBar({ isCompact = false }: SmartSearchBarProps) {
   const [query, setQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
   const { language } = useConfigStore();
@@ -33,6 +39,7 @@ export function SmartSearchBar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowResults(false);
+        setShowCategoryMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -42,13 +49,21 @@ export function SmartSearchBar() {
   const handleSearch = (searchQuery: string) => {
     if (searchQuery.trim()) {
       addToHistory(searchQuery); // 保存到历史记录
-      navigate(`/category/service?q=${encodeURIComponent(searchQuery)}`);
+      // Redirect to Map Discovery with query
+      navigate(`/discover?q=${encodeURIComponent(searchQuery)}`);
       setShowResults(false);
+      setShowCategoryMenu(false);
     }
   };
 
+  const handleCategorySelect = (categoryId: string) => {
+    // Navigate to Map Discovery with category filter
+    navigate(`/discover?category=${categoryId}`);
+    setShowCategoryMenu(false);
+  };
+
   const t = {
-    placeholder: language === 'zh' ? '搜索服务、美食或任务..' : 'Search services, food, or tasks..',
+    placeholder: language === 'zh' ? '搜索服务、美食或任务..' : 'Search...',
     searchButton: language === 'zh' ? '搜索' : 'Search',
     aiRecommendations: language === 'zh' ? 'AI 智能推荐' : 'AI Recommendations',
     trendingSearches: language === 'zh' ? '热门搜索' : 'Trending Searches',
@@ -59,30 +74,50 @@ export function SmartSearchBar() {
     noResults: language === 'zh' ? '没有找到相关结果' : 'No results found',
     tryOther: language === 'zh' ? '试试其他关键词' : 'Try different keywords',
     highMatch: language === 'zh' ? '高度匹配' : 'High Match',
+    categories: language === 'zh' ? '分类' : 'Categories',
   };
 
   return (
-    <div className="relative w-full max-w-2xl" ref={searchRef}>
-      <div className="relative group flex items-center gap-2 px-2 sm:px-0">
+    <div className={`relative w-full ${isCompact ? '' : 'max-w-2xl'}`} ref={searchRef}>
+      <div className={`relative group flex items-center gap-2 transition-all p-1 rounded-2xl ${isCompact ? '' : 'bg-white/10 backdrop-blur-sm border border-white/20 shadow-sm hover:bg-white/20 focus-within:bg-white/20 focus-within:border-white/40 focus-within:shadow-md'}`}>
+
+        {/* Category Menu Toggle */}
+        <div className="relative">
+          <button
+            onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/30 transition-all ${showCategoryMenu ? 'bg-white/30 text-foreground shadow-sm' : ''}`}
+          >
+            <Grid className="w-5 h-5" />
+            {!isCompact && <ChevronDown className={`w-3 h-3 transition-transform ${showCategoryMenu ? 'rotate-180' : ''}`} />}
+          </button>
+          {showCategoryMenu && (
+            <CategoryMenu onSelect={handleCategorySelect} onClose={() => setShowCategoryMenu(false)} />
+          )}
+        </div>
+
+        <div className="w-px h-6 bg-white/20 mx-1 hidden sm:block" />
+
         <div className="flex-1 relative">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setShowResults(true)}
+            onFocus={() => {
+              setShowResults(true);
+              setShowCategoryMenu(false);
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSearch(query);
               }
             }}
             placeholder={t.placeholder}
-            className="w-full pl-10 pr-10 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl border border-white/20 bg-white/20 backdrop-blur-md focus:bg-white/40 focus:border-primary/50 transition-all outline-none text-sm sm:text-lg shadow-elevated"
+            className="w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground px-2 py-2 text-sm sm:text-base"
           />
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
 
           {/* AI 搜索加载指示器 */}
           {loading && (
-            <div className="absolute right-10 top-1/2 -translate-y-1/2">
+            <div className="absolute right-8 top-1/2 -translate-y-1/2">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
             </div>
           )}
@@ -94,25 +129,29 @@ export function SmartSearchBar() {
                 setQuery("");
                 setShowResults(false);
               }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        <Button
-          onClick={() => handleSearch(query)}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl font-black flex items-center gap-1.5 transition-all shadow-md"
-        >
-          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">{t.searchButton}</span>
-        </Button>
+        {!isCompact && (
+          <Button
+            onClick={() => handleSearch(query)}
+            size="sm"
+            className="rounded-xl px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-sm"
+          >
+            <Search className="w-4 h-4 mr-1.5" />
+            {t.searchButton}
+          </Button>
+        )}
       </div>
 
       {/* 搜索结果下拉框 */}
       {showResults && (
-        <div className="absolute top-full mt-2 w-full glass-card rounded-2xl p-3 shadow-elevated z-50 max-h-[500px] overflow-y-auto">
+        <div className={`absolute top-full mt-2 w-full glass-card rounded-2xl p-3 shadow-elevated z-50 max-h-[500px] overflow-y-auto ${isCompact ? 'text-sm' : ''
+          } animate-in fade-in slide-in-from-top-2 duration-200`}>
           {/* AI 搜索结果预览 */}
           {query && results.length > 0 && (
             <div className="space-y-2 mb-4">
@@ -139,7 +178,7 @@ export function SmartSearchBar() {
               {results.length > 3 && (
                 <Button
                   variant="ghost"
-                  className="w-full text-primary hover:text-primary/80"
+                  className="w-full text-primary hover:text-primary/80 h-9"
                   onClick={() => handleSearch(query)}
                 >
                   {t.viewAll} {results.length} {t.results} →

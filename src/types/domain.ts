@@ -76,6 +76,7 @@ export interface User {
   // Community Contribution & Level (JustTalk System)
   contributionScore?: number;  // Total contribution score
   level?: number;              // User level (1-5)
+  verificationLevel?: number;   // Trust level (1: Email/Phone, 2: ID, 3: Pro)
   levelIcon?: string;          // Level icon emoji
   levelName?: string;          // Level name
 }
