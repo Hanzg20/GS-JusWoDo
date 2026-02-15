@@ -1,12 +1,12 @@
-# Cloudflare Pages Configuration for JUSTWEDO
+# Cloudflare Pages Configuration for JWD (PWA Mode)
 name = "gig-neighbor"
 compatibility_date = "2026-01-14"
 [assets]
-directory = "./dist"
+directory = "./dist-pwa"  # PWA build output directory
 not_found_handling = "single-page-application"
 
-# Build Configuration
+# Build Configuration for PWA
 [build]
-command = "npm run build"
+command = "npm run build:pwa"  # Build PWA version with Service Worker
 
 # Note: For Cloudflare Pages, headers should be defined in a public/_headers file.
