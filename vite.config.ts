@@ -9,7 +9,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '');
-  const isPWAEnabled = env.VITE_ENABLE_PWA === 'true';
+  const isPWAEnabled = env.VITE_ENABLE_PWA === 'true' || mode === 'pwa';
 
   console.log('🔧 Build mode:', mode);
   console.log('📱 PWA enabled:', isPWAEnabled);
