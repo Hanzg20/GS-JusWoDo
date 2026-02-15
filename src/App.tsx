@@ -15,21 +15,30 @@ import { AnimatedRoutes } from "./components/AnimatedRoutes";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { initializeLanguage } = useConfigStore();
+  const { initializeLanguage, language } = useConfigStore();
 
   // Initialize language on first run
   useEffect(() => {
     initializeLanguage();
   }, [initializeLanguage]);
 
+  // Update document title based on language
+  useEffect(() => {
+    const titles = {
+      zh: '渥帮 JWD - 渥太华本地互助社区',
+      en: 'JWD - Get Things Done Together'
+    };
+    document.title = titles[language];
+  }, [language]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <TooltipProvider>
-          <SEO /> {/* Default Global SEO */}
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <SEO /> {/* Default Global SEO - moved inside Router */}
             <CommunityProvider>
               <AnimatedRoutes />
               <MobileBottomNav />

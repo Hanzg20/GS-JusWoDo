@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import {
     Mail,
     Eye,
@@ -136,12 +137,22 @@ const Login = () => {
         }
         setLoading(true);
         try {
-            const { error: verifyError } = await supabase.auth.verifyOtp({
-                ...(identifierType === 'phone' ? { phone: getCleanPhone(identifier) } : { email: identifier.trim() }),
-                token: otpCode,
-                type: identifierType === 'phone' ? 'sms' : 'email'
-            });
-            if (verifyError) throw verifyError;
+            let verifyResult;
+            if (identifierType === 'phone') {
+                verifyResult = await supabase.auth.verifyOtp({
+                    phone: getCleanPhone(identifier),
+                    token: otpCode,
+                    type: 'sms'
+                });
+            } else {
+                verifyResult = await supabase.auth.verifyOtp({
+                    email: identifier.trim(),
+                    token: otpCode,
+                    type: 'email'
+                });
+            }
+
+            if (verifyResult.error) throw verifyResult.error;
             toast.success("登录成功");
             // AuthStore will handle the state change automatically via onAuthStateChange
             navigate("/");
@@ -189,6 +200,7 @@ const Login = () => {
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 overflow-hidden relative">
+            <SEO title="登录 / Login" />
             {/* Background Orbs */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/10 rounded-full blur-[120px] animate-pulse" />
@@ -324,7 +336,7 @@ const Login = () => {
                                                     <div className="space-y-2">
                                                         <div className="flex items-center justify-between px-1">
                                                             <label className="text-sm font-bold text-slate-700">密码</label>
-                                                            <Link to="/forgot-password" size="sm" className="text-xs text-primary font-bold hover:underline">
+                                                            <Link to="/forgot-password" className="text-xs text-primary font-bold hover:underline">
                                                                 忘记密码？
                                                             </Link>
                                                         </div>

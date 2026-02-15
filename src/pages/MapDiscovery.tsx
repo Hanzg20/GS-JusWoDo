@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import SEO from '@/components/SEO';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import MarkerCluster from '@/components/map/MarkerCluster';
@@ -179,6 +180,10 @@ const MapDiscovery = () => {
 
     return (
         <div className="h-[calc(100vh-64px)] relative flex flex-col overflow-hidden">
+            <SEO
+                title={searchQuery ? `${searchQuery} - ${language === 'zh' ? '地图搜索' : 'Map Search'}` : (language === 'zh' ? '发现服务' : 'Discover Local Services')}
+                description={language === 'zh' ? '在地图上探索附近的优质服务和邻里互助。' : 'Explore trusted local services and neighbors on the map.'}
+            />
             {/* Search Banner */}
             {(searchQuery || searchCategory) && (
                 <div className="absolute top-16 left-0 right-0 z-[990] px-4 flex justify-center pointer-events-none">
@@ -214,7 +219,6 @@ const MapDiscovery = () => {
                         doubleClickZoom={true}
                         scrollWheelZoom={true}
                         dragging={true}
-                        tap={true}
                     >
                         <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

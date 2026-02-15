@@ -156,17 +156,17 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     )}
                 </div>
                 {/* Content Section - Compact for Mobile */}
-                <div className="p-3 sm:p-5 flex flex-col gap-2 sm:gap-3">
-                    {/* Title - Compact size on mobile */}
-                    <div>
+                <div className="p-3 sm:p-5 flex flex-col h-full">
+                    {/* Title - Strict truncation for symmetry */}
+                    <div className="mb-2 sm:mb-3 h-[2.8rem] sm:h-[3.2rem] overflow-hidden">
                         <h3 className="font-extrabold text-sm sm:text-lg line-clamp-2 group-hover:text-primary transition-colors leading-[1.3]">
                             {displayTitle}
                         </h3>
                     </div>
 
-                    {/* Provider Info - Simplified on mobile */}
+                    {/* Provider Info - Single line */}
                     {provider && (
-                        <div className="flex items-center gap-1.5 overflow-hidden">
+                        <div className="flex items-center gap-1.5 mb-2 sm:mb-3">
                             <div className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black border ${provider.identity === 'MERCHANT'
                                 ? 'bg-blue-50/50 text-blue-600 border-blue-100'
                                 : 'bg-green-50/50 text-green-600 border-green-100'
@@ -175,25 +175,27 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                                     ? (language === 'zh' ? '商' : 'M')
                                     : (language === 'zh' ? '邻' : 'N')}
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground/80 truncate">
+                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground/60 truncate">
                                 {displayBusinessName}
                             </span>
                         </div>
                     )}
 
-                    {/* Description - HIDE on mobile to keep compact grid */}
-                    <p className="hidden sm:block text-sm text-muted-foreground line-clamp-2 leading-relaxed min-h-[2.5rem]">
-                        {displayDesc}
-                    </p>
+                    {/* Description - Strict 2-line clamp + fixed height for desktop symmetry */}
+                    <div className="hidden sm:block mb-4 h-[2.5rem] overflow-hidden">
+                        <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
+                            {displayDesc}
+                        </p>
+                    </div>
 
                     {/* Footer: Price Focus */}
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/40">
-                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-bold bg-muted/30 px-2 py-0.5 rounded-full">
-                            <MapPin className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-primary/60" />
-                            <span className="truncate max-w-[60px] sm:max-w-none">{item.location.city}</span>
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/40">
+                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground/70 font-bold bg-muted/20 px-2 py-0.5 rounded-full">
+                            <MapPin className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-primary/50" />
+                            <span className="truncate max-w-[60px] sm:max-w-none font-extrabold">{item.location.city}</span>
                             {item.distanceMeters !== undefined && (
-                                <span className="ml-0.5 text-primary/80">
-                                    • {(item.distanceMeters / 1000).toFixed(1)}km
+                                <span className="ml-1 text-primary/60">
+                                    {(item.distanceMeters / 1000).toFixed(1)}km
                                 </span>
                             )}
                         </div>
@@ -201,13 +203,13 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                         <div className="flex items-baseline gap-0.5">
                             {startingPrice ? (
                                 <>
-                                    <span className="text-[10px] text-primary/70 font-black">{language === 'zh' ? '¥' : '$'}</span>
-                                    <span className="text-primary font-black text-sm sm:text-xl leading-none">
+                                    <span className="text-[10px] text-primary/60 font-black">{language === 'zh' ? '¥' : '$'}</span>
+                                    <span className="text-primary font-black text-base sm:text-xl leading-none">
                                         {(startingPrice.amount / 100).toFixed(0)}
                                     </span>
                                 </>
                             ) : (
-                                <span className="text-muted-foreground text-[10px] font-black italic">
+                                <span className="text-muted-foreground text-[10px] font-black italic opacity-60">
                                     {language === 'zh' ? '议价' : 'Quote'}
                                 </span>
                             )}

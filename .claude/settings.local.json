@@ -29,7 +29,8 @@
       "Bash(powershell -Command \"(Get-ChildItem public/pwa-icons/*.png).Count\")",
       "Bash(test:*)",
       "Bash(powershell -Command \"(Get-ChildItem dist-pwa/pwa-icons/*.png).Count\")",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run dev:pwa:*)"
     ],
     "deny": [],
     "ask": []

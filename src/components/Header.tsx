@@ -1,4 +1,4 @@
-import { Bell, User, Menu, PlusCircle, MessageCircle, Globe, MapPin, Search } from "lucide-react";
+import { Bell, User, Menu, PlusCircle, MessageCircle, Globe, MapPin, Search, Map, MessageSquareQuote } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -45,6 +45,7 @@ const Header = () => {
     becomeProvider: language === 'zh' ? '能人入驻' : 'Become a Pro',
     proHub: language === 'zh' ? '达人中心' : 'Pro Hub',
     brandName: language === 'zh' ? '渥帮' : 'JUSTWEDO',
+    trueWord: language === 'zh' ? '真言' : 'JustTalk',
   };
 
   const isProvider = currentUser?.roles?.includes('PROVIDER');
@@ -76,6 +77,22 @@ const Header = () => {
           </button>
         </div>
 
+        {/* Navigation Tools (Desktop Only) */}
+        <nav className="hidden lg:flex items-center gap-1 mx-2">
+          <Link to="/discover">
+            <Button variant="ghost" size="sm" className="rounded-full h-9 px-4 font-black text-xs uppercase tracking-widest gap-2 flex items-center">
+              <Map className="w-4 h-4 text-primary" />
+              <span>{t.map}</span>
+            </Button>
+          </Link>
+          <Link to="/community">
+            <Button variant="ghost" size="sm" className="rounded-full h-9 px-4 font-black text-xs uppercase tracking-widest gap-2 flex items-center">
+              <MessageSquareQuote className="w-4 h-4 text-primary" />
+              <span>{t.trueWord}</span>
+            </Button>
+          </Link>
+        </nav>
+
         {/* Global Search Bar (Desktop) */}
         <div className="hidden md:block flex-1 max-w-xl mx-auto">
           <SmartSearchBar isCompact />
@@ -93,6 +110,16 @@ const Header = () => {
             />
             {currentUser && <BeanBalance showLabel={false} size="sm" />}
           </div>
+
+          {/* Mobile Map Link */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden rounded-full w-9 h-9"
+            onClick={() => navigate('/discover')}
+          >
+            <Map className="w-4 h-4 text-muted-foreground" />
+          </Button>
 
           {/* Mobile Search Toggle */}
           <Button

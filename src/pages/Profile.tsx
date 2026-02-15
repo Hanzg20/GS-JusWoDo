@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import {
     MapPin, Package,
@@ -84,6 +85,7 @@ const Profile = () => {
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] pb-24">
+            <SEO title={t.profile} noindex />
             <Header />
 
             <div className="max-w-2xl mx-auto pt-6 px-4 space-y-6">

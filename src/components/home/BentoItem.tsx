@@ -34,6 +34,9 @@ export function BentoItem({
         4: "lg:col-span-4",
     }[colSpan];
 
+    // Responsive colSpan for tablets (md)
+    const mdColSpanClass = colSpan >= 2 ? "md:col-span-2" : "md:col-span-1";
+
     const rowSpanClass = {
         1: "lg:row-span-1",
         2: "lg:row-span-2",
@@ -45,7 +48,7 @@ export function BentoItem({
             opacity: 1,
             y: 0,
             scale: 1,
-            transition: { duration: 0.5, ease: "easeOut" }
+            transition: { duration: 0.5, ease: "easeOut" as any }
         }
     };
 
@@ -57,6 +60,7 @@ export function BentoItem({
             className={cn(
                 "group relative overflow-hidden rounded-3xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-shadow duration-300",
                 colSpanClass,
+                mdColSpanClass,
                 rowSpanClass,
                 className
             )}

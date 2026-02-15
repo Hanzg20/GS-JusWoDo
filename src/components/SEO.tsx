@@ -1,59 +1,67 @@
 import { Helmet } from 'react-helmet-async';
 import { useConfigStore } from '@/stores/configStore';
+import { useLocation } from 'react-router-dom';
 
 interface SEOProps {
     title?: string;
     description?: string;
     image?: string;
-    url?: string;
-    type?: 'website' | 'article' | 'product';
+    type?: 'website' | 'article' | 'product' | 'profile';
+    keywords?: string[];
+    noindex?: boolean;
 }
 
 const SEO = ({
     title,
     description,
     image,
-    url,
-    type = 'website'
+    type = 'website',
+    keywords = [],
+    noindex = false
 }: SEOProps) => {
     const { language } = useConfigStore();
+    const location = useLocation();
 
-    // Default values
-    const siteName = language === 'zh' ? '渥帮 JWD' : 'JustWeDo';
-    const defaultTitle = language === 'zh' ? '渥帮 JWD - 渥太华本地互助社区' : 'JustWeDo - Ottawa Local Gig Community';
+    // Defaults
+    const siteName = language === 'zh' ? '渥帮 (JustWeDo)' : 'JustWeDo';
+    const defaultTitle = language === 'zh' ? '渥帮 - 渥太华本地生活服务平台' : 'JustWeDo - Ottawa Local Services Marketplace';
     const defaultDescription = language === 'zh'
-        ? '连接邻里，发现专业。渥太华首选的生活服务与闲置交易平台。找家政、租工具、买二手，就在渥帮。'
-        : 'Connecting neighbors, surfacing pros. Ottawa\'s premier platform for local services and rentals. Find help, rent tools, or buy neighborhood goods.';
-    const defaultImage = 'https://justwedo.ca/og-image.jpg'; // Pending real deployment URL
-    const siteUrl = 'https://justwedo.ca'; // Pending real deployment URL
+        ? '连接渥太华社区，提供家政、维修、美食、接送等便捷服务。'
+        : 'Connecting Ottawa neighborhoods with trusted local services like cleaning, moving, food, and more.';
+    const defaultImage = 'https://justwedo.ca/og-image.jpg'; // Replace with actual URL
+    const siteUrl = 'https://justwedo.ca'; // Replace with actual URL
 
-    // Computed values
-    const pageTitle = title ? `${title} | ${siteName}` : defaultTitle;
-    const pageDescription = description || defaultDescription;
-    const pageImage = image || defaultImage;
-    const pageUrl = url || window.location.href;
+    const fullTitle = title ? `${title} | ${siteName}` : defaultTitle;
+    const fullDescription = description || defaultDescription;
+    const fullImage = image || defaultImage;
+    const fullUrl = `${siteUrl}${location.pathname}`;
 
     return (
         <Helmet>
-            {/* Standard Meta Tags */}
-            <title>{pageTitle}</title>
-            <meta name="description" content={pageDescription} />
-            <link rel="canonical" href={pageUrl} />
+            {/* Standard Metadata */}
+            <title>{fullTitle}</title>
+            <meta name="description" content={fullDescription} />
+            {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
+            <link rel="canonical" href={fullUrl} />
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
-            {/* Open Graph (Facebook, LinkedIn, WeChat) */}
-            <meta property="og:site_name" content={siteName} />
-            <meta property="og:title" content={pageTitle} />
-            <meta property="og:description" content={pageDescription} />
-            <meta property="og:image" content={pageImage} />
-            <meta property="og:url" content={pageUrl} />
+            {/* Robots */}
+            {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+            {/* Open Graph / Facebook */}
             <meta property="og:type" content={type} />
+            <meta property="og:title" content={title || defaultTitle} />
+            <meta property="og:description" content={fullDescription} />
+            <meta property="og:image" content={fullImage} />
+            <meta property="og:url" content={fullUrl} />
+            <meta property="og:site_name" content={siteName} />
             <meta property="og:locale" content={language === 'zh' ? 'zh_CN' : 'en_CA'} />
 
-            {/* Twitter Card */}
+            {/* Twitter */}
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content={pageTitle} />
-            <meta name="twitter:description" content={pageDescription} />
-            <meta name="twitter:image" content={pageImage} />
+            <meta name="twitter:title" content={title || defaultTitle} />
+            <meta name="twitter:description" content={fullDescription} />
+            <meta name="twitter:image" content={fullImage} />
         </Helmet>
     );
 };

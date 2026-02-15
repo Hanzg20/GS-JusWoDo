@@ -25,7 +25,6 @@ import { Badge } from "@/components/ui/badge";
 // Bento Components
 import { BentoGrid } from "@/components/home/BentoGrid";
 import { BentoHero } from "@/components/home/BentoHero";
-import { BentoCategories } from "@/components/home/BentoCategories";
 import { BentoProfile } from "@/components/home/BentoProfile";
 import { BentoPromo } from "@/components/home/BentoPromo";
 import { StoriesSection } from "@/components/home/StoriesSection";
@@ -150,17 +149,12 @@ const Index = () => {
       {/* Bento Grid Layout - Hero Area */}
       <div className="pt-4 pb-8 bg-gradient-to-b from-background to-secondary/5">
         <BentoGrid>
-          {/* Main Hero: Search & Stats (2x2) */}
+          {/* Main Hero: Greeting & Stats (2x1 on desktop) */}
           <BentoHero />
 
-          {/* Categories List (1x2) */}
-          <BentoCategories />
-
-          {/* Right Column: Profile & Promo (1x1 + 1x1) */}
-          <div className="flex flex-col gap-4 lg:col-span-1 lg:row-span-2 h-full">
-            <BentoProfile />
-            <BentoPromo />
-          </div>
+          {/* Profile & Promo (1x1 each) */}
+          <BentoProfile />
+          <BentoPromo />
 
           {/* Full Width Stories (4x1) */}
           <StoriesSection />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '@/components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { repositoryFactory } from '@/services/repositories/factory';
 import { ProviderProfile as ProviderProfileType, ListingMaster, Review } from '@/types/domain';
@@ -165,6 +166,12 @@ export default function ProviderProfile() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5">
+            <SEO
+                title={businessName}
+                description={description?.substring(0, 160) || (language === 'zh' ? `查看 ${businessName} 的服务评价和详情` : `Check out services and reviews for ${businessName}`)}
+                image={providerAvatar}
+                type="profile"
+            />
             <Header />
 
             <div className="container max-w-6xl py-8">
