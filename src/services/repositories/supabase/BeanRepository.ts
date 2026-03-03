@@ -26,19 +26,28 @@ export class SupabaseBeanRepository implements IBeanRepository {
     }
 
     async addTransaction(transaction: Omit<BeanTransaction, 'id' | 'createdAt'>): Promise<BeanTransaction> {
-        const { data, error } = await supabase
-            .from('bean_transactions')
-            .insert({
-                user_id: transaction.userId,
-                amount: transaction.amount,
-                type: transaction.type,
-                reason: transaction.descriptionZh, // Mapping reason to descriptionZh
-                related_order_id: (transaction as any).relatedOrderId // Pass through extra fields
-            })
-            .select()
-            .single();
+        const { error } = await supabase
+            .rpc('record_bean_transaction', {
+                p_user_id: transaction.userId,
+                p_amount: transaction.amount,
+                p_type: transaction.type,
+                p_reason_zh: transaction.descriptionZh,
+                p_reason_en: transaction.descriptionEn || transaction.descriptionZh,
+                p_related_order_id: (transaction as any).relatedOrderId
+            });
 
         if (error) throw error;
+
+        // Fetch the newly created transaction to return it (matching interface)
+        const { data, error: fetchError } = await supabase
+            .from('bean_transactions')
+            .select('*')
+            .eq('user_id', transaction.userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (fetchError) throw fetchError;
         return this.mapToDomain(data);
     }
 

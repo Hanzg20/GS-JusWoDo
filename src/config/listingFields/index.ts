@@ -80,6 +80,11 @@ export const getFieldsForType = (
             provider: taskFields,
             all: taskFields,
         },
+        'EVENT': {
+            buyer: eventFields,
+            provider: eventFields,
+            all: eventFields,
+        },
         'OTHER': {
             buyer: { ...defaultBasicFields, type: 'GOODS', role: 'buyer' },
             provider: { ...defaultBasicFields, type: 'GOODS', role: 'provider' },

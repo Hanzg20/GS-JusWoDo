@@ -79,6 +79,7 @@ export interface User {
   verificationLevel?: number;   // Trust level (1: Email/Phone, 2: ID, 3: Pro)
   levelIcon?: string;          // Level icon emoji
   levelName?: string;          // Level name
+  jwdCode?: string;            // Unique JWD Personal Identity Code
 }
 
 export interface UserAddress extends BaseEntity {
@@ -197,6 +198,7 @@ export interface ListingMaster extends BaseEntity {
   reviewCount: number;
   isPromoted?: boolean;
   distanceMeters?: number; // Calculated distance from search center
+  searchScore?: number; // Hybrid ranking score
 
   // New: Link to child items
   itemIds?: string[];

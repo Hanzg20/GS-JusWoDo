@@ -34,7 +34,8 @@ export class SupabaseListingRepository implements IListingRepository {
             rating: Number(row.rating),
             reviewCount: row.review_count,
             isPromoted: row.is_promoted,
-            distanceMeters: row.distance_meters, // New: from PostGIS search
+            distanceMeters: row.distance_meters,
+            searchScore: row.search_score,
             createdAt: row.created_at,
             updatedAt: row.updated_at
         };
@@ -132,8 +133,13 @@ export class SupabaseListingRepository implements IListingRepository {
         isSemantic?: boolean,
         lat?: number,
         lng?: number,
-        radius?: number
+        radius?: number,
+        limit?: number,
+        offset?: number
     }): Promise<ListingMaster[]> {
+        const matchCount = options.limit || 50;
+        const matchOffset = options.offset || 0;
+
         if (options.isSemantic && options.query) {
             // 1. Generate embedding using Edge Function for the query string
             const { data: embeddingData, error: embeddingError } = await supabase.functions.invoke('generate-embedding', {
@@ -145,14 +151,17 @@ export class SupabaseListingRepository implements IListingRepository {
                 return this.search({ ...options, isSemantic: false });
             }
 
-            // 2. Similarity search using the UNIFIED pgvector RPC
+            // 2. Similarity search using the UNIFIED pgvector RPC with Hybrid Ranking
             const { data, error } = await supabase.rpc('match_listings', {
                 query_embedding: embeddingData.embedding,
                 match_threshold: 0.3,
-                match_count: 50,
+                match_count: matchCount,
+                p_offset: matchOffset,
                 filter_node_id: options.nodeId,
                 filter_category_id: options.categoryId,
-                filter_type: options.type
+                filter_type: options.type,
+                p_lat: options.lat,
+                p_lng: options.lng
             });
 
             if (error) throw error;
@@ -165,7 +174,8 @@ export class SupabaseListingRepository implements IListingRepository {
                 p_radius_meters: options.radius,
                 p_type: options.type,
                 p_category_id: options.categoryId,
-                p_match_count: 100
+                p_match_count: matchCount,
+                p_offset: matchOffset
             });
 
             if (error) throw error;
@@ -175,8 +185,11 @@ export class SupabaseListingRepository implements IListingRepository {
             let qb = supabase.from('listing_masters').select('*').eq('status', 'PUBLISHED');
 
             if (options.query) {
-                // ILIKE search across title and description
-                qb = qb.or(`title_zh.ilike.%${options.query}%,title_en.ilike.%${options.query}%,description_zh.ilike.%${options.query}%,description_en.ilike.%${options.query}%`);
+                // High-performance Full-Text Search using GIN index
+                qb = qb.textSearch('fts_doc', options.query, {
+                    config: 'simple',
+                    type: 'websearch'
+                });
             }
 
             if (options.nodeId) qb = qb.eq('node_id', options.nodeId);
@@ -192,7 +205,10 @@ export class SupabaseListingRepository implements IListingRepository {
 
             if (options.type) qb = qb.eq('type', options.type);
 
-            const { data, error } = await qb.order('created_at', { ascending: false });
+            // Apply pagination to traditional search
+            const { data, error } = await qb
+                .order('created_at', { ascending: false })
+                .range(matchOffset, matchOffset + matchCount - 1);
 
             if (error) throw error;
             return (data || []).map(this.mapFromDb);

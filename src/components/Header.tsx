@@ -1,4 +1,4 @@
-import { Bell, User, Menu, PlusCircle, MessageCircle, Globe, MapPin, Search, Map, MessageSquareQuote } from "lucide-react";
+import { Bell, User, Menu, PlusCircle, MessageCircle, Globe, MapPin, Search, Map, MessageSquareQuote, ScanLine } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -10,11 +10,13 @@ import { useConfigStore } from "@/stores/configStore";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 import { LitePost } from "./Community/LitePost";
 import { SmartSearchBar } from "./SmartSearchBar";
+import { JWDScanner } from "./common/JWDScanner";
 
 const Header = () => {
   const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const { currentUser, isLoading } = useAuthStore();
   const { activeNodeId } = useCommunity();
   const { totalUnreadCount, loadUnreadCount } = useMessageStore();
@@ -101,6 +103,14 @@ const Header = () => {
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="hidden sm:flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full w-9 h-9 text-primary hover:bg-primary/10 transition-colors"
+              onClick={() => setShowScanner(true)}
+            >
+              <ScanLine className="w-5 h-5" />
+            </Button>
             <LitePost
               trigger={
                 <Button variant="ghost" size="sm" className="rounded-full h-9 px-4 font-black text-xs uppercase tracking-widest gap-2 hidden lg:flex">
@@ -119,6 +129,16 @@ const Header = () => {
             onClick={() => navigate('/discover')}
           >
             <Map className="w-4 h-4 text-muted-foreground" />
+          </Button>
+
+          {/* Mobile Scan Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden rounded-full w-9 h-9 text-primary"
+            onClick={() => setShowScanner(true)}
+          >
+            <ScanLine className="w-5 h-5" />
           </Button>
 
           {/* Mobile Search Toggle */}
@@ -186,6 +206,11 @@ const Header = () => {
         <div className="md:hidden px-4 pb-3 animate-in slide-in-from-top-2">
           <SmartSearchBar isCompact />
         </div>
+      )}
+
+      {/* JWD Scanner Overlay */}
+      {showScanner && (
+        <JWDScanner onClose={() => setShowScanner(false)} />
       )}
     </header>
   );

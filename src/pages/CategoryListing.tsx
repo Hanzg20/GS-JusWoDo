@@ -47,14 +47,12 @@ const CategoryListing = () => {
     };
 
     const identifyIndustry = (type: string | undefined): string => {
-        // ... (unchanged)
         if (!type) return 'all';
-        if (type.startsWith('101')) return 'food';
-        if (type.startsWith('102')) return 'service';
-        if (type.startsWith('103')) return 'transport';
-        if (type.startsWith('104')) return 'rental';
-        if (type.startsWith('105')) return 'learning';
-        if (type.startsWith('106')) return 'professional';
+        if (type.startsWith('101')) return 'home';
+        if (type.startsWith('102')) return 'pro';
+        if (type.startsWith('103')) return 'kids';
+        if (type.startsWith('104')) return 'food';
+        if (type.startsWith('105')) return 'travel';
         return type.toLowerCase();
     };
 

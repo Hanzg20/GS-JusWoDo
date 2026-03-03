@@ -39,14 +39,14 @@ export interface Category {
 }
 
 export const mainCategories: Category[] = [
-    { icon: <ChefHat className="w-6 h-6" />, label: "Food", id: "food", color: "#f59e0b" },
-    { icon: <Truck className="w-6 h-6" />, label: "Moving", id: "moving", color: "#10b981" },
-    { icon: <Baby className="w-6 h-6" />, label: "Kids", id: "kids", color: "#8b5cf6" },
-    { icon: <Car className="w-6 h-6" />, label: "Carpool", id: "carpool", color: "#3b82f6" },
-    { icon: <Home className="w-6 h-6" />, label: "Real Estate", id: "real-estate", color: "#dc2626" },
-    { icon: <Scissors className="w-6 h-6" />, label: "Beauty", id: "beauty", color: "#ec4899" },
-    { icon: <Sparkle className="w-6 h-6" />, label: "Cleaning", id: "cleaning", color: "#10b981" },
-    { icon: <PlaneTakeoff className="w-6 h-6" />, label: "Airport", id: "airport", color: "#3b82f6" },
-    { icon: <Hammer className="w-6 h-6" />, label: "Assembly", id: "assembly", color: "#f59e0b" },
-    { icon: <MoreHorizontal className="w-6 h-6" />, label: "More", id: "more", color: "#6b7280" },
+    { icon: <ChefHat className="w-6 h-6" />, label: "Food", id: "1040600", color: "#f59e0b" },
+    { icon: <Truck className="w-6 h-6" />, label: "Moving", id: "1010500", color: "#10b981" },
+    { icon: <Baby className="w-6 h-6" />, label: "Kids", id: "1030000", color: "#8b5cf6" },
+    { icon: <Car className="w-6 h-6" />, label: "Carpool", id: "1050600", color: "#3b82f6" },
+    { icon: <Home className="w-6 h-6" />, label: "Real Estate", id: "1010000", color: "#dc2626" }, // General Home
+    { icon: <Scissors className="w-6 h-6" />, label: "Beauty", id: "1020000", color: "#ec4899" },
+    { icon: <Sparkle className="w-6 h-6" />, label: "Cleaning", id: "1010100", color: "#10b981" },
+    { icon: <PlaneTakeoff className="w-6 h-6" />, label: "Airport", id: "1050000", color: "#3b82f6" },
+    { icon: <Hammer className="w-6 h-6" />, label: "Assembly", id: "1010400", color: "#f59e0b" }, // Using Repairs for Assembly
+    { icon: <MoreHorizontal className="w-6 h-6" />, label: "More", id: "service", color: "#6b7280" },
 ];

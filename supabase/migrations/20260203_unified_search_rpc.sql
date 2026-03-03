@@ -17,7 +17,10 @@ CREATE OR REPLACE FUNCTION public.match_listings (
   filter_node_id text DEFAULT NULL,
   filter_category_id text DEFAULT NULL,
   filter_type public.listing_type DEFAULT NULL,
-  filter_provider_id uuid DEFAULT NULL
+  filter_provider_id uuid DEFAULT NULL,
+  p_lat double precision DEFAULT NULL,
+  p_lng double precision DEFAULT NULL,
+  p_offset int DEFAULT 0
 )
 RETURNS TABLE (
   id UUID,
@@ -40,11 +43,17 @@ RETURNS TABLE (
   review_count INTEGER,
   attributes JSONB,
   metadata JSONB,
-  similarity FLOAT
+  similarity FLOAT,
+  search_score FLOAT
 )
 LANGUAGE plpgsql
 STABLE
 AS $$
+DECLARE
+    -- Weight constants for Hybrid Ranking
+    w_similarity CONSTANT float := 0.6;
+    w_proximity CONSTANT float := 0.3;
+    w_promotion CONSTANT float := 0.1;
 BEGIN
   RETURN QUERY
   SELECT
@@ -68,7 +77,22 @@ BEGIN
     m.review_count,
     m.attributes,
     m.metadata,
-    1 - (m.embedding <=> query_embedding) AS similarity
+    (1 - (m.embedding <=> query_embedding))::float as similarity,
+    (
+        -- Hybrid Rank Score Calculation
+        (w_similarity * (1 - (m.embedding <=> query_embedding))) +
+        (w_promotion * (CASE WHEN m.is_promoted THEN 1 ELSE 0.5 END)) +
+        (w_proximity * (
+            CASE 
+                WHEN p_lat IS NOT NULL AND p_lng IS NOT NULL AND m.latitude IS NOT NULL 
+                THEN exp(-0.0001 * ST_Distance(
+                    ST_SetSRID(ST_MakePoint(m.longitude, m.latitude), 4326)::geography, 
+                    ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography
+                ))
+                ELSE 0.5 -- Default middle proximity score if no location provided
+            END
+        ))
+    )::float AS search_score
   FROM public.listing_masters m
   WHERE m.status = 'PUBLISHED'
     AND (filter_node_id IS NULL OR m.node_id = filter_node_id)
@@ -83,8 +107,9 @@ BEGIN
     AND (filter_type IS NULL OR m.type = filter_type)
     AND (filter_provider_id IS NULL OR m.provider_id = filter_provider_id)
     AND (1 - (m.embedding <=> query_embedding) > match_threshold)
-  ORDER BY m.embedding <=> query_embedding
-  LIMIT match_count;
+  ORDER BY search_score DESC
+  LIMIT match_count
+  OFFSET p_offset;
 END;
 $$;
 

@@ -42,8 +42,8 @@ export const useLocation = () => {
         };
 
         navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-            enableHighAccuracy: true,
-            timeout: 5000,
+            enableHighAccuracy: false, // More reliable for desktop/IP-based location
+            timeout: 15000, // 15 seconds
             maximumAge: 0,
         });
     }, []);

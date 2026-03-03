@@ -14,7 +14,8 @@ interface ListingState {
     updateListing: (id: string, listing: Partial<ListingMaster>, items?: Partial<ListingItem>[]) => Promise<void>;
     deleteListing: (id: string) => Promise<void>;
     fetchListings: () => Promise<void>;
-    searchListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType }) => Promise<void>;
+    searchListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, limit?: number, offset?: number }) => Promise<void>;
+    loadMoreListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, limit?: number, offset?: number }) => Promise<void>;
     toggleItemAvailability: (itemId: string) => Promise<void>;
 }
 
@@ -160,6 +161,19 @@ export const useListingStore = create<ListingState>((set, get) => ({
             const repo = repositoryFactory.getListingRepository();
             const listings = await repo.search(options);
             set({ listings, isLoading: false });
+        } catch (err: any) {
+            set({ error: err.message, isLoading: false });
+        }
+    },
+    loadMoreListings: async (options) => {
+        set({ isLoading: true, error: null });
+        try {
+            const repo = repositoryFactory.getListingRepository();
+            const newListings = await repo.search(options);
+            set((state) => ({
+                listings: [...state.listings, ...newListings],
+                isLoading: false
+            }));
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
         }

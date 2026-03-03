@@ -138,7 +138,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     beansBalance: profile.beans_balance || 0,
                     providerProfileId: profile.provider_profile_id,
                     isVerifiedProvider: !!profile.provider_profile_id,
-                    nodeId: profile.node_id
+                    nodeId: profile.node_id,
+                    jwdCode: profile.jwd_code
                 };
 
                 // Sync language from profile to config store if present

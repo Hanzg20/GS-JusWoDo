@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import SEO from '@/components/SEO';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -14,6 +14,20 @@ import { useConfigStore } from '@/stores/configStore';
 import { toast } from 'sonner';
 import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
+import { useMap } from 'react-leaflet';
+
+// Fix Leaflet rendering issues when container size changes
+const MapResizer = () => {
+    const map = useMap();
+    useEffect(() => {
+        // Trigger a redraw after a short delay to ensure the container is fully rendered
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+};
 
 // Sub-components
 import { MapFilters } from '@/components/map/discovery/MapFilters';
@@ -150,26 +164,28 @@ const MapDiscovery = () => {
         }
     }, [coords, locError, fetchListings, language]);
 
-    const handleSearchArea = (map: L.Map) => {
+    const handleSearchArea = useCallback((map: L.Map) => {
         const center = map.getCenter();
         const bounds = map.getBounds();
         const northEast = bounds.getNorthEast();
         const radius = Math.round(center.distanceTo(northEast));
         fetchListings(center.lat, center.lng, radius);
-    };
+    }, [fetchListings]);
 
-    const clearSearch = () => {
+    const clearSearch = useCallback(() => {
         setSearchParams({});
-    };
+    }, [setSearchParams]);
 
-    const clusterMarkers = listings
-        .filter(l => l.location?.coordinates)
-        .map(listing => ({
-            id: listing.id,
-            position: [listing.location!.coordinates!.lat, listing.location!.coordinates!.lng] as [number, number],
-            icon: getIcon(listing.type),
-            popup: getPopupHtml(listing, language)
-        }));
+    const clusterMarkers = useMemo(() => {
+        return listings
+            .filter(l => l.location?.coordinates)
+            .map(listing => ({
+                id: listing.id,
+                position: [listing.location!.coordinates!.lat, listing.location!.coordinates!.lng] as [number, number],
+                icon: getIcon(listing.type),
+                popup: getPopupHtml(listing, language)
+            }));
+    }, [listings, language]);
 
     if (locLoading) return (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-muted/20">
@@ -220,6 +236,7 @@ const MapDiscovery = () => {
                         scrollWheelZoom={true}
                         dragging={true}
                     >
+                        <MapResizer />
                         <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

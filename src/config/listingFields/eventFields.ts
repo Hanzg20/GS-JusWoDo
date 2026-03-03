@@ -21,12 +21,40 @@ export const eventFields: ListingFieldsConfig = {
                     importance: 'required',
                 },
                 {
+                    name: 'eventType',
+                    label: '活动类型',
+                    type: 'select',
+                    importance: 'required',
+                    options: [
+                        { label: '邻里聚会 (Neighborhood Party)', value: 'PARTY' },
+                        { label: '邻里团购 (Group Buy)', value: 'GROUP_BUY' },
+                        { label: '技能分享 (Skill Share)', value: 'SKILL_SHARE' },
+                        { label: '互助请求 (Community Task)', value: 'TASK' },
+                        { label: '二手市集 (Yard Sale)', value: 'YARD_SALE' },
+                        { label: '其他 (Other)', value: 'OTHER' }
+                    ],
+                    defaultValue: 'PARTY'
+                },
+                {
                     name: 'description',
                     label: '活动详细信息',
                     type: 'textarea',
                     importance: 'required',
                     placeholder: '请说明活动流程、费用说明、注意事项等...',
                     rows: 6,
+                }
+            ]
+        },
+        {
+            title: '邻里承诺 (JinBean)',
+            fields: [
+                {
+                    name: 'beanCommitment',
+                    label: '报名承诺金 (金豆)',
+                    type: 'number',
+                    importance: 'recommended',
+                    placeholder: '建议 5-10 豆',
+                    helpText: '用户报名时需暂时锁定的金豆，如约参加后自动退回，可有效防止鸽子。'
                 }
             ]
         },

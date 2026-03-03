@@ -12,7 +12,6 @@ import {
     IReviewRepository,
     IUserRepository,
     IInventoryRepository,
-    IInventoryRepository,
     IPayoutRepository,
     ICommunityPostRepository
 } from './interfaces';
@@ -59,7 +58,7 @@ class RepositoryFactory {
         this.useSupabase = hasSupabaseUrl && !useMockData;
 
         if (this.useSupabase) {
-            console.log('%c🔗 Repository Factory: Using Supabase (Production Mode)', 'color: #10b981; font-weight: bold; font-size: 12px;');
+            console.log('%c🔗 Repository Factory: Using Supabase Mode', 'color: #10b981; font-weight: bold; font-size: 12px;');
         } else {
             console.log('%c🔧 Repository Factory: Using Mock Data (Development Mode)', 'color: #f59e0b; font-weight: bold; font-size: 12px;');
         }

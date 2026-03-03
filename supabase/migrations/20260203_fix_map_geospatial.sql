@@ -49,7 +49,8 @@ CREATE OR REPLACE FUNCTION public.match_listings_by_radius(
     p_radius_meters DOUBLE PRECISION,
     p_type TEXT DEFAULT NULL,
     p_category_id TEXT DEFAULT NULL,
-    p_match_count INTEGER DEFAULT 100
+    p_match_count INTEGER DEFAULT 100,
+    p_offset INTEGER DEFAULT 0
 )
 RETURNS TABLE (
     id UUID,
@@ -91,9 +92,17 @@ BEGIN
         lm.status = 'PUBLISHED'
         AND ST_DWithin(lm.location_coords, ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography, p_radius_meters)
         AND (p_type IS NULL OR lm.type::text = p_type)
-        AND (p_category_id IS NULL OR lm.category_id = p_category_id)
+        AND (
+            p_category_id IS NULL 
+            OR lm.category_id = p_category_id
+            OR (
+                p_category_id LIKE '%0000' 
+                AND lm.category_id LIKE SUBSTRING(p_category_id FROM 1 FOR 3) || '%'
+            )
+        )
     ORDER BY distance_meters ASC
-    LIMIT p_match_count;
+    LIMIT p_match_count
+    OFFSET p_offset;
 END;
 $$;
 

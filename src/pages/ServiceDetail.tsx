@@ -22,6 +22,7 @@ import { InstantPayFlow } from "@/components/checkout/InstantPayFlow";
 import { QuoteRequestFlow } from "@/components/checkout/QuoteRequestFlow";
 import { GoodsDetailView } from "@/components/checkout/GoodsDetailView";
 import { TaskDetailView } from "@/components/checkout/TaskDetailView";
+import { EventDetailView } from "@/components/events/EventDetailView";
 import { EnhancedReviewList } from "@/components/reviews/EnhancedReviewList";
 
 const ServiceDetail = () => {

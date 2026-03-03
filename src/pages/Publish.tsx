@@ -135,6 +135,7 @@ const Publish = () => {
     const categories = [
         { id: 'SERVICE', label: '💼 提供专业服务', visible: 'PROVIDER_ONLY', subtitle: '咨询/上门/代办 (含SKU与底价)' },
         { id: 'TASK', label: '🙋 发布需求任务', visible: 'BUYER_ONLY', subtitle: '寻求邻居帮忙 (含预算与截止日期)' },
+        { id: 'EVENT', label: '🎉 组织邻里活动', visible: 'ALL', subtitle: '聚会/团购/分享 (含报名管理与承诺金)' },
         { id: 'GOODS', label: '🛍️ 商业/正规供货', visible: 'ALL', subtitle: '批量商品 / 品牌销售 / 有库存管理' },
         { id: 'RENTAL', label: '🔄 专业设备租赁', visible: 'ALL', subtitle: '相机/电钻/场地 (含押金与租约)' },
     ].filter(cat =>

@@ -103,7 +103,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }, [value]);
 
     // Reverse geocoding to get address from coordinates
-    const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+    const reverseGeocode = useCallback(async (lat: number, lng: number): Promise<string> => {
         try {
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
@@ -114,10 +114,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             console.error('Reverse geocoding failed:', error);
             return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         }
-    };
+    }, []);
 
     // Forward geocoding to get coordinates from address
-    const forwardGeocode = async (query: string): Promise<{ lat: number; lng: number; address: string } | null> => {
+    const forwardGeocode = useCallback(async (query: string): Promise<{ lat: number; lng: number; address: string } | null> => {
         try {
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
@@ -135,9 +135,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             console.error('Forward geocoding failed:', error);
             return null;
         }
-    };
+    }, []);
 
-    const handleMapClick = async (lat: number, lng: number) => {
+    const handleMapClick = useCallback(async (lat: number, lng: number) => {
         const address = await reverseGeocode(lat, lng);
         const locationData = {
             lat,
@@ -147,9 +147,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         };
         setSelectedLocation(locationData);
         onChange(locationData);
-    };
+    }, [reverseGeocode, showRadiusSelector, serviceRadius, onChange]);
 
-    const handleRadiusChange = (newRadius: number) => {
+    const handleRadiusChange = useCallback((newRadius: number) => {
         setServiceRadius(newRadius);
         if (selectedLocation) {
             const updatedLocation = {
@@ -159,9 +159,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             setSelectedLocation(updatedLocation);
             onChange(updatedLocation);
         }
-    };
+    }, [selectedLocation, onChange]);
 
-    const handleSearch = async () => {
+    const handleSearch = useCallback(async () => {
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
@@ -174,7 +174,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             onChange(result);
             setShowMap(true);
         }
-    };
+    }, [searchQuery, forwardGeocode, onChange]);
 
     // Debounced search
     useEffect(() => {
@@ -368,17 +368,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                             {/* Current location marker (if different from selected) */}
                             {coords && (!selectedLocation ||
                                 (Math.abs(coords.lat - selectedLocation.lat) > 0.0001 ||
-                                 Math.abs(coords.lng - selectedLocation.lng) > 0.0001)) && (
-                                <Marker
-                                    position={[coords.lat, coords.lng]}
-                                    icon={L.divIcon({
-                                        html: '<div class="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>',
-                                        className: 'current-location-icon',
-                                        iconSize: [12, 12],
-                                        iconAnchor: [6, 6],
-                                    })}
-                                />
-                            )}
+                                    Math.abs(coords.lng - selectedLocation.lng) > 0.0001)) && (
+                                    <Marker
+                                        position={[coords.lat, coords.lng]}
+                                        icon={L.divIcon({
+                                            html: '<div class="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>',
+                                            className: 'current-location-icon',
+                                            iconSize: [12, 12],
+                                            iconAnchor: [6, 6],
+                                        })}
+                                    />
+                                )}
                         </MapContainer>
                     </div>
 

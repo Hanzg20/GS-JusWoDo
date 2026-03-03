@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import fs from 'fs';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -16,7 +17,6 @@ export default defineConfig(({ mode }) => {
 
   const plugins = [
     react(),
-    basicSsl(),
     mode === "development" && componentTagger()
   ];
 
@@ -129,9 +129,22 @@ export default defineConfig(({ mode }) => {
     })
   );
 
+  const keyPath = path.resolve(__dirname, 'localhost-key.pem');
+  const certPath = path.resolve(__dirname, 'localhost.pem');
+  const hasLocalCerts = fs.existsSync(keyPath) && fs.existsSync(certPath);
+
+  if (!hasLocalCerts && mode === 'development') {
+    plugins.push(basicSsl());
+    console.warn('⚠️  Local SSL certificates not found. Falling back to basic-ssl.');
+    console.warn('👉 Run "mkcert localhost" to enable trusted certificates.');
+  }
+
   return {
     server: {
-      https: true,
+      https: (hasLocalCerts ? {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath),
+      } : true) as any,
       host: "::",
       port: 8080,
     },

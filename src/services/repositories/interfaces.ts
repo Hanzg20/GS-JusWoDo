@@ -45,7 +45,9 @@ export interface IListingRepository {
         isSemantic?: boolean,
         lat?: number,
         lng?: number,
-        radius?: number
+        radius?: number,
+        limit?: number,
+        offset?: number
     }): Promise<ListingMaster[]>;
     create(listing: Omit<ListingMaster, 'id' | 'createdAt' | 'updatedAt'>): Promise<ListingMaster>;
     update(id: string, data: Partial<ListingMaster>): Promise<ListingMaster>;

@@ -5,13 +5,13 @@
 export const autoMatchSubcategory = (title: string, description: string, parentIndustryId: string): string => {
     const text = (title + " " + description).toLowerCase();
 
-    // Simple Keyword Mapping (Mocking a more complex system)
+    // Simple Keyword Mapping (Numeric IDs from ref_codes)
     const mappings: Record<string, string[]> = {
-        'HOUSE_SERVICES': ['clean', 'cleaning', 'assemble', 'ikea', 'furniture', 'repair', '保洁', '安装', '维修'],
-        'FOOD_MARKET': ['food', 'eat', 'meal', 'bake', 'cake', 'groceries', '美食', '外卖', '代购'],
-        'HOUSE_RENTAL': ['rent', 'room', 'sublet', 'lease', '租房', '分租'],
-        'USED_GOODS': ['sell', 'unused', 'secondhand', 'old', '二手', '闲置'],
-        'OUTDOOR_GEAR': ['camp', 'tent', 'hike', 'ski', 'snow', '露营', '铲雪'],
+        '1010100': ['clean', 'cleaning', '保洁', '洗'], // Home Cleaning
+        '1040600': ['food', 'eat', 'meal', 'bake', 'cake', 'groceries', '美食', '外卖', '代购'], // Market
+        '1040200': ['sell', 'unused', 'secondhand', 'old', '二手', '闲置'], // Used Goods
+        '1050600': ['car', 'ride', 'airport', 'transport', '顺风车', '接送'], // Carpool
+        '1010400': ['assemble', 'ikea', 'furniture', 'repair', '安装', '维修'], // Maintenance
     };
 
     for (const [subId, keywords] of Object.entries(mappings)) {
@@ -20,6 +20,6 @@ export const autoMatchSubcategory = (title: string, description: string, parentI
         }
     }
 
-    // Default to a general sub-category for that industry or a fallback
-    return `${parentIndustryId}_GENERAL`;
+    // Default to the parent industry ID
+    return parentIndustryId;
 };

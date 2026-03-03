@@ -33,12 +33,46 @@ BEGIN
 END;
 $$;
 
--- Trigger: Execute on new auth user
+-- 删除旧 trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS handle_new_oauth_user();
+-- 重新创建函数（使用 postgres 角色）
+CREATE OR REPLACE FUNCTION public.handle_new_oauth_user()
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.user_profiles (id, email, name, avatar, node_id, beans_balance)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(
+      NEW.raw_user_meta_data->>'full_name',
+      NEW.raw_user_meta_data->>'name', 
+      split_part(NEW.email, '@', 1)
+    ),
+    NEW.raw_user_meta_data->>'avatar_url',
+    'NODE_LEES',
+    100
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    avatar = COALESCE(user_profiles.avatar, EXCLUDED.avatar),
+    name = COALESCE(user_profiles.name, EXCLUDED.name);
+  
+  INSERT INTO public.user_roles (user_id, role_id)
+  SELECT NEW.id, id FROM public.roles WHERE name = 'BUYER'
+  ON CONFLICT (user_id, role_id) DO NOTHING;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- 重新创建 trigger
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION public.handle_new_user();
+  FOR EACH ROW 
+  EXECUTE FUNCTION public.handle_new_oauth_user();
+
 
 -- ==========================================
 -- VECTOR EMBEDDING TRIGGER (For AI Search)
