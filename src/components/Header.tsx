@@ -31,115 +31,49 @@ const Header = () => {
 
   // Localized text dictionary
   const t = {
-    discover: language === 'zh' ? '发现' : 'Discover',
-    map: language === 'zh' ? '地图' : 'Map',
-    community: language === 'zh' ? '邻里' : 'Neighbors',
-    orders: language === 'zh' ? '订单' : 'Orders',
-    myPosts: language === 'zh' ? '我的发布' : 'My Posts',
-    chat: language === 'zh' ? '消息' : 'Chat',
-    post: language === 'zh' ? '说一下' : 'Post',
-    postSomething: language === 'zh' ? '发布需求' : 'Post Something',
+    community: language === 'zh' ? '邻里互助' : 'Community',
+    services: language === 'zh' ? '服务列表' : 'Services',
+    post: language === 'zh' ? '发布需求/服务' : 'Post Need/Service',
     myProfile: language === 'zh' ? '我的主页' : 'My Profile',
-    wait: language === 'zh' ? '稍候...' : 'Wait...',
-    me: language === 'zh' ? '我' : 'Me',
-    join: language === 'zh' ? '登录' : 'Join',
-    neighborly: language === 'zh' ? '让生活更轻松' : 'Make Life Easier',
-    becomeProvider: language === 'zh' ? '能人入驻' : 'Become a Pro',
-    proHub: language === 'zh' ? '达人中心' : 'Pro Hub',
-    brandName: language === 'zh' ? '渥帮' : 'JUSTWEDO',
-    trueWord: language === 'zh' ? '真言' : 'JustTalk',
+    brandName: language === 'zh' ? '渥帮 JWD' : 'JWD Ottawa',
+    location: language === 'zh' ? 'Ottawa / Kanata' : 'Ottawa / Kanata',
   };
 
-  const isProvider = currentUser?.roles?.includes('PROVIDER');
-
   return (
-    <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-border/5">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/10 shadow-sm">
       <div className="container flex items-center justify-between h-16 px-4 max-w-7xl mx-auto gap-4">
-        {/* Logo & Node */}
-        <div className="flex items-center gap-4 shrink-0">
-          <Link to="/" className="flex items-center gap-2 focus:scale-95 transition-transform">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-xl object-cover shadow-sm" />
-            <div className="flex flex-col hidden sm:flex">
-              <h1 className="text-lg font-black tracking-tighter text-gradient leading-none">{t.brandName}</h1>
+        {/* Logo & Location */}
+        <div className="flex items-center gap-3 shrink-0">
+          <Link to="/" className="flex items-center gap-2.5 focus:scale-95 transition-transform">
+            <img src="/logo.png" alt="渥帮 JWD Logo" className="w-9 h-9 rounded-xl object-cover shadow-sm" />
+            <div className="flex flex-col">
+              <h1 className="text-base font-black tracking-tight text-slate-900 leading-none">{t.brandName}</h1>
+              <span className="text-[10px] font-semibold text-primary/80 tracking-wide mt-0.5">Ottawa & Kanata</span>
             </div>
           </Link>
 
-          {/* Global Location (City/System) */}
-          <button
-            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-background border border-border/40 rounded-full hover:bg-muted/30 transition-all shadow-sm active:scale-95 group"
-          >
-            <MapPin className="w-3 h-3 text-primary group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">
-              {(() => {
-                const node = useConfigStore.getState().refCodes.find(r => r.codeId === activeNodeId);
-                const extra = node?.extraData ? (typeof node.extraData === 'string' ? JSON.parse(node.extraData) : node.extraData) : {};
-                return extra.city || 'Ottawa';
-              })()}
-            </span>
-          </button>
+          {/* Location Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-primary/5 border border-primary/10 rounded-full text-xs font-semibold text-primary">
+            <MapPin className="w-3.5 h-3.5 text-primary" />
+            <span>{t.location}</span>
+          </div>
         </div>
 
-        {/* Navigation Tools (Desktop Only) */}
-        <nav className="hidden lg:flex items-center gap-1 mx-2">
-          <Link to="/discover">
-            <Button variant="ghost" size="sm" className="rounded-full h-9 px-4 font-black text-xs uppercase tracking-widest gap-2 flex items-center">
-              <Map className="w-4 h-4 text-primary" />
-              <span>{t.map}</span>
-            </Button>
-          </Link>
-          <Link to="/community">
-            <Button variant="ghost" size="sm" className="rounded-full h-9 px-4 font-black text-xs uppercase tracking-widest gap-2 flex items-center">
-              <MessageSquareQuote className="w-4 h-4 text-primary" />
-              <span>{t.trueWord}</span>
-            </Button>
-          </Link>
-        </nav>
-
-        {/* Global Search Bar (Desktop) */}
-        <div className="hidden md:block flex-1 max-w-xl mx-auto">
+        {/* Desktop Search Bar */}
+        <div className="hidden md:block flex-1 max-w-lg mx-auto">
           <SmartSearchBar isCompact />
         </div>
 
-        {/* Actions */}
+        {/* Navigation Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden sm:flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full w-9 h-9 text-primary hover:bg-primary/10 transition-colors"
-              onClick={() => setShowScanner(true)}
-            >
-              <ScanLine className="w-5 h-5" />
-            </Button>
-            <LitePost
-              trigger={
-                <Button variant="ghost" size="sm" className="rounded-full h-9 px-4 font-black text-xs uppercase tracking-widest gap-2 hidden lg:flex">
-                  <PlusCircle className="w-4 h-4" /> {t.post}
-                </Button>
-              }
-            />
-            {currentUser && <BeanBalance showLabel={false} size="sm" />}
-          </div>
-
-          {/* Mobile Map Link */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden rounded-full w-9 h-9"
-            onClick={() => navigate('/discover')}
-          >
-            <Map className="w-4 h-4 text-muted-foreground" />
-          </Button>
-
-          {/* Mobile Scan Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden rounded-full w-9 h-9 text-primary"
-            onClick={() => setShowScanner(true)}
-          >
-            <ScanLine className="w-5 h-5" />
-          </Button>
+          {/* Central Post Action */}
+          <LitePost
+            trigger={
+              <Button size="sm" className="rounded-full h-9 px-4 font-bold text-xs gap-1.5 shadow-sm bg-primary text-white hover:bg-primary/90 hidden sm:flex">
+                <PlusCircle className="w-4 h-4" /> {t.post}
+              </Button>
+            }
+          />
 
           {/* Mobile Search Toggle */}
           <Button
@@ -151,25 +85,26 @@ const Header = () => {
             <Search className="w-4 h-4 text-muted-foreground" />
           </Button>
 
-          {/* Notification Bell Icon with Badge (Desktop only) */}
+          {/* Messages Notification Bell */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative rounded-full w-9 h-9 hidden md:flex"
+            className="relative rounded-full w-9 h-9"
             onClick={() => navigate('/messages')}
           >
-            <Bell className="w-4 h-4 text-muted-foreground" />
+            <Bell className="w-4.5 h-4.5 text-slate-600" />
             {totalUnreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-md border-2 border-white animate-pulse">
                 {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
               </span>
             )}
           </Button>
 
+          {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full w-9 h-9">
-                <Globe className="w-4 h-4 text-muted-foreground" />
+                <Globe className="w-4.5 h-4.5 text-slate-600" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-2xl border-border/10">
@@ -182,16 +117,17 @@ const Header = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* User Profile Avatar */}
           <button
             onClick={() => navigate(currentUser ? '/profile' : '/login')}
-            className="relative overflow-hidden w-9 h-9 rounded-full border border-border/10 focus:scale-90 transition-transform"
+            className="relative overflow-hidden w-9 h-9 rounded-full border border-border/20 focus:scale-95 transition-transform"
           >
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-muted">
                 <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : currentUser ? (
-              <img src={currentUser.avatar} className="w-full h-full object-cover" />
+              <img src={currentUser.avatar} alt="User Avatar" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary">
                 <User className="w-4 h-4" />
@@ -206,11 +142,6 @@ const Header = () => {
         <div className="md:hidden px-4 pb-3 animate-in slide-in-from-top-2">
           <SmartSearchBar isCompact />
         </div>
-      )}
-
-      {/* JWD Scanner Overlay */}
-      {showScanner && (
-        <JWDScanner onClose={() => setShowScanner(false)} />
       )}
     </header>
   );

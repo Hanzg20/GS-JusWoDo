@@ -40,19 +40,19 @@ const Index = () => {
   // Localization Dictionary
   const t = {
     currentCommunity: language === 'zh' ? '当前社区' : 'Current Community',
-    aiSearch: language === 'zh' ? 'AI搜索' : 'AI Search',
-    pulse: language === 'zh' ? '社区脉搏' : 'Community Pulse',
+    aiSearch: language === 'zh' ? '搜索' : 'Search',
+    pulse: language === 'zh' ? '社区动态' : 'Community Updates',
     liveUpdates: language === 'zh' ? '实时更新' : 'Live Updates',
-    marketTitle: language === 'zh' ? '美食市集' : 'Community Market',
-    marketDesc: language === 'zh' ? '自家制作美食与二手好物' : 'Homemade treats and local finds',
+    marketTitle: language === 'zh' ? '邻里好物与闲置' : 'Community Goods',
+    marketDesc: language === 'zh' ? 'Ottawa & Kanata 本地闲置转让与物品分享' : 'Local items and neighborhood sharing in Ottawa & Kanata',
     viewAll: language === 'zh' ? '查看全部' : 'View All',
-    serviceTitle: language === 'zh' ? '生活服务' : 'Life Services',
-    serviceDesc: language === 'zh' ? '让生活更轻松的日常帮助' : 'Everyday help for a better life',
+    serviceTitle: language === 'zh' ? 'Ottawa & Kanata 本地服务' : 'Ottawa & Kanata Services',
+    serviceDesc: language === 'zh' ? '家政清洁、房屋维修、铲雪除草、宠物接送等邻里靠谱帮助' : 'Cleaning, handyman, snow removal, pet care & trusted local help',
     rentalTitle: language === 'zh' ? '共享租赁' : 'Rentals',
-    rentalDesc: language === 'zh' ? '以租代买，省钱更环保' : 'Rent instead of buying, save more',
-    emptyTitle: language === 'zh' ? '社区正在建设中' : 'Community Under Construction',
-    emptyDesc: language === 'zh' ? '很快就会有更多精彩服务上线' : 'More exciting services coming soon',
-    beFirst: language === 'zh' ? '成为第一个发布者' : 'Be the First to Post',
+    rentalDesc: language === 'zh' ? '以租代买，省钱更环保' : 'Rent tools & equipment locally',
+    emptyTitle: language === 'zh' ? 'Ottawa & Kanata 社区建设中' : 'Community Under Construction',
+    emptyDesc: language === 'zh' ? '欢迎发布第一条本地服务或需求帖' : 'Be the first to post a local service or need',
+    beFirst: language === 'zh' ? '发布需求或服务' : 'Post a Need or Service',
   };
 
   // Load ref codes on mount
@@ -146,10 +146,10 @@ const Index = () => {
       <SEO /> {/* Default Homepage SEO */}
       <Header />
 
-      {/* Bento Grid Layout - Hero Area */}
-      <div className="pt-4 pb-8 bg-gradient-to-b from-background to-secondary/5">
+      {/* Daangn-style Hero Area */}
+      <div className="pt-4 pb-6 bg-gradient-to-b from-primary/5 via-background to-background">
         <BentoGrid>
-          {/* Main Hero: Greeting & Stats (2x1 on desktop) */}
+          {/* Main Hero: Headline & Location Pills */}
           <BentoHero />
 
           {/* Profile & Promo (1x1 each) */}
@@ -161,8 +161,13 @@ const Index = () => {
         </BentoGrid>
       </div>
 
-      <main className="container max-w-7xl px-4 sm:px-6 space-y-8 sm:space-y-16">
-        {/* Popular In Community - Enhanced Card Design */}
+      <main className="container max-w-7xl px-4 sm:px-6 space-y-8 sm:space-y-12">
+        {/* 4 Core Daangn-style Categories */}
+        <section className="pt-2">
+          <CategoryIconGrid />
+        </section>
+
+        {/* Popular In Community - Hot Ottawa Services */}
         {nearbyHotServices.length > 0 && (
           <motion.section
             initial="hidden"

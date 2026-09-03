@@ -57,8 +57,8 @@ export default function MobileBottomNav() {
             path: "/",
         },
         {
-            icon: MessageSquareQuote, // Changed from Store to MessageSquareQuote for JustTalk
-            label: language === 'zh' ? '真言' : 'JustTalk',
+            icon: MessageSquareQuote,
+            label: language === 'zh' ? '邻里互助' : 'Community',
             path: "/community",
         },
         {

@@ -23,25 +23,60 @@ const SEO = ({
     const location = useLocation();
 
     // Defaults
-    const siteName = language === 'zh' ? '渥帮 (JustWeDo)' : 'JustWeDo';
-    const defaultTitle = language === 'zh' ? '渥帮 - 渥太华本地生活服务平台' : 'JustWeDo - Ottawa Local Services Marketplace';
+    const siteName = language === 'zh' ? '渥帮 JWD' : 'JustWeDo Ottawa & Kanata';
+    const defaultTitle = language === 'zh' 
+        ? '渥帮 JWD - Ottawa & Kanata 本地极简社区服务平台' 
+        : 'JustWeDo - Ottawa & Kanata Community Services Marketplace';
     const defaultDescription = language === 'zh'
-        ? '连接渥太华社区，提供家政、维修、美食、接送等便捷服务。'
-        : 'Connecting Ottawa neighborhoods with trusted local services like cleaning, moving, food, and more.';
-    const defaultImage = 'https://justwedo.ca/og-image.jpg'; // Replace with actual URL
-    const siteUrl = 'https://justwedo.ca'; // Replace with actual URL
+        ? '渥帮 (JustWeDo) 专注于 Ottawa 及 Kanata (Kanata Lakes, Stittsville, Nepean 等) 本地社区。轻松查找与快速发布家政清洁、房屋维修、铲雪除草、宠物照顾、接送协助与邻里闲置互助。'
+        : 'Connecting Ottawa & Kanata neighborhoods (Kanata Lakes, Stittsville, Barrhaven) with trusted local services including house cleaning, handyman, snow removal, pet care, and neighborly help.';
+    const defaultImage = 'https://www.justwedo.com/pwa-icons/icon-512x512.png';
+    const siteUrl = 'https://www.justwedo.com';
 
+    const defaultKeywords = [
+        'Ottawa local services', 'Kanata handyman', 'Kanata Lakes cleaning',
+        '渥太华本地服务', 'Kanata 邻里互助', '渥太华清洁', '渥太华维修',
+        '渥太华铲雪', 'Ottawa community help', 'JustWeDo', '渥帮'
+    ];
+
+    const allKeywords = Array.from(new Set([...defaultKeywords, ...keywords]));
     const fullTitle = title ? `${title} | ${siteName}` : defaultTitle;
     const fullDescription = description || defaultDescription;
     const fullImage = image || defaultImage;
     const fullUrl = `${siteUrl}${location.pathname}`;
+
+    // Schema.org LocalBusiness / Community Organization
+    const jsonLdSchema = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "渥帮 JWD (JustWeDo)",
+        "url": siteUrl,
+        "logo": `${siteUrl}/logo.png`,
+        "image": fullImage,
+        "description": fullDescription,
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Ottawa",
+            "addressRegion": "ON",
+            "addressCountry": "CA"
+        },
+        "areaServed": [
+            { "@type": "AdministrativeArea", "name": "Ottawa" },
+            { "@type": "AdministrativeArea", "name": "Kanata" },
+            { "@type": "AdministrativeArea", "name": "Kanata Lakes" },
+            { "@type": "AdministrativeArea", "name": "Stittsville" },
+            { "@type": "AdministrativeArea", "name": "Barrhaven" },
+            { "@type": "AdministrativeArea", "name": "Nepean" }
+        ],
+        "knowsLanguage": ["zh-CN", "en-CA"]
+    };
 
     return (
         <Helmet>
             {/* Standard Metadata */}
             <title>{fullTitle}</title>
             <meta name="description" content={fullDescription} />
-            {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
+            <meta name="keywords" content={allKeywords.join(', ')} />
             <link rel="canonical" href={fullUrl} />
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
@@ -62,6 +97,11 @@ const SEO = ({
             <meta name="twitter:title" content={title || defaultTitle} />
             <meta name="twitter:description" content={fullDescription} />
             <meta name="twitter:image" content={fullImage} />
+
+            {/* JSON-LD Local Business Schema */}
+            <script type="application/ld+json">
+                {JSON.stringify(jsonLdSchema)}
+            </script>
         </Helmet>
     );
 };
