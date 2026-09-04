@@ -54,6 +54,10 @@ const iconMap: Record<string, LucideIcon> = {
   "MoreHorizontal": Icons.MoreHorizontal,
   "MapPin": Icons.MapPin,
   "Star": Icons.Star,
+
+  // Pillars (homepage top-level nav)
+  "MessageSquareQuote": Icons.MessageSquareQuote,
+  "Gift": Icons.Gift,
 };
 
 /**

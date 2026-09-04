@@ -161,7 +161,7 @@ export type PricingModel = 'FIXED' | 'HOURLY' | 'DAILY' | 'NEGOTIABLE' | 'DEPOSI
 export interface RefCode {
   codeId: string; // e.g. '1010000'
   parentId?: string;
-  type: 'INDUSTRY' | 'CATEGORY' | 'STATUS' | 'UNIT' | 'COMMUNITY_NODE';
+  type: 'PILLAR' | 'INDUSTRY' | 'CATEGORY' | 'STATUS' | 'UNIT' | 'COMMUNITY_NODE';
   zhName: string;
   enName?: string;
   extraData?: Record<string, any>;
