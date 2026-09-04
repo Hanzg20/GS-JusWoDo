@@ -99,6 +99,14 @@ const Index = () => {
 
   const currentFilteredListings = getFilteredListings();
 
+  // Hero carousel: top-rated real listings, not paid ad slots — the
+  // differentiator vs. yellowducky.ca's pay-to-appear carousel is that
+  // this ranks by actual rating/reviews.
+  const featuredListings = [...listings]
+    .filter(l => l.rating >= 4.5 && l.reviewCount > 0)
+    .sort((a, b) => (b.rating - a.rating) || (b.reviewCount - a.reviewCount))
+    .slice(0, 6);
+
   // Animation variants
   const sectionVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
@@ -130,7 +138,7 @@ const Index = () => {
 
       {/* Streamlined Hero Header */}
       <div className="pt-3 pb-4 max-w-7xl mx-auto px-4 sm:px-6">
-        <BentoHero />
+        <BentoHero featuredListings={featuredListings} />
       </div>
 
       <main className="container max-w-7xl px-4 sm:px-6 space-y-6 sm:space-y-8">
