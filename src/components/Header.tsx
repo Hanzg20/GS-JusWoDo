@@ -1,6 +1,6 @@
 import { Bell, User, PlusCircle, Globe, MapPin, Search } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useAuthStore } from "@/stores/authStore";
 import { useMessageStore } from "@/stores/messageStore";
@@ -11,6 +11,10 @@ import { SmartSearchBar } from "./SmartSearchBar";
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // BentoHero already renders a full search bar on the homepage —
+  // don't duplicate it here, only show Header's search on other pages.
+  const isHomepage = location.pathname === '/';
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const { currentUser, isLoading } = useAuthStore();
   const { totalUnreadCount, loadUnreadCount } = useMessageStore();
@@ -51,9 +55,11 @@ const Header = () => {
         </div>
 
         {/* Desktop Search Bar */}
-        <div className="hidden md:block flex-1 max-w-lg mx-auto">
-          <SmartSearchBar isCompact />
-        </div>
+        {!isHomepage && (
+          <div className="hidden md:block flex-1 max-w-lg mx-auto">
+            <SmartSearchBar isCompact />
+          </div>
+        )}
 
         {/* Navigation Actions */}
         <div className="flex items-center gap-2 shrink-0">
@@ -66,15 +72,17 @@ const Header = () => {
             }
           />
 
-          {/* Mobile Search Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden rounded-full w-9 h-9"
-            onClick={() => setShowMobileSearch(!showMobileSearch)}
-          >
-            <Search className="w-4 h-4 text-muted-foreground" />
-          </Button>
+          {/* Mobile Search Toggle — not on homepage, BentoHero already has a search bar there */}
+          {!isHomepage && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden rounded-full w-9 h-9"
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+            >
+              <Search className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          )}
 
           {/* Messages Notification Bell */}
           <Button

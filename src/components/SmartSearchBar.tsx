@@ -49,21 +49,24 @@ export function SmartSearchBar({ isCompact = false }: SmartSearchBarProps) {
   const handleSearch = (searchQuery: string) => {
     if (searchQuery.trim()) {
       addToHistory(searchQuery); // 保存到历史记录
-      // Redirect to Map Discovery with query
-      navigate(`/discover?q=${encodeURIComponent(searchQuery)}`);
+      // Unified search results list (like a normal search page) — not the map.
+      // Map is a separate, deliberate view via the map button next to Search.
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       setShowResults(false);
       setShowCategoryMenu(false);
     }
   };
 
   const handleCategorySelect = (categoryId: string) => {
-    // Navigate to Map Discovery with category filter
-    navigate(`/discover?category=${categoryId}`);
+    // Category picks go straight to that category's listing page.
+    navigate(`/category/${categoryId}`);
     setShowCategoryMenu(false);
   };
 
   const t = {
-    placeholder: language === 'zh' ? '搜索服务、美食或任务..' : 'Search...',
+    placeholder: language === 'zh'
+      ? (isCompact ? '搜索服务、二手、邻里…' : '搜索家政清洁、铲雪、二手家具…')
+      : (isCompact ? 'Search services, goods…' : 'Search cleaning, snow removal, used furniture…'),
     searchButton: language === 'zh' ? '搜索' : 'Search',
     aiRecommendations: language === 'zh' ? 'AI 智能推荐' : 'AI Recommendations',
     trendingSearches: language === 'zh' ? '热门搜索' : 'Trending Searches',
@@ -150,7 +153,7 @@ export function SmartSearchBar({ isCompact = false }: SmartSearchBarProps) {
 
       {/* 搜索结果下拉框 */}
       {showResults && (
-        <div className={`absolute top-full mt-2 w-full glass-card rounded-2xl p-3 shadow-elevated z-50 max-h-[500px] overflow-y-auto ${isCompact ? 'text-sm' : ''
+        <div className={`absolute top-full mt-2 w-full glass-card !bg-white rounded-2xl p-3 shadow-elevated z-50 max-h-[500px] overflow-y-auto ${isCompact ? 'text-sm' : ''
           } animate-in fade-in slide-in-from-top-2 duration-200`}>
           {/* AI 搜索结果预览 */}
           {query && results.length > 0 && (

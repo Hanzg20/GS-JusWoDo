@@ -25,7 +25,7 @@ export function CategoryMenu({ onSelect, onClose }: CategoryMenuProps) {
     };
 
     return (
-        <div className="absolute top-full left-0 mt-2 w-64 glass-card rounded-2xl p-2 shadow-elevated z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-left">
+        <div className="absolute top-full left-0 mt-2 w-64 glass-card !bg-white rounded-2xl p-2 shadow-elevated z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-left">
             <div className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider border-b border-border/10 mb-1">
                 {language === 'zh' ? '全部分类' : 'All Categories'}
             </div>
