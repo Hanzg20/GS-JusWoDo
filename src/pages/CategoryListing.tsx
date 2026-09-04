@@ -10,6 +10,20 @@ import { ListingCard } from "@/components/ListingCard";
 import { SlidersHorizontal, ArrowDownWideNarrow, Sparkles, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+
+type SortBy = 'newest' | 'rating' | 'reviews' | 'distance';
+
+// Straight-line distance in meters — good enough for "closest first" sorting
+// at this scale, no PostGIS round trip needed.
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 const CategoryListing = () => {
     const { type } = useParams<{ type: string }>();
@@ -17,10 +31,75 @@ const CategoryListing = () => {
     const query = searchParams.get('q');
     const { listings, isLoading, searchListings } = useListingStore();
     const { currentUser } = useAuthStore();
-    const { refCodes, language } = useConfigStore();
+    const { refCodes, language, activeNodeId } = useConfigStore();
     const [isSmartSearch, setIsSmartSearch] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+    const [sortBy, setSortBy] = useState<SortBy>('newest');
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+    const sortLabels: Record<SortBy, string> = {
+        newest: language === 'zh' ? '最新发布' : 'Newest',
+        rating: language === 'zh' ? '评分最高' : 'Highest Rated',
+        reviews: language === 'zh' ? '评论最多' : 'Most Reviewed',
+        distance: language === 'zh' ? '离我最近' : 'Closest to Me',
+    };
+
+    // Only ask for location when the user actually picks "Closest to Me" —
+    // never on page load.
+    const handleSelectSort = (key: SortBy) => {
+        if (key === 'distance' && !userLocation) {
+            if (!navigator.geolocation) {
+                toast.error(language === 'zh' ? '此设备不支持定位' : 'Location is not supported on this device');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    setSortBy('distance');
+                },
+                () => {
+                    toast.error(language === 'zh' ? '需要定位权限才能按距离排序' : 'Location permission is needed to sort by distance');
+                },
+                { timeout: 8000 }
+            );
+            return;
+        }
+        setSortBy(key);
+    };
+
+    // Reference point for distance: precise GPS once the neighbor opts into
+    // "Closest to Me", otherwise their community node's center — so a
+    // distance can always be shown without prompting for location upfront.
+    const nodeLocation = useMemo(() => {
+        const nodeId = currentUser?.nodeId || activeNodeId;
+        const node = refCodes.find(r => r.type === 'NODE' && r.codeId === nodeId);
+        const extra = node?.extraData;
+        return extra?.lat && extra?.lng ? { lat: extra.lat, lng: extra.lng } : null;
+    }, [refCodes, currentUser?.nodeId, activeNodeId]);
+
+    const referenceLocation = userLocation || nodeLocation;
+    // Distance is exact once GPS is granted; otherwise it's estimated from
+    // the neighbor's community node center — flagged so the UI can be
+    // honest about it (~Xkm) instead of implying false precision.
+    const isPreciseDistance = !!userLocation;
+
+    // Client-side distance calc — listings this size don't need a server
+    // round trip, and this reuses the existing lat/lng columns as-is.
+    // Always attaches distanceMeters for display; only reorders the list
+    // when the neighbor has actually chosen the "Closest to Me" sort.
+    const sortedListings = useMemo(() => {
+        if (!referenceLocation) return listings;
+        const withDistance = listings.map(l => {
+            const coords = l.location?.coordinates;
+            const distanceMeters = coords
+                ? haversineMeters(referenceLocation.lat, referenceLocation.lng, coords.lat, coords.lng)
+                : undefined;
+            return { ...l, distanceMeters, distanceApprox: !isPreciseDistance };
+        });
+        if (sortBy !== 'distance') return withDistance;
+        return withDistance.sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
+    }, [listings, sortBy, referenceLocation, isPreciseDistance]);
 
     // Which pillar this listing type belongs to (via ref_codes PILLAR extra_data.path),
     // then the 细分类目 (CATEGORY-level) chips under it — see
@@ -42,9 +121,10 @@ const CategoryListing = () => {
             isSemantic: isSmartSearch && !!query,
             nodeId: currentUser?.nodeId || 'NODE_LEES',
             categoryId: selectedCategoryId,
-            type: (type?.toUpperCase() as any) || undefined
+            type: (type?.toUpperCase() as any) || undefined,
+            sortBy
         });
-    }, [type, query, isSmartSearch, selectedCategoryId]);
+    }, [type, query, isSmartSearch, selectedCategoryId, sortBy]);
 
     const getPageTitle = (type: string | undefined) => {
         // ... (unchanged)
@@ -110,9 +190,20 @@ const CategoryListing = () => {
                                 </Button>
                             </>
                         )}
-                        <Button variant="outline" size="sm" className="rounded-full h-8">
-                            Closest <ArrowDownWideNarrow className="w-3 h-3 ml-1" />
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="rounded-full h-8">
+                                    {sortLabels[sortBy]} <ArrowDownWideNarrow className="w-3 h-3 ml-1" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {(Object.keys(sortLabels) as SortBy[]).map((key) => (
+                                    <DropdownMenuItem key={key} onClick={() => handleSelectSort(key)}>
+                                        {sortLabels[key]} {sortBy === key && '✓'}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
@@ -163,9 +254,9 @@ const CategoryListing = () => {
                         </div>
                         <Button className="btn-action rounded-full px-10">Verify Now</Button>
                     </div>
-                ) : listings.length > 0 ? (
+                ) : sortedListings.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {listings.map(item => (
+                        {sortedListings.map(item => (
                             <ListingCard key={item.id} item={item} />
                         ))}
                     </div>

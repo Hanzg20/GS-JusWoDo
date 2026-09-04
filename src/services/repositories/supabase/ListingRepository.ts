@@ -135,7 +135,8 @@ export class SupabaseListingRepository implements IListingRepository {
         lng?: number,
         radius?: number,
         limit?: number,
-        offset?: number
+        offset?: number,
+        sortBy?: 'rating' | 'reviews' | 'newest'
     }): Promise<ListingMaster[]> {
         const matchCount = options.limit || 50;
         const matchOffset = options.offset || 0;
@@ -205,9 +206,20 @@ export class SupabaseListingRepository implements IListingRepository {
 
             if (options.type) qb = qb.eq('type', options.type);
 
+            // Sort: default newest-first, or by rating / review count
+            switch (options.sortBy) {
+                case 'rating':
+                    qb = qb.order('rating', { ascending: false });
+                    break;
+                case 'reviews':
+                    qb = qb.order('review_count', { ascending: false });
+                    break;
+                default:
+                    qb = qb.order('created_at', { ascending: false });
+            }
+
             // Apply pagination to traditional search
             const { data, error } = await qb
-                .order('created_at', { ascending: false })
                 .range(matchOffset, matchOffset + matchCount - 1);
 
             if (error) throw error;

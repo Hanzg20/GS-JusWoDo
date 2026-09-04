@@ -198,6 +198,7 @@ export interface ListingMaster extends BaseEntity {
   reviewCount: number;
   isPromoted?: boolean;
   distanceMeters?: number; // Calculated distance from search center
+  distanceApprox?: boolean; // true when distanceMeters is estimated from a community node center, not precise GPS
   searchScore?: number; // Hybrid ranking score
 
   // New: Link to child items

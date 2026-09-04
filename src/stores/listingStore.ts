@@ -14,8 +14,8 @@ interface ListingState {
     updateListing: (id: string, listing: Partial<ListingMaster>, items?: Partial<ListingItem>[]) => Promise<void>;
     deleteListing: (id: string) => Promise<void>;
     fetchListings: () => Promise<void>;
-    searchListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, limit?: number, offset?: number }) => Promise<void>;
-    loadMoreListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, limit?: number, offset?: number }) => Promise<void>;
+    searchListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, limit?: number, offset?: number, sortBy?: 'rating' | 'reviews' | 'newest' }) => Promise<void>;
+    loadMoreListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, limit?: number, offset?: number, sortBy?: 'rating' | 'reviews' | 'newest' }) => Promise<void>;
     toggleItemAvailability: (itemId: string) => Promise<void>;
 }
 

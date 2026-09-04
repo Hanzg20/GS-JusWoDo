@@ -47,7 +47,8 @@ export interface IListingRepository {
         lng?: number,
         radius?: number,
         limit?: number,
-        offset?: number
+        offset?: number,
+        sortBy?: 'rating' | 'reviews' | 'newest'
     }): Promise<ListingMaster[]>;
     create(listing: Omit<ListingMaster, 'id' | 'createdAt' | 'updatedAt'>): Promise<ListingMaster>;
     update(id: string, data: Partial<ListingMaster>): Promise<ListingMaster>;

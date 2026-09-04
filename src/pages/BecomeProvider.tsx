@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/authStore";
 import { useProviderStore } from "@/stores/providerStore";
+import { useConfigStore } from "@/stores/configStore";
 import { toast } from "sonner";
 
 const BecomeProvider = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
     const { upgradeToProvider } = useProviderStore();
+    const { refCodes, activeNodeId } = useConfigStore();
 
     const [step, setStep] = useState<'intro' | 'form'>('intro');
     const [submitting, setSubmitting] = useState(false);
@@ -54,11 +56,24 @@ const BecomeProvider = () => {
 
         setSubmitting(true);
         try {
+            // Use the neighbor's community node as a real starting location
+            // (was previously hardcoded to lat:0,lng:0 — see
+            // supabase/migrations/20260904_add_node_coordinates.sql for the
+            // node coordinates this now reads from). Providers can refine
+            // their exact address later from their dashboard.
+            const node = refCodes.find(r => r.type === 'NODE' && r.codeId === (currentUser.nodeId || activeNodeId));
+            const nodeExtra = node?.extraData || {};
+
             await upgradeToProvider(currentUser.id, {
                 identity: formData.identity,
                 nameZh: formData.nameZh,
                 nameEn: formData.nameEn,
-                location: { lat: 0, lng: 0, address: 'Kanata', radiusKm: 10 } // Default for now
+                location: {
+                    lat: nodeExtra.lat ?? 45.4215,
+                    lng: nodeExtra.lng ?? -75.6972,
+                    address: node?.zhName || node?.enName || 'Ottawa',
+                    radiusKm: 10
+                }
             });
 
             toast.success("Welcome to the Provider Community! 🎉");

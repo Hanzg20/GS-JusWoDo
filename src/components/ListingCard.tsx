@@ -195,7 +195,7 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                             <span className="truncate max-w-[60px] sm:max-w-none font-extrabold">{item.location.city}</span>
                             {item.distanceMeters !== undefined && (
                                 <span className="ml-1 text-primary/60">
-                                    {(item.distanceMeters / 1000).toFixed(1)}km
+                                    {item.distanceApprox && '~'}{(item.distanceMeters / 1000).toFixed(1)}km
                                 </span>
                             )}
                         </div>
