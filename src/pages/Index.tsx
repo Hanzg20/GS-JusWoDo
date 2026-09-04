@@ -5,8 +5,10 @@ import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
 import { useCommunity } from "@/context/CommunityContext";
 import { useConfigStore } from "@/stores/configStore";
+import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
-import { ArrowRight, Sparkles, Flame, Wrench, Package, Camera } from "lucide-react";
+import { MasonryGrid } from "@/components/Community/MasonryGrid";
+import { ArrowRight, Sparkles, Flame, Wrench, Package, Camera, MessageSquareQuote } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ListingCard } from "@/components/ListingCard";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
@@ -14,13 +16,14 @@ import { repositoryFactory } from "@/services/repositories/factory";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BentoHero } from "@/components/home/BentoHero";
 
-type TabType = 'all' | 'services' | 'goods' | 'rentals';
+type TabType = 'all' | 'services' | 'goods' | 'rentals' | 'community';
 
 const Index = () => {
   const navigate = useNavigate();
   const { listings, setListings } = useListingStore();
   const { activeNodeId } = useCommunity();
   const { refCodes, setRefCodes, language } = useConfigStore();
+  const { posts: communityPosts, isLoading: isCommunityLoading, fetchFeed } = useCommunityPostStore();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('all');
 
@@ -32,6 +35,7 @@ const Index = () => {
     services: isZh ? '🧹 本地服务' : '🧹 Services',
     goods: isZh ? '🏷️ 邻里闲置' : '🏷️ Goods',
     rentals: isZh ? '📸 共享租赁' : '📸 Rentals',
+    community: isZh ? '💬 邻里动态' : '💬 Neighbors',
     viewMore: isZh ? '查看更多' : 'View More',
     emptyTitle: isZh ? 'Ottawa & Kanata 社区建设中' : 'Community Under Construction',
     emptyDesc: isZh ? '欢迎发布第一条本地服务或需求帖' : 'Be the first to post a local service or need',
@@ -73,6 +77,11 @@ const Index = () => {
     loadNodeListings();
   }, [activeNodeId, setListings]);
 
+  // Load community feed (real 邻里互助 content, separate from listings)
+  useEffect(() => {
+    fetchFeed({ nodeId: activeNodeId, scope: 'nearby' });
+  }, [activeNodeId, fetchFeed]);
+
   // Filter listings by active tab
   const getFilteredListings = () => {
     switch (activeTab) {
@@ -111,6 +120,7 @@ const Index = () => {
     { id: 'services', label: t.services, icon: Wrench },
     { id: 'goods', label: t.goods, icon: Package },
     { id: 'rentals', label: t.rentals, icon: Camera },
+    { id: 'community', label: t.community, icon: MessageSquareQuote },
   ];
 
   return (
@@ -158,7 +168,7 @@ const Index = () => {
 
             {/* View More Link */}
             <Link
-              to={activeTab === 'all' ? '/discover' : `/category/${activeTab}`}
+              to={activeTab === 'all' ? '/discover' : activeTab === 'community' ? '/community' : `/category/${activeTab}`}
               className="flex items-center gap-1 text-xs sm:text-sm font-bold text-primary hover:text-primary/80 transition-colors self-end sm:self-auto"
             >
               <span>{t.viewMore}</span>
@@ -166,9 +176,13 @@ const Index = () => {
             </Link>
           </div>
 
-          {/* Listings Grid */}
+          {/* Feed Content */}
           <AnimatePresence mode="wait">
-            {isLoading ? (
+            {activeTab === 'community' ? (
+              <motion.div key="community" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <MasonryGrid posts={communityPosts.slice(0, 9)} isLoading={isCommunityLoading} />
+              </motion.div>
+            ) : isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <SkeletonCard key={i} />

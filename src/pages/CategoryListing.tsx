@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import SEO from "@/components/SEO";
 import { useParams, useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
@@ -7,7 +7,7 @@ import { useListingStore } from "@/stores/listingStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { ListingCard } from "@/components/ListingCard";
-import { SlidersHorizontal, ArrowDownWideNarrow, Sparkles, Loader2 } from "lucide-react";
+import { SlidersHorizontal, ArrowDownWideNarrow, Sparkles, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -19,17 +19,32 @@ const CategoryListing = () => {
     const { currentUser } = useAuthStore();
     const { refCodes, language } = useConfigStore();
     const [isSmartSearch, setIsSmartSearch] = useState(true);
+    const [showFilters, setShowFilters] = useState(false);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+
+    // Which pillar this listing type belongs to (via ref_codes PILLAR extra_data.path),
+    // then the 细分类目 (CATEGORY-level) chips under it — see
+    // supabase/migrations/20260903_add_category_pillars.sql
+    const pillarCategories = useMemo(() => {
+        const pillar = refCodes.find(r => r.type === 'PILLAR' && r.extraData?.path === `/category/${type}`);
+        if (!pillar) return [];
+        const industryIds = refCodes.filter(r => r.type === 'INDUSTRY' && r.parentId === pillar.codeId).map(i => i.codeId);
+        return refCodes.filter(r => r.type === 'CATEGORY' && industryIds.includes(r.parentId || ''));
+    }, [refCodes, type]);
 
     useEffect(() => {
-        const industry = identifyIndustry(type);
+        setSelectedCategoryId(undefined);
+    }, [type]);
+
+    useEffect(() => {
         searchListings({
             query: query || undefined,
             isSemantic: isSmartSearch && !!query,
             nodeId: currentUser?.nodeId || 'NODE_LEES',
-            categoryId: type !== 'service' && type !== 'rental' && type !== 'consultation' && type !== 'goods' && type !== 'task' ? type : undefined,
+            categoryId: selectedCategoryId,
             type: (type?.toUpperCase() as any) || undefined
         });
-    }, [type, query, isSmartSearch]);
+    }, [type, query, isSmartSearch, selectedCategoryId]);
 
     const getPageTitle = (type: string | undefined) => {
         // ... (unchanged)
@@ -45,17 +60,6 @@ const CategoryListing = () => {
             default: return language === 'zh' ? '发现' : 'Explore All';
         }
     };
-
-    const identifyIndustry = (type: string | undefined): string => {
-        if (!type) return 'all';
-        if (type.startsWith('101')) return 'home';
-        if (type.startsWith('102')) return 'pro';
-        if (type.startsWith('103')) return 'kids';
-        if (type.startsWith('104')) return 'food';
-        if (type.startsWith('105')) return 'travel';
-        return type.toLowerCase();
-    };
-
 
     return (
         <div className="min-h-screen bg-background pb-20">
@@ -91,15 +95,53 @@ const CategoryListing = () => {
                                 Keyword
                             </Button>
                         </div>
-                        <Separator orientation="vertical" className="h-6 mx-1" />
-                        <Button variant="outline" size="sm" className="rounded-full h-8">
-                            <SlidersHorizontal className="w-3 h-3 mr-2" /> Filter
-                        </Button>
+                        {pillarCategories.length > 0 && (
+                            <>
+                                <Separator orientation="vertical" className="h-6 mx-1" />
+                                <Button
+                                    variant={showFilters || selectedCategoryId ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="rounded-full h-8"
+                                    onClick={() => setShowFilters(v => !v)}
+                                >
+                                    <SlidersHorizontal className="w-3 h-3 mr-2" />
+                                    {language === 'zh' ? '筛选' : 'Filter'}
+                                    {selectedCategoryId && ' · 1'}
+                                </Button>
+                            </>
+                        )}
                         <Button variant="outline" size="sm" className="rounded-full h-8">
                             Closest <ArrowDownWideNarrow className="w-3 h-3 ml-1" />
                         </Button>
                     </div>
                 </div>
+
+                {/* Sub-category filter chips — 细分类目, from ref_codes CATEGORY tier */}
+                {showFilters && pillarCategories.length > 0 && (
+                    <div className="container flex flex-wrap gap-2 pt-3">
+                        {selectedCategoryId && (
+                            <button
+                                onClick={() => setSelectedCategoryId(undefined)}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-muted text-muted-foreground hover:bg-muted/70 transition-colors"
+                            >
+                                {language === 'zh' ? '清除' : 'Clear'} <X className="w-3 h-3" />
+                            </button>
+                        )}
+                        {pillarCategories.map(cat => (
+                            <button
+                                key={cat.codeId}
+                                onClick={() => setSelectedCategoryId(cat.codeId === selectedCategoryId ? undefined : cat.codeId)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                                    selectedCategoryId === cat.codeId
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                                }`}
+                            >
+                                {language === 'zh' ? cat.zhName : (cat.enName || cat.zhName)}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <main className="container py-8">
