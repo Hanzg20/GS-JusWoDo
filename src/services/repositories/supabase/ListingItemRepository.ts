@@ -69,6 +69,21 @@ export class SupabaseListingItemRepository implements IListingItemRepository {
         return (data || []).map(this.mapFromDb);
     }
 
+    // Bulk variant for listing/search pages — one round trip for a whole
+    // page of cards instead of N (or the items just never loading at all,
+    // which is what card price displays were silently falling back on).
+    async getByMasters(masterIds: string[]): Promise<ListingItem[]> {
+        if (masterIds.length === 0) return [];
+        const { data, error } = await supabase
+            .from('listing_items')
+            .select('*')
+            .in('master_id', masterIds)
+            .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        return (data || []).map(this.mapFromDb);
+    }
+
     async getById(id: string): Promise<ListingItem | null> {
         const { data, error } = await supabase
             .from('listing_items')

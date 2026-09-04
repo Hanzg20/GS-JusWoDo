@@ -26,16 +26,51 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
     };
 
     const displayTitle = getLocalized(item.titleEn, item.titleZh);
-    const displayDesc = getLocalized(item.descriptionEn, item.descriptionZh);
     const displayBusinessName = provider ? getLocalized(provider.businessNameEn, provider.businessNameZh) : '';
     const displayNodeName = nodeInfo ? getLocalized(nodeInfo.enName, nodeInfo.zhName) : undefined;
 
-    // Find the starting price (lowest amount)
-    const startingPrice = items.length > 0
-        ? items.reduce((min, cur) => cur.pricing.price.amount < min.pricing.price.amount ? cur : min, items[0]).pricing.price
+    // Cheapest item's full pricing (not just the amount) — the model field
+    // is what actually tells us how to *say* the price, not just what
+    // number to show.
+    const cheapestPricing = items.length > 0
+        ? items.reduce((min, cur) => cur.pricing.price.amount < min.pricing.price.amount ? cur : min, items[0]).pricing
         : null;
 
-    // Type-based styling
+    // Price label driven by pricing.model — the "6 transaction models" this
+    // field encodes (see product_requirements_document.md), so a task's
+    // reward doesn't read like a store price, a rental shows its rate unit,
+    // and free items say so instead of falling back to a vague "quote".
+    type PriceLabel =
+        | { isPrice: false; text: string }
+        | { isPrice: true; currencySymbol: string; amount: string; prefix?: string; suffix?: string };
+
+    const priceLabel: PriceLabel = (() => {
+        const currencySymbol = language === 'zh' ? '¥' : '$';
+        if (!cheapestPricing) return { isPrice: false, text: language === 'zh' ? '面议' : 'Get Quote' };
+        const { model, price, unit } = cheapestPricing;
+        if (price.amount === 0) return { isPrice: false, text: language === 'zh' ? '免费' : 'Free' };
+        const amount = (price.amount / 100).toFixed(0);
+        switch (model) {
+            case 'QUOTE':
+            case 'NEGOTIABLE':
+                return { isPrice: false, text: language === 'zh' ? '面议' : 'Negotiable' };
+            case 'VISIT_FEE':
+                return { isPrice: true, currencySymbol, amount, prefix: language === 'zh' ? '上门费 ' : 'Visit fee ' };
+            case 'HOURLY':
+                return { isPrice: true, currencySymbol, amount, suffix: `/${language === 'zh' ? '时' : 'hr'}` };
+            case 'DAILY':
+                return { isPrice: true, currencySymbol, amount, suffix: `/${language === 'zh' ? '天' : 'day'}` };
+            default:
+                return unit
+                    ? { isPrice: true, currencySymbol, amount, suffix: `/${unit}` }
+                    : { isPrice: true, currencySymbol, amount };
+        }
+    })();
+
+    // Type-based styling — 4 styles, mapped to the 3 pillars + Rental
+    // (see conversation 2026-09-04: TASK/EVENT were previously falling
+    // into the default "Service" badge, which misrepresented neighbor
+    // requests as paid professional services)
     const getTypeConfig = () => {
         switch (item.type) {
             case 'RENTAL':
@@ -44,19 +79,22 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     bgClass: 'bg-gradient-to-br from-blue-500 to-blue-600',
                     glowClass: 'group-hover:shadow-blue-500/20'
                 };
-            case 'CONSULTATION':
+            case 'TASK':
+            case 'EVENT':
                 return {
-                    badge: language === 'zh' ? '专家' : 'Expert',
-                    bgClass: 'bg-gradient-to-br from-purple-500 to-purple-600',
-                    glowClass: 'group-hover:shadow-purple-500/20'
+                    badge: language === 'zh' ? '任务' : 'Task',
+                    bgClass: 'bg-gradient-to-br from-orange-500 to-orange-600',
+                    glowClass: 'group-hover:shadow-orange-500/20'
                 };
             case 'GOODS':
+            case 'FREE_GIVEAWAY':
+            case 'WANTED':
                 return {
                     badge: language === 'zh' ? '集市' : 'Market',
                     bgClass: 'bg-gradient-to-br from-green-500 to-green-600',
                     glowClass: 'group-hover:shadow-green-500/20'
                 };
-            default:
+            default: // SERVICE, CONSULTATION, OTHER
                 return {
                     badge: language === 'zh' ? '服务' : 'Service',
                     bgClass: 'bg-gradient-to-br from-primary to-primary/80',
@@ -73,7 +111,7 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                className={`relative bg-card rounded-2xl overflow-hidden h-full border border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl ${typeConfig.glowClass}`}
+                className={`relative bg-card rounded-2xl overflow-hidden h-full flex flex-col border border-border/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl ${typeConfig.glowClass}`}
             >
                 {/* Image Section with Enhanced Overlays */}
                 <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-muted to-muted/50">
@@ -93,16 +131,21 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     {/* Gradient Overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                    {/* Rating Badge */}
-                    <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg"
-                    >
-                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                        <span className="text-foreground">{item.rating}</span>
-                    </motion.div>
+                    {/* Rating Badge — hidden for Tasks (a help request isn't
+                        "rated") and for anything with zero real reviews yet,
+                        so a brand-new listing doesn't show a fake perfect
+                        score (new listings default to rating:5, reviewCount:0) */}
+                    {item.type !== 'TASK' && item.type !== 'EVENT' && item.reviewCount > 0 && (
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg"
+                        >
+                            <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                            <span className="text-foreground">{item.rating}</span>
+                        </motion.div>
+                    )}
 
                     <motion.div
                         initial={{ x: -20, opacity: 0 }}
@@ -132,7 +175,7 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     </button>
 
                     {/* AI Similarity Badge - 优先级最高 */}
-                    {item.similarity && item.similarity > 0.75 && (
+                    {item.similarity !== undefined && item.similarity > 0.75 && (
                         <motion.div
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
@@ -147,8 +190,9 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                         </motion.div>
                     )}
 
-                    {/* Trending indicator if rating > 4.5 (只在没有相似度徽章时显示) */}
-                    {item.rating && item.rating > 4.5 && (!item.similarity || item.similarity <= 0.75) && (
+                    {/* Trending indicator — requires real reviews, not just the
+                        rating:5 default every new listing starts with */}
+                    {item.rating > 4.5 && item.reviewCount > 0 && (!item.similarity || item.similarity <= 0.75) && (
                         <div className="absolute bottom-3 left-3 bg-orange-500/95 text-white px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-lg backdrop-blur-sm">
                             <TrendingUp className="w-3 h-3" />
                             {language === 'zh' ? '热门' : 'Hot'}
@@ -156,7 +200,7 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     )}
                 </div>
                 {/* Content Section - Compact for Mobile */}
-                <div className="p-3 sm:p-5 flex flex-col h-full">
+                <div className="p-3 sm:p-5 flex flex-col flex-1 min-h-0">
                     {/* Title - Strict truncation for symmetry */}
                     <div className="mb-2 sm:mb-3 h-[2.8rem] sm:h-[3.2rem] overflow-hidden">
                         <h3 className="font-extrabold text-sm sm:text-lg line-clamp-2 group-hover:text-primary transition-colors leading-[1.3]">
@@ -181,13 +225,6 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                         </div>
                     )}
 
-                    {/* Description - Strict 2-line clamp + fixed height for desktop symmetry */}
-                    <div className="hidden sm:block mb-4 h-[2.5rem] overflow-hidden">
-                        <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
-                            {displayDesc}
-                        </p>
-                    </div>
-
                     {/* Footer: Price Focus */}
                     <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/40">
                         <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground/70 font-bold bg-muted/20 px-2 py-0.5 rounded-full">
@@ -198,19 +235,33 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                                     {item.distanceApprox && '~'}{(item.distanceMeters / 1000).toFixed(1)}km
                                 </span>
                             )}
+                            {/* Rental-specific: deposit is the second most important
+                                number after the rate, kept on the same line so it
+                                doesn't grow the card past its fixed row height */}
+                            {item.type === 'RENTAL' && cheapestPricing?.deposit && cheapestPricing.deposit.amount > 0 && (
+                                <span className="ml-1 pl-1 border-l border-border/60 text-muted-foreground/70">
+                                    {language === 'zh' ? '押金' : 'Dep.'} {priceLabel.isPrice ? priceLabel.currencySymbol : (language === 'zh' ? '¥' : '$')}{(cheapestPricing.deposit.amount / 100).toFixed(0)}
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex items-baseline gap-0.5">
-                            {startingPrice ? (
+                            {priceLabel.isPrice ? (
                                 <>
-                                    <span className="text-[10px] text-primary/60 font-black">{language === 'zh' ? '¥' : '$'}</span>
+                                    {priceLabel.prefix && (
+                                        <span className="text-[10px] text-primary/60 font-bold mr-0.5">{priceLabel.prefix}</span>
+                                    )}
+                                    <span className="text-[10px] text-primary/60 font-black">{priceLabel.currencySymbol}</span>
                                     <span className="text-primary font-black text-base sm:text-xl leading-none">
-                                        {(startingPrice.amount / 100).toFixed(0)}
+                                        {priceLabel.amount}
                                     </span>
+                                    {priceLabel.suffix && (
+                                        <span className="text-[10px] text-primary/60 font-bold">{priceLabel.suffix}</span>
+                                    )}
                                 </>
                             ) : (
                                 <span className="text-muted-foreground text-[10px] font-black italic opacity-60">
-                                    {language === 'zh' ? '议价' : 'Quote'}
+                                    {priceLabel.text}
                                 </span>
                             )}
                         </div>

@@ -12,18 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 
 type SortBy = 'newest' | 'rating' | 'reviews' | 'distance';
-
-// Straight-line distance in meters — good enough for "closest first" sorting
-// at this scale, no PostGIS round trip needed.
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 const CategoryListing = () => {
     const { type } = useParams<{ type: string }>();
@@ -31,7 +22,7 @@ const CategoryListing = () => {
     const query = searchParams.get('q');
     const { listings, isLoading, searchListings } = useListingStore();
     const { currentUser } = useAuthStore();
-    const { refCodes, language, activeNodeId } = useConfigStore();
+    const { refCodes, language } = useConfigStore();
     const [isSmartSearch, setIsSmartSearch] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
@@ -68,38 +59,19 @@ const CategoryListing = () => {
         setSortBy(key);
     };
 
-    // Reference point for distance: precise GPS once the neighbor opts into
-    // "Closest to Me", otherwise their community node's center — so a
+    // Fetches listingItems (price/deposit) for whatever's currently showing
+    // and attaches distance — precise once GPS is granted via "Closest to
+    // Me", otherwise approximated from the neighbor's community node so a
     // distance can always be shown without prompting for location upfront.
-    const nodeLocation = useMemo(() => {
-        const nodeId = currentUser?.nodeId || activeNodeId;
-        const node = refCodes.find(r => r.type === 'NODE' && r.codeId === nodeId);
-        const extra = node?.extraData;
-        return extra?.lat && extra?.lng ? { lat: extra.lat, lng: extra.lng } : null;
-    }, [refCodes, currentUser?.nodeId, activeNodeId]);
+    const enrichedListings = useEnrichedListings(listings, userLocation);
 
-    const referenceLocation = userLocation || nodeLocation;
-    // Distance is exact once GPS is granted; otherwise it's estimated from
-    // the neighbor's community node center — flagged so the UI can be
-    // honest about it (~Xkm) instead of implying false precision.
-    const isPreciseDistance = !!userLocation;
-
-    // Client-side distance calc — listings this size don't need a server
-    // round trip, and this reuses the existing lat/lng columns as-is.
-    // Always attaches distanceMeters for display; only reorders the list
-    // when the neighbor has actually chosen the "Closest to Me" sort.
+    // Only reorder by distance once the neighbor actually picked that sort
+    // — the rest of the time the backend's own order (newest/rating/etc)
+    // stands, distance is just shown for context.
     const sortedListings = useMemo(() => {
-        if (!referenceLocation) return listings;
-        const withDistance = listings.map(l => {
-            const coords = l.location?.coordinates;
-            const distanceMeters = coords
-                ? haversineMeters(referenceLocation.lat, referenceLocation.lng, coords.lat, coords.lng)
-                : undefined;
-            return { ...l, distanceMeters, distanceApprox: !isPreciseDistance };
-        });
-        if (sortBy !== 'distance') return withDistance;
-        return withDistance.sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
-    }, [listings, sortBy, referenceLocation, isPreciseDistance]);
+        if (sortBy !== 'distance') return enrichedListings;
+        return [...enrichedListings].sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
+    }, [enrichedListings, sortBy]);
 
     // Which pillar this listing type belongs to (via ref_codes PILLAR extra_data.path),
     // then the 细分类目 (CATEGORY-level) chips under it — see

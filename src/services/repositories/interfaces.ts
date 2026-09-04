@@ -57,6 +57,7 @@ export interface IListingRepository {
 
 export interface IListingItemRepository {
     getByMaster(masterId: string): Promise<ListingItem[]>;
+    getByMasters(masterIds: string[]): Promise<ListingItem[]>;
     getById(id: string): Promise<ListingItem | null>;
     create(item: Omit<ListingItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<ListingItem>;
     update(id: string, data: Partial<ListingItem>): Promise<ListingItem>;

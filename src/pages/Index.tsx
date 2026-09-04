@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import SEO from "@/components/SEO";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,6 +15,7 @@ import { SkeletonCard } from "@/components/ui/SkeletonCard";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BentoHero } from "@/components/home/BentoHero";
+import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 
 type TabType = 'all' | 'services' | 'goods' | 'rentals' | 'community';
 
@@ -83,7 +84,7 @@ const Index = () => {
   }, [activeNodeId, fetchFeed]);
 
   // Filter listings by active tab
-  const getFilteredListings = () => {
+  const currentFilteredListings = useMemo(() => {
     switch (activeTab) {
       case 'services':
         return listings.filter(l => l.type === 'SERVICE');
@@ -95,9 +96,13 @@ const Index = () => {
       default:
         return listings;
     }
-  };
+  }, [listings, activeTab]);
 
-  const currentFilteredListings = getFilteredListings();
+  // Same enrichment CategoryListing.tsx uses: fetches the pricing these
+  // cards need (never loaded on this page before) and attaches an
+  // approximate distance from the neighbor's community node.
+  const visibleFeedListings = useMemo(() => currentFilteredListings.slice(0, 12), [currentFilteredListings]);
+  const enrichedFeedListings = useEnrichedListings(visibleFeedListings);
 
   // Hero carousel: top-rated real listings, not paid ad slots — the
   // differentiator vs. yellowducky.ca's pay-to-appear carousel is that
@@ -196,7 +201,7 @@ const Index = () => {
                   <SkeletonCard key={i} />
                 ))}
               </div>
-            ) : currentFilteredListings.length > 0 ? (
+            ) : enrichedFeedListings.length > 0 ? (
               <motion.div
                 key={activeTab}
                 variants={cardContainerVariants}
@@ -204,7 +209,7 @@ const Index = () => {
                 animate="visible"
                 className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
               >
-                {currentFilteredListings.slice(0, 12).map((item) => (
+                {enrichedFeedListings.map((item) => (
                   <motion.div key={item.id} variants={cardVariants}>
                     <ListingCard item={item} />
                   </motion.div>
