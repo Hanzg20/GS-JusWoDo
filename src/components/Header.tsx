@@ -1,24 +1,18 @@
-import { Bell, User, Menu, PlusCircle, MessageCircle, Globe, MapPin, Search, Map, MessageSquareQuote, ScanLine } from "lucide-react";
+import { Bell, User, PlusCircle, Globe, MapPin, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useAuthStore } from "@/stores/authStore";
-import { useCommunity } from "@/context/CommunityContext";
-import { BeanBalance } from "./beans/BeanBalance";
 import { useMessageStore } from "@/stores/messageStore";
 import { useConfigStore } from "@/stores/configStore";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 import { LitePost } from "./Community/LitePost";
 import { SmartSearchBar } from "./SmartSearchBar";
-import { JWDScanner } from "./common/JWDScanner";
 
 const Header = () => {
   const navigate = useNavigate();
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
   const { currentUser, isLoading } = useAuthStore();
-  const { activeNodeId } = useCommunity();
   const { totalUnreadCount, loadUnreadCount } = useMessageStore();
   const { language, setLanguage } = useConfigStore();
 
@@ -31,10 +25,7 @@ const Header = () => {
 
   // Localized text dictionary
   const t = {
-    community: language === 'zh' ? '邻里互助' : 'Community',
-    services: language === 'zh' ? '服务列表' : 'Services',
     post: language === 'zh' ? '发布需求/服务' : 'Post Need/Service',
-    myProfile: language === 'zh' ? '我的主页' : 'My Profile',
     brandName: language === 'zh' ? '渥帮 JWD' : 'JWD Ottawa',
     location: language === 'zh' ? 'Ottawa / Kanata' : 'Ottawa / Kanata',
   };

@@ -6,7 +6,6 @@ import { useListingStore } from "@/stores/listingStore";
 import { useCommunity } from "@/context/CommunityContext";
 import { useConfigStore } from "@/stores/configStore";
 import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
-import { TaskBoard } from "@/components/home/TaskBoard";
 import { ArrowRight, Sparkles, Flame, Wrench, Package, Camera } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ListingCard } from "@/components/ListingCard";
@@ -125,20 +124,10 @@ const Index = () => {
       </div>
 
       <main className="container max-w-7xl px-4 sm:px-6 space-y-6 sm:space-y-8">
-        {/* 4 Core Daangn Categories */}
+        {/* 3 Core Daangn Categories: 商户服务 / 邻里互助 / 二手闲置 */}
         <section>
           <CategoryIconGrid />
         </section>
-
-        {/* Task Board - Urgent Neighborhood Demands */}
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={sectionVariants}
-        >
-          <TaskBoard />
-        </motion.section>
 
         {/* Unified Tabbed Feed Section */}
         <motion.section

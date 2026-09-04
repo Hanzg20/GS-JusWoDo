@@ -415,7 +415,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                     {/* Location / Action Footer */}
                     <div className="flex items-center justify-between pt-4 border-t border-border">
                         <div className="flex items-center gap-2 text-muted-foreground">
-                            <div className="p-2 rounded-full hover:bg-muted transition-colors cursor-pointer">
+                            <div className="p-2 rounded-full">
                                 <MapPin className="w-5 h-5" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-widest">{currentUser?.nodeId || 'Kanata Lakes'}</span>

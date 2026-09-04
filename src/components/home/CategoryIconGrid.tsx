@@ -4,14 +4,13 @@ import {
   Wrench,
   MessageSquareQuote,
   Gift,
-  Briefcase,
   ChevronRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 /**
- * Daangn-style 4 Core Category Grid Component
- * Compact, lightweight, user-friendly, high density for Ottawa & Kanata
+ * Daangn-style 3 Core Category Grid Component
+ * JWD's 3 pillars: 商户服务 / 邻里互助 / 二手闲置 — no 4th catch-all category
  */
 export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, number> }) {
   const navigate = useNavigate();
@@ -31,8 +30,8 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
     {
       id: 'community',
       path: '/community',
-      name: isZh ? '邻里互助问答' : 'Neighborhood Q&A',
-      desc: isZh ? '求助 / 建议 / 推荐 / 资讯' : 'Ask, discuss, recommend',
+      name: isZh ? '邻里互助' : 'Neighborhood Help',
+      desc: isZh ? '求助 / 跑腿短工 / 推荐 / 资讯' : 'Ask, errands, recommend',
       icon: MessageSquareQuote,
       bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       badgeColor: 'bg-emerald-500',
@@ -46,20 +45,11 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
       bgColor: 'bg-purple-50 text-purple-600 border-purple-100',
       badgeColor: 'bg-purple-500',
     },
-    {
-      id: 'task',
-      path: '/category/task',
-      name: isZh ? '本地跑腿与短工' : 'Local Gigs & Tasks',
-      desc: isZh ? '临时小忙 / 急需帮手 / 跑腿' : 'Errands & quick local help',
-      icon: Briefcase,
-      bgColor: 'bg-blue-50 text-blue-600 border-blue-100',
-      badgeColor: 'bg-blue-500',
-    },
   ];
 
   return (
     <div className="py-2 px-1">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {categories.map((cat, idx) => {
           const Icon = cat.icon;
           const count = counts[cat.id] || 0;
