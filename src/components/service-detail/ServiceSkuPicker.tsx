@@ -3,6 +3,10 @@ import { ListingItem } from "@/types/domain";
 import { getTranslation } from "@/stores/listingStore";
 import { useConfigStore } from "@/stores/configStore";
 
+function isUnpricedModel(model: string) {
+    return model === 'QUOTE' || model === 'NEGOTIABLE';
+}
+
 interface ServiceSkuPickerProps {
     items: ListingItem[];
     selectedItem: ListingItem | null;
@@ -44,8 +48,16 @@ export function ServiceSkuPicker({ items, selectedItem, onSelect }: ServiceSkuPi
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="font-black text-primary text-lg tracking-tighter">${item.pricing.price.amount / 100}</p>
-                            <p className="text-[9px] font-black text-muted-foreground uppercase opacity-50">/{item.pricing.unit || 'hr'}</p>
+                            {isUnpricedModel(item.pricing.model) ? (
+                                <p className="font-black text-primary text-sm tracking-tighter">
+                                    {language === 'zh' ? '面议' : 'Contact'}
+                                </p>
+                            ) : (
+                                <>
+                                    <p className="font-black text-primary text-lg tracking-tighter">${item.pricing.price.amount / 100}</p>
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase opacity-50">/{item.pricing.unit || 'hr'}</p>
+                                </>
+                            )}
                         </div>
                     </div>
                 ))}

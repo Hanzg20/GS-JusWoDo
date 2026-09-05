@@ -179,7 +179,7 @@ const ServiceDetail = () => {
       ) : (
         <div className="min-h-screen bg-background pb-32">
           <SEO
-            title={`${getTranslation(master, 'title')} ${selectedItem ? `| $${selectedItem.pricing.price.amount / 100}` : ''}`}
+            title={`${getTranslation(master, 'title')}${selectedItem && selectedItem.pricing.model !== 'QUOTE' && selectedItem.pricing.model !== 'NEGOTIABLE' ? ` | $${selectedItem.pricing.price.amount / 100}` : ''}`}
             description={getTranslation(master, 'description').substring(0, 160)}
             image={master.images[0]}
             type="product"

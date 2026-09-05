@@ -12,6 +12,7 @@ import { getFieldsForType } from "@/config/listingFields";
 import { FormData, ListingType } from "@/types/listingFields";
 import { communityPostRepository } from "@/services/repositories/supabase/CommunityPostRepository";
 import { CommunityPostType } from "@/types/community";
+import { supabase } from "@/lib/supabase";
 
 const Publish = () => {
     const navigate = useNavigate();
@@ -118,6 +119,7 @@ const Publish = () => {
                 price: firstItem ? (firstItem.pricing.price.amount / 100).toString() : "0",
                 stock: firstItem ? (firstItem.attributes?.stock || 0).toString() : "0",
                 pickupLocation: master.location?.fullAddress || "",
+                _originalNodeId: master.nodeId,
                 skus: skus, // Pass the full list to the SKU editor if the field exists in config
                 // Flatten other attributes if any
                 ...firstItem?.attributes
@@ -202,6 +204,11 @@ const Publish = () => {
             const images = formData.images as string[];
 
             const masterData = {
+                // The form collects one language only (no separate zh/en
+                // inputs, by design — like FB Marketplace/Craigslist, UGC
+                // displays as-authored regardless of site language). Both
+                // columns get the same text on purpose; don't "fix" this by
+                // adding a translation step without a product decision first.
                 titleZh: title,
                 titleEn: title,
                 descriptionZh: description,
@@ -210,7 +217,13 @@ const Publish = () => {
                 mediaUrl: formData.mediaUrl as string || undefined,
                 type: selectedCategory as any,
                 categoryId: null, // Set to null to avoid FK constraint; type field is sufficient
-                nodeId: activeNodeId || 'NODE_LEES',
+                // On edit, keep the listing's existing node rather than
+                // whatever community the editor's browser happens to be
+                // viewing right now — activeNodeId is only the right choice
+                // for a brand-new listing. Without this, re-saving a listing
+                // silently reassigns it to a different neighborhood (and its
+                // stale lat/lng no longer matches), breaking distance display.
+                nodeId: (isEditMode && formData._originalNodeId) || activeNodeId || 'NODE_LEES',
                 status: 'PUBLISHED',
                 location: {
                     fullAddress: formData.pickupLocation || formData.location || '',
@@ -241,7 +254,7 @@ const Publish = () => {
                     descriptionEn: sku.description || description,
                     status: 'AVAILABLE' as const,
                     pricing: {
-                        model: 'FIXED' as const,
+                        model: (formData.pricingMode as any) || 'FIXED',
                         price: {
                             amount: Math.round((sku.price || 0) * 100),
                             currency: 'CAD',
@@ -262,7 +275,7 @@ const Publish = () => {
                     descriptionEn: description,
                     status: 'AVAILABLE' as const,
                     pricing: {
-                        model: 'FIXED' as const,
+                        model: (formData.pricingMode as any) || 'FIXED',
                         price: {
                             amount: Math.round(price * 100),
                             currency: 'CAD',
@@ -282,15 +295,25 @@ const Publish = () => {
             };
             (masterData as any).metadata = metadata;
 
+            let publishedId = editId;
             if (isEditMode && editId) {
                 await updateListing(editId, masterData, finalItems);
                 toast.success("修改成功！");
             } else {
                 const newListing = await createListing(masterData, finalItems);
+                publishedId = newListing.id;
                 if (fromPostId) {
                     await communityPostRepository.convertToListing(fromPostId, newListing.id);
                 }
                 toast.success("发布成功！");
+            }
+
+            // Fire-and-forget: backfill the other language via translate-listing.
+            // Never block/fail the publish flow on this — see Publish.tsx's
+            // titleZh/titleEn comment above for why translation is needed at all.
+            if (publishedId) {
+                supabase.functions.invoke('translate-listing', { body: { masterId: publishedId } })
+                    .catch(err => console.warn('translate-listing invoke failed:', err));
             }
 
             navigate('/my-listings');

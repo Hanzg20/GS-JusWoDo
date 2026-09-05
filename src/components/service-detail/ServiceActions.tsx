@@ -22,6 +22,7 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
         bookTime: language === 'zh' ? '预约时间' : 'Book Time',
         deposit: language === 'zh' ? '押金 (可退)' : 'Ref. Deposit',
         free: language === 'zh' ? '免费' : 'Free',
+        negotiable: language === 'zh' ? '面议' : 'Contact for Price',
         haveThis: language === 'zh' ? '我有这个' : 'I Have This',
         claimIt: language === 'zh' ? '免费领取' : 'Claim It',
     };
@@ -40,10 +41,16 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
 
     const renderPricingCard = () => {
         if (!selectedItem) return null;
-        const isFree = selectedItem.pricing.price.amount === 0;
+        // A $0 amount on a QUOTE/NEGOTIABLE item means "no price set yet",
+        // not "this is free" — those need their own "Contact for Price"
+        // copy instead of accidentally reading as a free giveaway.
+        const isUnpriced = selectedItem.pricing.model === 'QUOTE' || selectedItem.pricing.model === 'NEGOTIABLE';
+        const isFree = !isUnpriced && selectedItem.pricing.price.amount === 0;
         return (
             <div className="flex flex-col">
-                {isFree ? (
+                {isUnpriced ? (
+                    <span className="text-2xl font-black text-primary tracking-tighter">{t.negotiable}</span>
+                ) : isFree ? (
                     <span className="text-2xl font-black text-primary tracking-tighter">{t.free}</span>
                 ) : (
                     <div className="flex items-baseline gap-1">

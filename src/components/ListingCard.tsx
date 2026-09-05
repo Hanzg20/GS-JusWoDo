@@ -268,6 +268,16 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                             )}
                         </div>
                     </div>
+
+                    {/* Area/neighborhood — always accurate since it comes
+                        straight from node_id, unlike the distance above
+                        which depends on the listing having real coordinates
+                        (see 2026-09-05 node_id/distance mismatch fix) */}
+                    {displayNodeName && (
+                        <div className="mt-1.5 text-[9px] sm:text-[10px] font-bold text-muted-foreground/40 uppercase tracking-wider truncate">
+                            {displayNodeName}
+                        </div>
+                    )}
                 </div>
 
                 {/* Bottom Accent Line */}
