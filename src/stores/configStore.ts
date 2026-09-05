@@ -15,6 +15,7 @@ interface ConfigState {
     language: 'en' | 'zh';
     isLanguageAutoDetected: boolean; // Track if language was auto-detected
     isLocationAutoDetected: boolean; // Track if we've already tried geolocation once
+    locationDetectionSucceeded: boolean; // True only when detection found a real nearby node — see detectLocation()
     setActiveNode: (nodeId: string) => void;
     setRefCodes: (codes: RefCode[]) => void;
     setLanguage: (lang: 'en' | 'zh') => void;
@@ -49,6 +50,7 @@ export const useConfigStore = create<ConfigState>()(
             language: 'en', // Default language (will be auto-detected on first run)
             isLanguageAutoDetected: false,
             isLocationAutoDetected: false,
+            locationDetectionSucceeded: false,
             setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
             setRefCodes: (codes) => set({ refCodes: codes }),
             setLanguage: (lang) => set({ language: lang, isLanguageAutoDetected: true }),
@@ -93,7 +95,7 @@ export const useConfigStore = create<ConfigState>()(
                         }
 
                         if (nearest && nearestDistance <= SERVICE_AREA_RADIUS_METERS) {
-                            set({ activeNodeId: nearest.codeId, isLocationAutoDetected: true });
+                            set({ activeNodeId: nearest.codeId, isLocationAutoDetected: true, locationDetectionSucceeded: true });
                             // Neighborhood name is always English — see NodePicker.tsx.
                             const label = nearest.enName || nearest.zhName;
                             toast.success(isZh ? `已为您定位到「${label}」` : `Located you in ${label}`);

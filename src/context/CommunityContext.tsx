@@ -12,10 +12,10 @@ interface CommunityContextType {
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
 
 export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { activeNodeId, setActiveNode, setRefCodes, detectLocation } = useConfigStore();
+    const { activeNodeId, setActiveNode, setRefCodes, detectLocation, locationDetectionSucceeded } = useConfigStore();
     const [isLoading, setIsLoading] = React.useState(true);
 
-    const { currentUser, isLoading: isAuthLoading } = useAuthStore();
+    const { currentUser, isLoading: isAuthLoading, updateUser } = useAuthStore();
 
     useEffect(() => {
         // Initialize RefCodes and Nodes on startup
@@ -51,6 +51,25 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
         if (currentUser?.nodeId) return;
         detectLocation();
     }, [isLoading, isAuthLoading, currentUser, detectLocation]);
+
+    // detectLocation() above only sets local state — a signed-in user whose
+    // profile still has no node (fresh signup, see handle_new_oauth_user())
+    // needs a genuine detection result written back to user_profiles.node_id,
+    // or it's lost the moment they reload / log in elsewhere. Gated on
+    // locationDetectionSucceeded (not just isLocationAutoDetected) so a
+    // denied/unavailable/out-of-area result — which leaves activeNodeId at
+    // whatever ambient default was already showing — never gets written as
+    // if it were a real answer; leaving node_id null lets them try again
+    // later or pick manually, without reintroducing the fake-default bug.
+    useEffect(() => {
+        if (!currentUser || currentUser.nodeId) return;
+        if (!locationDetectionSucceeded) return;
+
+        repositoryFactory.getAuthRepository()
+            .updateProfile(currentUser.id, { nodeId: activeNodeId })
+            .then(updated => updateUser(updated))
+            .catch(err => console.error('Failed to persist detected node to profile:', err));
+    }, [currentUser, locationDetectionSucceeded, activeNodeId, updateUser]);
 
     return (
         <CommunityContext.Provider value={{ activeNodeId, setActiveNode, isLoading }}>

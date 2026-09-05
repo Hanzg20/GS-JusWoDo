@@ -38,7 +38,7 @@ export function ServiceProviderCard({ provider, master, distance, isInArea, onCh
             <div className="flex items-center gap-4 mb-6">
                 <Link to={`/provider/${provider.id}`} className="relative group cursor-pointer block">
                     <div className="w-16 h-16 rounded-3xl overflow-hidden border-2 border-white shadow-card group-hover:shadow-lg transition-all">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${provider.id}`} alt="Provider" className="w-full h-full object-cover bg-muted" />
+                        <img src={provider.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${provider.id}`} alt="Provider" className="w-full h-full object-cover bg-muted" />
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-xl flex items-center justify-center border-2 border-white shadow-sm">
                         <Shield className="w-3 h-3 text-white" />

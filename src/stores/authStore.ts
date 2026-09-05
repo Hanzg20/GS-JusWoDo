@@ -94,7 +94,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                             email: session.user.email || null,
                             phone: session.user.phone || null,
                             name: defaultName,
-                            node_id: 'NODE_LEES',
+                            // No hardcoded fallback node — leave unset so
+                            // CommunityContext's geolocation effect (which
+                            // only runs once a profile lacks a node) can
+                            // actually place this person for real instead of
+                            // silently parking every new signup in one node.
+                            node_id: null,
                             avatar: session.user.user_metadata?.avatar_url ||
                                 session.user.user_metadata?.picture ||
                                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
