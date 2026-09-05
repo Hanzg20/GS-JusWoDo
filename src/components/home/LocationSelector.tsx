@@ -20,10 +20,8 @@ export function LocationSelector() {
 
   // Get current node info
   const currentNode = refCodes.find(r => r.codeId === activeNodeId);
-  // Respect language setting
-  const displayName = language === 'zh'
-    ? (currentNode?.zhName || currentNode?.enName || '当前社区')
-    : (currentNode?.enName || currentNode?.zhName || 'Community');
+  // Neighborhood names are always English — see NodePicker.tsx.
+  const displayName = currentNode?.enName || currentNode?.zhName || (language === 'zh' ? '当前社区' : 'Community');
 
   // Get all nodes (Handle potential type drift: COMMUNITY vs COMMUNITY_NODE vs NODE)
   const nodes = refCodes.filter(r => {
@@ -77,7 +75,7 @@ export function LocationSelector() {
               onClick={() => handleNodeChange(node.codeId)}
               className={activeNodeId === node.codeId ? 'bg-primary/10 font-semibold' : ''}
             >
-              {language === 'zh' ? (node.zhName || node.enName) : (node.enName || node.zhName)}
+              {node.enName || node.zhName}
             </DropdownMenuItem>
           ))
         ) : (

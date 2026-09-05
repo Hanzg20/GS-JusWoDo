@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/authStore";
 import { useProviderStore } from "@/stores/providerStore";
 import { useConfigStore } from "@/stores/configStore";
+import { NodePicker } from "@/components/NodePicker";
 import { toast } from "sonner";
 
 const BecomeProvider = () => {
@@ -24,6 +25,7 @@ const BecomeProvider = () => {
         identity: 'NEIGHBOR' as 'NEIGHBOR' | 'MERCHANT',
         nameZh: '',
         nameEn: '',
+        nodeId: '',
     });
 
     useEffect(() => {
@@ -31,9 +33,10 @@ const BecomeProvider = () => {
             setFormData(prev => ({
                 ...prev,
                 nameZh: currentUser.name || '',
+                nodeId: prev.nodeId || currentUser.nodeId || activeNodeId,
             }));
         }
-    }, [currentUser]);
+    }, [currentUser, activeNodeId]);
 
     // If already a provider, redirect
     useEffect(() => {
@@ -56,12 +59,12 @@ const BecomeProvider = () => {
 
         setSubmitting(true);
         try {
-            // Use the neighbor's community node as a real starting location
-            // (was previously hardcoded to lat:0,lng:0 — see
-            // supabase/migrations/20260904_add_node_coordinates.sql for the
-            // node coordinates this now reads from). Providers can refine
-            // their exact address later from their dashboard.
-            const node = refCodes.find(r => r.type === 'NODE' && r.codeId === (currentUser.nodeId || activeNodeId));
+            // Location now comes from the neighborhood the provider actually
+            // picked in the form below (was previously hardcoded to
+            // lat:0,lng:0, then silently guessed from their account's node —
+            // see supabase/migrations/20260904_add_node_coordinates.sql /
+            // 20260904_add_node_districts.sql for the tree this reads from).
+            const node = refCodes.find(r => r.type === 'NODE' && r.codeId === formData.nodeId);
             const nodeExtra = node?.extraData || {};
 
             await upgradeToProvider(currentUser.id, {
@@ -71,7 +74,7 @@ const BecomeProvider = () => {
                 location: {
                     lat: nodeExtra.lat ?? 45.4215,
                     lng: nodeExtra.lng ?? -75.6972,
-                    address: node?.zhName || node?.enName || 'Ottawa',
+                    address: node?.enName || node?.zhName || 'Ottawa',
                     radiusKm: 10
                 }
             });
@@ -182,6 +185,15 @@ const BecomeProvider = () => {
                                     onChange={e => setFormData(d => ({ ...d, nameEn: e.target.value }))}
                                     placeholder="e.g. Wang's Authentic Snacks"
                                     className="h-12"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Neighborhood</Label>
+                                <NodePicker
+                                    value={formData.nodeId}
+                                    onChange={nodeId => setFormData(d => ({ ...d, nodeId }))}
+                                    className="w-full h-12 justify-between !rounded-xl border-border"
                                 />
                             </div>
 

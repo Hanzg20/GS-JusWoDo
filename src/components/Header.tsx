@@ -1,4 +1,4 @@
-import { Bell, User, PlusCircle, Globe, MapPin, Search } from "lucide-react";
+import { Bell, User, PlusCircle, Globe, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
@@ -8,6 +8,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 import { LitePost } from "./Community/LitePost";
 import { SmartSearchBar } from "./SmartSearchBar";
+import { NodePicker } from "./NodePicker";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -31,7 +32,6 @@ const Header = () => {
   const t = {
     post: language === 'zh' ? '发布需求/服务' : 'Post Need/Service',
     brandName: language === 'zh' ? '渥帮 JWD' : 'JWD Ottawa',
-    location: language === 'zh' ? 'Ottawa / Kanata' : 'Ottawa / Kanata',
   };
 
   return (
@@ -47,11 +47,10 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* Location Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-primary/5 border border-primary/10 rounded-full text-xs font-semibold text-primary">
-            <MapPin className="w-3.5 h-3.5 text-primary" />
-            <span>{t.location}</span>
-          </div>
+          {/* Community node picker — District > Node, see NodePicker.tsx
+              (not to be confused with LocationPicker.tsx, the map/pin-drop
+              component used by the publish flow) */}
+          <NodePicker className="hidden sm:flex" />
         </div>
 
         {/* Desktop Search Bar */}

@@ -12,10 +12,10 @@ interface CommunityContextType {
 const CommunityContext = createContext<CommunityContextType | undefined>(undefined);
 
 export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { activeNodeId, setActiveNode, setRefCodes } = useConfigStore();
+    const { activeNodeId, setActiveNode, setRefCodes, detectLocation } = useConfigStore();
     const [isLoading, setIsLoading] = React.useState(true);
 
-    const { currentUser } = useAuthStore();
+    const { currentUser, isLoading: isAuthLoading } = useAuthStore();
 
     useEffect(() => {
         // Initialize RefCodes and Nodes on startup
@@ -40,6 +40,17 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
             setActiveNode(currentUser.nodeId);
         }
     }, [currentUser, setActiveNode]);
+
+    // First-visit geolocation: once refCodes (node coordinates) are loaded and
+    // we know whether this person already has a home node on their profile,
+    // try to place them automatically. detectLocation() no-ops after the
+    // first attempt (tracked via the persisted isLocationAutoDetected flag)
+    // and never overrides a node the user or their profile already set.
+    useEffect(() => {
+        if (isLoading || isAuthLoading) return;
+        if (currentUser?.nodeId) return;
+        detectLocation();
+    }, [isLoading, isAuthLoading, currentUser, detectLocation]);
 
     return (
         <CommunityContext.Provider value={{ activeNodeId, setActiveNode, isLoading }}>

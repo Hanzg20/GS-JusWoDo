@@ -4,16 +4,9 @@ import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
 import { repositoryFactory } from '@/services/repositories/factory';
 import { ListingMaster } from '@/types/domain';
+import { haversineMeters } from '@/lib/geo';
 
-// Straight-line distance in meters — good enough for "closest first" sorting
-// at this scale, no PostGIS round trip needed.
-export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+export { haversineMeters };
 
 /**
  * Shared by every page that renders a grid of ListingCards (Index.tsx,

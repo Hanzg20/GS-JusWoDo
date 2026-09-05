@@ -26,11 +26,9 @@ export function PopularInCommunity({ listings }: PopularInCommunityProps) {
     defaultCommunity: language === 'zh' ? '当前社区' : 'Current Community',
   };
 
-  // Get node display name
+  // Get node display name — neighborhood names are always English, see NodePicker.tsx.
   const nodeInfo = refCodes.find(r => r.codeId === activeNodeId);
-  const nodeDisplayName = language === 'zh'
-    ? (nodeInfo?.zhName || nodeInfo?.enName || t.defaultCommunity)
-    : (nodeInfo?.enName || nodeInfo?.zhName || t.defaultCommunity);
+  const nodeDisplayName = nodeInfo?.enName || nodeInfo?.zhName || t.defaultCommunity;
 
   // Filter listings for current node and sort by popularity
   const popularListings = listings

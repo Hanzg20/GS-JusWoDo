@@ -22,7 +22,7 @@ const CategoryListing = () => {
     const query = searchParams.get('q');
     const { listings, isLoading, searchListings } = useListingStore();
     const { currentUser } = useAuthStore();
-    const { refCodes, language } = useConfigStore();
+    const { refCodes, language, activeNodeId } = useConfigStore();
     const [isSmartSearch, setIsSmartSearch] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
@@ -91,12 +91,12 @@ const CategoryListing = () => {
         searchListings({
             query: query || undefined,
             isSemantic: isSmartSearch && !!query,
-            nodeId: currentUser?.nodeId || 'NODE_LEES',
+            nodeId: currentUser?.nodeId || activeNodeId,
             categoryId: selectedCategoryId,
             type: (type?.toUpperCase() as any) || undefined,
             sortBy
         });
-    }, [type, query, isSmartSearch, selectedCategoryId, sortBy]);
+    }, [type, query, isSmartSearch, selectedCategoryId, sortBy, currentUser?.nodeId, activeNodeId]);
 
     const getPageTitle = (type: string | undefined) => {
         // ... (unchanged)

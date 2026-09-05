@@ -128,7 +128,7 @@ export const ListingCardCompact = ({ item }: { item: ListingMaster }) => {
                                 {provider && (
                                     <VerificationBadge
                                         level={(provider.verificationLevel || 1) as 1 | 2 | 3 | 4 | 5}
-                                        nodeName={getLocalized(nodeInfo?.enName, nodeInfo?.zhName)}
+                                        nodeName={nodeInfo?.enName || nodeInfo?.zhName}
                                         endorsementCount={provider.stats?.repeatRate ? Math.floor(provider.stats.repeatRate * 10) : 0}
                                     />
                                 )}
