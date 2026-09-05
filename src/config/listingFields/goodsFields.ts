@@ -1,7 +1,15 @@
 import { ListingFieldsConfig } from '@/types/listingFields';
 
 /**
- * Field definitions for GOODS type - Buyer (individual selling second-hand items)
+ * Field definitions for GOODS type - Buyer (individual selling second-hand
+ * items). Deliberately modeled on Facebook Marketplace's "Item for Sale"
+ * flow — photos, title, price, condition, description, location, nothing
+ * else — since that's the bar for "quick and easy for a non-professional
+ * seller" (see conversation 2026-09-05). The old version of this form had
+ * 14 fields across 3 groups (purchase source/date, selling reason,
+ * conditional delivery-method matrix, negotiable checkbox, etc.) — far more
+ * friction than a neighbor listing a used couch should need, and none of it
+ * matches what an actual marketplace listing flow asks for.
  */
 export const buyerGoodsFields: ListingFieldsConfig = {
     type: 'GOODS',
@@ -11,160 +19,68 @@ export const buyerGoodsFields: ListingFieldsConfig = {
             title: '基础信息',
             fields: [
                 {
+                    name: 'images',
+                    label: '照片',
+                    type: 'images',
+                    importance: 'required',
+                    helpText: '最多10张，第一张会作为封面',
+                    validation: {
+                        min: 1,
+                        max: 10,
+                    }
+                },
+                {
                     name: 'title',
                     label: '商品名称',
                     type: 'text',
                     importance: 'required',
-                    placeholder: '例如：索尼 A7M4 相机',
-                    helpText: '清晰的标题能吸引更多买家',
+                    placeholder: '例如：宜家餐桌',
                     validation: {
-                        min: 5,
+                        min: 3,
                         max: 100,
                     }
                 },
                 {
-                    name: 'images',
-                    label: '商品图片',
-                    type: 'images',
+                    name: 'price',
+                    label: '价格 (CAD)',
+                    type: 'number',
                     importance: 'required',
-                    helpText: '上传1-6张清晰照片，展示商品各个角度',
+                    placeholder: '0.00 （填0表示免费送）',
                     validation: {
-                        min: 1,
-                        max: 6,
+                        min: 0,
                     }
                 },
-                {
-                    name: 'mediaUrl',
-                    label: '展示视频 (YouTube/B站)',
-                    type: 'text',
-                    importance: 'optional',
-                    placeholder: 'https://www.youtube.com/watch?v=...',
-                    helpText: '支持 YouTube, Bilibili, Vimeo 等主流视频链接',
-                },
-                {
-                    name: 'description',
-                    label: '详细描述',
-                    type: 'textarea',
-                    importance: 'recommended',
-                    placeholder: '详细说明使用感受、是否有瑕疵...',
-                    rows: 5,
-                }
-            ]
-        },
-        {
-            title: '成色与来源',
-            fields: [
                 {
                     name: 'condition',
                     label: '成色',
                     type: 'select',
                     importance: 'required',
                     options: [
-                        { value: 'NEW', label: '全新未拆封' },
-                        { value: 'LIKE_NEW', label: '几乎全新（使用1-3次）' },
-                        { value: 'GOOD', label: '良好（轻微使用痕迹）' },
-                        { value: 'FAIR', label: '可用（明显使用痕迹但功能正常）' },
+                        { value: 'NEW', label: '全新' },
+                        { value: 'LIKE_NEW', label: '几乎全新' },
+                        { value: 'GOOD', label: '良好' },
+                        { value: 'FAIR', label: '可用' },
                     ]
                 },
                 {
-                    name: 'purchaseSource',
-                    label: '购入渠道',
-                    type: 'text',
+                    name: 'description',
+                    label: '描述',
+                    type: 'textarea',
                     importance: 'recommended',
-                    placeholder: '例如：京东自营、亚马逊',
-                    helpText: '正规渠道更容易获得买家信任',
-                },
-                {
-                    name: 'purchaseDate',
-                    label: '购入时间',
-                    type: 'text',
-                    importance: 'recommended',
-                    placeholder: '例如：2023年6月',
-                },
-                {
-                    name: 'sellingReason',
-                    label: '转手原因',
-                    type: 'text',
-                    importance: 'recommended',
-                    placeholder: '例如：升级设备、搬家不带走',
-                },
-                {
-                    name: 'originalPrice',
-                    label: '原价参考',
-                    type: 'number',
-                    importance: 'recommended',
-                    placeholder: '当时购买的价格',
-                    helpText: '方便买家判断性价比',
+                    placeholder: '介绍一下这件物品的情况...',
+                    rows: 4,
                 }
             ]
         },
         {
-            title: '交付与价格',
+            title: '位置',
             fields: [
                 {
-                    name: 'deliveryMethods',
-                    label: '交付方式',
-                    type: 'checkbox',
-                    importance: 'required',
-                    multiple: true,
-                    options: [
-                        { value: 'PICKUP', label: '自提（推荐）' },
-                        { value: 'DELIVERY', label: '送货上门' },
-                        { value: 'SHIPPING', label: '快递邮寄' },
-                    ]
-                },
-                {
                     name: 'pickupLocation',
-                    label: '自提地点',
+                    label: '取货地点',
                     type: 'location',
                     importance: 'required',
                     placeholder: 'Kanata Lakes',
-                    conditional: {
-                        dependsOn: 'deliveryMethods',
-                        value: 'PICKUP',
-                        operator: 'includes',
-                    }
-                },
-                {
-                    name: 'deliveryRange',
-                    label: '送货范围',
-                    type: 'text',
-                    importance: 'required',
-                    placeholder: '例如：Kanata周边10km',
-                    conditional: {
-                        dependsOn: 'deliveryMethods',
-                        value: 'DELIVERY',
-                        operator: 'includes',
-                    }
-                },
-                {
-                    name: 'shippingFee',
-                    label: '快递费用',
-                    type: 'number',
-                    importance: 'required',
-                    placeholder: '买家承担的快递费',
-                    conditional: {
-                        dependsOn: 'deliveryMethods',
-                        value: 'SHIPPING',
-                        operator: 'includes',
-                    }
-                },
-                {
-                    name: 'price',
-                    label: '售价 (CAD)',
-                    type: 'number',
-                    importance: 'required',
-                    placeholder: '0.00',
-                    validation: {
-                        min: 0,
-                    }
-                },
-                {
-                    name: 'negotiable',
-                    label: '是否可议价',
-                    type: 'checkbox',
-                    importance: 'optional',
-                    defaultValue: false,
                 }
             ]
         }

@@ -61,9 +61,12 @@ export const getFieldsForType = (
 
     const fieldMap: Record<string, Record<UserRole, ListingFieldsConfig>> = {
         'GOODS': {
-            buyer: providerGoodsFields,
+            // Was mapping 'buyer' to providerGoodsFields too — buyerGoodsFields
+            // (the simplified, Facebook-Marketplace-style form) was defined but
+            // never actually reachable.
+            buyer: buyerGoodsFields,
             provider: providerGoodsFields,
-            all: providerGoodsFields,
+            all: buyerGoodsFields,
         },
         'RENTAL': {
             buyer: rentalFields,
