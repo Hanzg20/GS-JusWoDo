@@ -38,18 +38,64 @@ export const useListingStore = create<ListingState>((set, get) => ({
             const masterRepo = repositoryFactory.getListingRepository();
             const itemRepo = repositoryFactory.getListingItemRepository();
 
-            // Inject Provider ID from Auth Store
             const { useAuthStore } = await import('@/stores/authStore');
             const currentUser = useAuthStore.getState().currentUser;
 
-            if (!currentUser || !currentUser.providerProfileId) {
-                throw new Error("Cannot publish: You must be a verified provider.");
+            if (!currentUser) {
+                throw new Error("Please log in to continue.");
+            }
+
+            let providerProfileId = currentUser.providerProfileId;
+
+            // listing_masters.provider_id is a hard FK to provider_profiles,
+            // so even a plain buyer posting a TASK or secondhand GOODS
+            // listing needs one. Rather than forcing them through the
+            // separate "Become a Provider" flow first, silently create the
+            // same lightweight NEIGHBOR-identity profile the first time
+            // they post something — without touching `roles`, so they keep
+            // seeing the buyer category set (Task/Goods) afterwards, not
+            // the provider's (Service/Goods). See conversation 2026-09-05.
+            if (!providerProfileId) {
+                const { supabase } = await import('@/lib/supabase');
+                const { useConfigStore } = await import('@/stores/configStore');
+
+                const node = useConfigStore.getState().refCodes.find(
+                    r => r.type === 'NODE' && r.codeId === listingData.nodeId
+                );
+                const nodeExtra = node?.extraData || {};
+
+                const providerRepo = repositoryFactory.getProviderRepository();
+                const newProvider = await providerRepo.create({
+                    userId: currentUser.id,
+                    identity: 'NEIGHBOR',
+                    businessNameZh: currentUser.name,
+                    isVerified: false,
+                    verificationLevel: 1,
+                    badges: [],
+                    stats: { totalOrders: 0, totalIncome: 0, averageRating: 0, reviewCount: 0 },
+                    location: {
+                        lat: nodeExtra.lat ?? 45.4215,
+                        lng: nodeExtra.lng ?? -75.6972,
+                        address: node?.zhName || node?.enName || 'Ottawa',
+                        radiusKm: 10
+                    },
+                    isActive: true
+                });
+
+                const { error: userError } = await supabase
+                    .from('user_profiles')
+                    .update({ provider_profile_id: newProvider.id })
+                    .eq('id', currentUser.id);
+                if (userError) throw userError;
+
+                useAuthStore.getState().updateUser({ providerProfileId: newProvider.id });
+                providerProfileId = newProvider.id;
             }
 
             // 1. Create Master
             const master = await masterRepo.create({
                 ...listingData,
-                providerId: currentUser.providerProfileId
+                providerId: providerProfileId
             });
 
             // 2. Create Items (linked to master)

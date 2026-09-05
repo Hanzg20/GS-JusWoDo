@@ -131,13 +131,19 @@ const Publish = () => {
         }
     };
 
-    // Category definitions with role-based visibility
+    // Category definitions with role-based visibility — trimmed to launch
+    // scope only (buyer: Task + Goods; provider: Service + Goods). GOODS is
+    // deliberately ALL — buyers selling/giving away secondhand items is the
+    // 二手闲置 pillar and shouldn't require becoming a "provider" any more
+    // than posting a Task does (createListing() auto-provisions the
+    // underlying provider_profiles row either way — see listingStore.ts).
+    // EVENT and RENTAL stay supported in the data model (EventDetailView,
+    // deposit pricing, etc. all still work) but aren't offered as creation
+    // options yet; add them back to this list when there's a reason to.
     const categories = [
         { id: 'SERVICE', label: '💼 提供专业服务', visible: 'PROVIDER_ONLY', subtitle: '咨询/上门/代办 (含SKU与底价)' },
+        { id: 'GOODS', label: '🛍️ 出售商品', visible: 'ALL', subtitle: '闲置转让 / 批量供货 (含库存管理)' },
         { id: 'TASK', label: '🙋 发布需求任务', visible: 'BUYER_ONLY', subtitle: '寻求邻居帮忙 (含预算与截止日期)' },
-        { id: 'EVENT', label: '🎉 组织邻里活动', visible: 'ALL', subtitle: '聚会/团购/分享 (含报名管理与承诺金)' },
-        { id: 'GOODS', label: '🛍️ 商业/正规供货', visible: 'ALL', subtitle: '批量商品 / 品牌销售 / 有库存管理' },
-        { id: 'RENTAL', label: '🔄 专业设备租赁', visible: 'ALL', subtitle: '相机/电钻/场地 (含押金与租约)' },
     ].filter(cat =>
         cat.visible === 'ALL' ||
         (cat.visible === 'PROVIDER_ONLY' && isProvider) ||

@@ -6,7 +6,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useMessageStore } from "@/stores/messageStore";
 import { useConfigStore } from "@/stores/configStore";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
-import { LitePost } from "./Community/LitePost";
 import { SmartSearchBar } from "./SmartSearchBar";
 import { NodePicker } from "./NodePicker";
 
@@ -28,9 +27,18 @@ const Header = () => {
     }
   }, [currentUser?.id, loadUnreadCount]);
 
+  // Ordinary neighbors post lightweight community content (LitePost);
+  // providers get routed straight into the structured service/listing
+  // flow instead — see conversation 2026-09-05 on the two posting entry
+  // points ("Post Need/Service" was previously wired to LitePost for
+  // everyone regardless of role, so a provider clicking it could never
+  // actually create a bookable service).
+  const isProvider = currentUser?.roles?.includes('PROVIDER');
+
   // Localized text dictionary
   const t = {
-    post: language === 'zh' ? '发布需求/服务' : 'Post Need/Service',
+    postBuyer: language === 'zh' ? '发个动态' : 'Post Update',
+    postProvider: language === 'zh' ? '发布服务/商品' : 'Post Service/Listing',
     brandName: language === 'zh' ? '渥帮 JWD' : 'JWD Ottawa',
   };
 
@@ -62,14 +70,18 @@ const Header = () => {
 
         {/* Navigation Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Central Post Action */}
-          <LitePost
-            trigger={
-              <Button size="sm" className="rounded-full h-9 px-4 font-bold text-xs gap-1.5 shadow-sm bg-primary text-white hover:bg-primary/90 hidden sm:flex">
-                <PlusCircle className="w-4 h-4" /> {t.post}
-              </Button>
-            }
-          />
+          {/* Central Post Action — always the structured Publish.tsx flow,
+              which already narrows its category choices by role (buyer:
+              Task; provider: Service/Goods). LitePost (lightweight
+              community content) stays scoped to the Community page's own
+              post button, not this one. */}
+          <Button
+            size="sm"
+            className="rounded-full h-9 px-4 font-bold text-xs gap-1.5 shadow-sm bg-primary text-white hover:bg-primary/90 hidden sm:flex"
+            onClick={() => navigate('/post-gig')}
+          >
+            <PlusCircle className="w-4 h-4" /> {isProvider ? t.postProvider : t.postBuyer}
+          </Button>
 
           {/* Mobile Search Toggle — not on homepage, BentoHero already has a search bar there */}
           {!isHomepage && (
