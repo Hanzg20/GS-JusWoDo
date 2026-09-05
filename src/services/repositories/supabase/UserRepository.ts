@@ -242,6 +242,63 @@ export class SupabaseUserRepository implements IUserRepository {
     }
 
     /**
+     * Block a user — hides their messages from the blocker's chat list.
+     */
+    async blockUser(blockerId: string, blockedId: string): Promise<void> {
+        if (blockerId === blockedId) {
+            throw new Error('Cannot block yourself');
+        }
+
+        const { error } = await supabase
+            .from('blocked_users')
+            .insert({
+                blocker_id: blockerId,
+                blocked_id: blockedId
+            });
+
+        if (error) {
+            if (error.code === '23505') {
+                // Already blocked - ignore
+                return;
+            }
+            throw error;
+        }
+    }
+
+    async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+        const { error } = await supabase
+            .from('blocked_users')
+            .delete()
+            .eq('blocker_id', blockerId)
+            .eq('blocked_id', blockedId);
+
+        if (error) throw error;
+    }
+
+    async isBlocked(blockerId: string, blockedId: string): Promise<boolean> {
+        const { data, error } = await supabase
+            .from('blocked_users')
+            .select('id')
+            .eq('blocker_id', blockerId)
+            .eq('blocked_id', blockedId)
+            .maybeSingle();
+
+        if (error) throw error;
+        return !!data;
+    }
+
+    /** All user ids the given user has blocked — used to filter chat/listings. */
+    async getBlockedUserIds(blockerId: string): Promise<string[]> {
+        const { data, error } = await supabase
+            .from('blocked_users')
+            .select('blocked_id')
+            .eq('blocker_id', blockerId);
+
+        if (error) throw error;
+        return (data || []).map(row => row.blocked_id);
+    }
+
+    /**
      * Check if user A is following user B
      */
     async isFollowing(followerId: string, followingId: string): Promise<boolean> {

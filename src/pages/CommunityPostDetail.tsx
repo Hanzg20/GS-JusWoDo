@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CommunityPostType, FACT_TYPE_CONFIG, ConsensusVoteType } from "@/types/community";
 import { ShareSheet } from "@/components/common/ShareSheet";
+import { ReportDialog } from "@/components/common/ReportDialog";
 import { LitePost } from "@/components/Community/LitePost";
 import { MediaEmbed } from "@/components/Community/MediaEmbed";
 import { HashtagText } from "@/components/Community/HashtagText";
@@ -294,9 +295,15 @@ const CommunityPostDetail = () => {
                                         </DropdownMenuItem>
                                     </>
                                 ) : (
-                                    <DropdownMenuItem className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
-                                        <Shield className="w-4 h-4" /> {language === 'zh' ? '投诉举报' : 'Report'}
-                                    </DropdownMenuItem>
+                                    <ReportDialog
+                                        targetType="COMMUNITY_POST"
+                                        targetId={currentPost.id}
+                                        trigger={
+                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                <Shield className="w-4 h-4" /> {language === 'zh' ? '投诉举报' : 'Report'}
+                                            </DropdownMenuItem>
+                                        }
+                                    />
                                 )}
                             </DropdownMenuContent>
                         </DropdownMenu>

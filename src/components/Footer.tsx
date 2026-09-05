@@ -1,4 +1,4 @@
-import { Heart, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useConfigStore } from "@/stores/configStore";
 
@@ -99,9 +99,6 @@ const Footer = () => {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-100">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{language === 'zh' ? '全域 v5.0' : 'Global v5.0'}</span>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Built with <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" /> in Canada
             </div>
           </div>
         </div>

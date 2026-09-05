@@ -13,10 +13,18 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
     ArrowLeft, Settings, Grid3X3, Bookmark, UserPlus,
-    UserMinus, MessageCircle, Heart, Share2, Layout, Shield
+    UserMinus, MessageCircle, Heart, Share2, Layout, Shield,
+    MoreVertical, Flag, Ban, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserLevelBadge } from "@/components/Community/UserLevelBadge";
+import { ReportDialog } from "@/components/common/ReportDialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const UserProfile = () => {
     const { userId } = useParams<{ userId: string }>();
@@ -29,6 +37,8 @@ const UserProfile = () => {
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'notes' | 'collected' | 'liked'>('notes');
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [isBlockLoading, setIsBlockLoading] = useState(false);
 
     const isOwnProfile = currentUser?.id === userId;
 
@@ -42,6 +52,9 @@ const UserProfile = () => {
                 setProfile(data);
                 // Fetch the social content for this user
                 await fetchUserActivity(userId);
+                if (currentUser?.id && currentUser.id !== userId) {
+                    setIsBlocked(await userRepository.isBlocked(currentUser.id, userId));
+                }
             } catch (error) {
                 console.error('Failed to fetch profile:', error);
             } finally {
@@ -50,6 +63,26 @@ const UserProfile = () => {
         };
         fetchProfile();
     }, [userId, currentUser?.id, fetchUserActivity]);
+
+    const handleToggleBlock = async () => {
+        if (!currentUser || !profile) return;
+        setIsBlockLoading(true);
+        try {
+            if (isBlocked) {
+                await userRepository.unblockUser(currentUser.id, profile.id);
+                setIsBlocked(false);
+                toast.success(language === 'zh' ? '已取消拉黑' : 'Unblocked');
+            } else {
+                await userRepository.blockUser(currentUser.id, profile.id);
+                setIsBlocked(true);
+                toast.success(language === 'zh' ? '已拉黑，你将不再收到对方消息' : "Blocked — you won't see their messages anymore");
+            }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Action failed');
+        } finally {
+            setIsBlockLoading(false);
+        }
+    };
 
     const handleFollow = async () => {
         if (!currentUser) {
@@ -139,9 +172,40 @@ const UserProfile = () => {
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <span className="text-xs font-black uppercase tracking-widest">{profile.name}</span>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                    <Share2 className="w-5 h-5" />
-                </Button>
+                {isOwnProfile ? (
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                        <Share2 className="w-5 h-5" />
+                    </Button>
+                ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="rounded-full">
+                                <MoreVertical className="w-5 h-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-2xl border-border/10">
+                            <ReportDialog
+                                targetType="USER"
+                                targetId={profile.id}
+                                trigger={
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 cursor-pointer font-bold text-sm">
+                                        <Flag className="w-4 h-4" /> {language === 'zh' ? '举报用户' : 'Report User'}
+                                    </DropdownMenuItem>
+                                }
+                            />
+                            <DropdownMenuItem
+                                onClick={handleToggleBlock}
+                                disabled={isBlockLoading}
+                                className="gap-2 cursor-pointer font-bold text-sm text-destructive focus:text-destructive"
+                            >
+                                {isBlocked ? <ShieldCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                                {isBlocked
+                                    ? (language === 'zh' ? '取消拉黑' : 'Unblock User')
+                                    : (language === 'zh' ? '拉黑用户' : 'Block User')}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
 
             <div className="max-w-xl mx-auto">

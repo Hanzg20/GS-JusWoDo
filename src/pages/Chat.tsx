@@ -17,6 +17,7 @@ import { StartConversationDialog } from "@/components/chat/StartConversationDial
 import { EmojiPicker } from "@/components/chat/EmojiPicker";
 import { ImageUpload } from "@/components/chat/ImageUpload";
 import { LocationShare } from "@/components/chat/LocationShare";
+import { userRepository } from "@/services/repositories/supabase/UserRepository";
 
 const Chat = () => {
     const navigate = useNavigate();
@@ -36,8 +37,25 @@ const Chat = () => {
 
     const [input, setInput] = useState("");
     const [showStartDialog, setShowStartDialog] = useState(false);
+    const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const notificationService = useRef<MessageNotificationService | null>(null);
+
+    // Blocked neighbors' conversations stay out of the list entirely —
+    // see UserProfile.tsx's Block User action.
+    useEffect(() => {
+        if (currentUser?.id) {
+            userRepository.getBlockedUserIds(currentUser.id).then(setBlockedUserIds).catch(console.error);
+        }
+    }, [currentUser?.id]);
+
+    const visibleConversations = useMemo(() => {
+        if (blockedUserIds.length === 0) return conversations;
+        return conversations.filter(conv => {
+            const otherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
+            return !blockedUserIds.includes(otherUserId);
+        });
+    }, [conversations, blockedUserIds, currentUser?.id]);
 
     // Initialize notification service
     useEffect(() => {
@@ -141,7 +159,7 @@ const Chat = () => {
                         <div className="flex items-center justify-between mb-4 px-1">
                             <h2 className="font-bold text-lg tracking-tight">Messages</h2>
                             <Badge variant="secondary" className="bg-primary/10 text-primary border-none">
-                                {conversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0)} New
+                                {visibleConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0)} New
                             </Badge>
                         </div>
                         <div className="relative">
@@ -155,9 +173,9 @@ const Chat = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {isLoading && conversations.length === 0 ? (
+                        {isLoading && visibleConversations.length === 0 ? (
                             <div className="p-8 text-center text-xs text-muted-foreground animate-pulse">Loading conversations...</div>
-                        ) : conversations.length === 0 ? (
+                        ) : visibleConversations.length === 0 ? (
                             <div className="p-8 text-center text-muted-foreground">
                                 <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
                                 <p className="text-xs mb-4">No chats yet</p>
@@ -171,7 +189,7 @@ const Chat = () => {
                                 </Button>
                             </div>
                         ) : (
-                            conversations.map(conv => (
+                            visibleConversations.map(conv => (
                                 <button
                                     key={`sidebar-conv-${conv.id}`}
                                     onClick={() => setActiveConversation(conv.id)}

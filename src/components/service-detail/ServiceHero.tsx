@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Share2, Flag } from "lucide-react";
 import { ShareSheet } from "@/components/common/ShareSheet";
+import { ReportDialog } from "@/components/common/ReportDialog";
 import { useNavigate } from "react-router-dom";
 
 interface ServiceHeroProps {
+    listingId: string;
     images: string[];
     title: string;
     description: string;
@@ -14,6 +16,7 @@ interface ServiceHeroProps {
 }
 
 export function ServiceHero({
+    listingId,
     images,
     title,
     description,
@@ -63,6 +66,15 @@ export function ServiceHero({
                         trigger={
                             <button className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30 hover:bg-white/40 transition-all hover:scale-105 active:scale-95">
                                 <Share2 className="w-5 h-5 text-white" />
+                            </button>
+                        }
+                    />
+                    <ReportDialog
+                        targetType="LISTING"
+                        targetId={listingId}
+                        trigger={
+                            <button className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30 hover:bg-white/40 transition-all hover:scale-105 active:scale-95">
+                                <Flag className="w-5 h-5 text-white" />
                             </button>
                         }
                     />

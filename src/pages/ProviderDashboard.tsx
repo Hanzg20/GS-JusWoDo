@@ -10,6 +10,7 @@ import {
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuthStore } from "@/stores/authStore";
+import { useConfigStore } from "@/stores/configStore";
 import { useOrderStore } from "@/stores/orderStore";
 import { useListingStore } from "@/stores/listingStore";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,50 @@ import { useProviderStore } from "@/stores/providerStore";
 const ProviderDashboard = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
     const { orders, loadUserOrders, updateOrderStatus, isLoading: isOrdersLoading } = useOrderStore();
     const { listingItems, fetchListings, updateListing, toggleItemAvailability, isLoading: isListingsLoading } = useListingStore();
     const { fetchProviderProfile, updateProviderProfile } = useProviderStore();
     const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
+
+    const t = {
+        becomeProTitle: language === 'zh' ? '开启您的邻里事业' : 'Start Your Neighborhood Business',
+        becomeProDesc: language === 'zh' ? '成为服务商，为邻居提供技能或闲置租赁，赚取额外收入。' : 'Become a provider — offer your skills or rent out your things, and earn extra income helping neighbors.',
+        becomeProCta: language === 'zh' ? '立即申请成为服务商' : 'Apply to Become a Provider',
+        dashboard: language === 'zh' ? '工作台' : 'Dashboard',
+        openForBusiness: language === 'zh' ? '营业中' : 'Open',
+        onBreak: language === 'zh' ? '休息中' : 'On Break',
+        acceptingOn: language === 'zh' ? '已开启营业状态' : "You're now accepting orders",
+        acceptingOff: language === 'zh' ? '已切换为休息状态' : "You're now on break",
+        acceptingUpdateFailed: language === 'zh' ? '更新营业状态失败' : 'Failed to update status',
+        scanToRedeem: language === 'zh' ? '扫码核销' : 'Scan to Redeem',
+        todo: language === 'zh' ? '待办事项' : 'To-Do',
+        viewAll: language === 'zh' ? '查看全部' : 'View All',
+        loadingOrders: language === 'zh' ? '正在加载订单...' : 'Loading orders...',
+        orderFallback: language === 'zh' ? '订单' : 'Order',
+        goQuote: language === 'zh' ? '去报价' : 'Send Quote',
+        startWork: language === 'zh' ? '开始执行' : 'Start Work',
+        decline: language === 'zh' ? '拒绝' : 'Decline',
+        allCaughtUpTitle: language === 'zh' ? '全部处理完了，太棒了！ ✨' : "All caught up — nice work! ✨",
+        allCaughtUpDesc: language === 'zh' ? '目前没有需要您处理的待办事项。' : "Nothing needs your attention right now.",
+        revenueOverview: language === 'zh' ? '营收概览' : 'Revenue Overview',
+        revenueSubtitle: language === 'zh' ? '本周主要经营指标' : "This week's key metrics",
+        week: language === 'zh' ? '周' : 'Week',
+        month: language === 'zh' ? '月' : 'Month',
+        totalRevenue: language === 'zh' ? '总计收入' : 'Total Revenue',
+        totalOrders: language === 'zh' ? '总订单量' : 'Total Orders',
+        activeOrders: language === 'zh' ? '活跃订单' : 'Active Orders',
+        quickInventory: language === 'zh' ? '快捷库存库' : 'Quick Inventory',
+        itemFallback: language === 'zh' ? '商品规格' : 'Item',
+        fullInventory: language === 'zh' ? '进入完整库存管理 →' : 'Manage Full Inventory →',
+        cockpit: language === 'zh' ? '管理驾驶舱' : 'Management Cockpit',
+        myListings: language === 'zh' ? '我的发布' : 'My Listings',
+        orderHistory: language === 'zh' ? '订单流水' : 'Order History',
+        messages: language === 'zh' ? '私信咨询' : 'Messages',
+        coupons: language === 'zh' ? '优惠券' : 'Coupons',
+        addListing: language === 'zh' ? '新增服务' : 'Add Listing',
+        statusUpdated: (status: string) => language === 'zh' ? `订单状态已更新为 ${status}` : `Order status updated to ${status}`,
+    };
 
     useEffect(() => {
         if (currentUser?.id) {
@@ -47,9 +88,9 @@ const ProviderDashboard = () => {
         setIsAcceptingOrders(checked);
         try {
             await updateProviderProfile(currentUser.providerProfileId, { isActive: checked });
-            toast.success(checked ? "已开启营业状态" : "已切换为休息状态");
+            toast.success(checked ? t.acceptingOn : t.acceptingOff);
         } catch (error) {
-            toast.error("更新营业状态失败");
+            toast.error(t.acceptingUpdateFailed);
             setIsAcceptingOrders(!checked);
         }
     };
@@ -87,7 +128,7 @@ const ProviderDashboard = () => {
 
     const handleUpdateStatus = async (orderId: string, status: any) => {
         await updateOrderStatus(orderId, status);
-        toast.success(`Order status updated to ${status}`);
+        toast.success(t.statusUpdated(status));
     };
 
     const handleToggleItemAvailability = async (itemId: string) => {
@@ -106,10 +147,10 @@ const ProviderDashboard = () => {
                     <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
                         <PlusCircle className="w-10 h-10 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-black mb-2">开启您的邻里事业</h2>
-                    <p className="text-muted-foreground mb-8">成为服务商，为邻居提供技能或闲置租赁，赚取额外收入。</p>
+                    <h2 className="text-2xl font-black mb-2">{t.becomeProTitle}</h2>
+                    <p className="text-muted-foreground mb-8">{t.becomeProDesc}</p>
                     <Button onClick={() => navigate('/become-provider')} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-lg shadow-lg">
-                        立即申请成为服务商
+                        {t.becomeProCta}
                     </Button>
                 </div>
             </div>
@@ -127,12 +168,12 @@ const ProviderDashboard = () => {
                         <div className="flex items-center gap-3 pr-6 border-r">
                             <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
                                 <LayoutDashboard className="w-5 h-5 text-primary" />
-                                工作台
+                                {t.dashboard}
                             </h1>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full animate-pulse ${isAcceptingOrders ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="text-sm font-bold">{isAcceptingOrders ? '营业中' : '休息中'}</span>
+                            <span className="text-sm font-bold">{isAcceptingOrders ? t.openForBusiness : t.onBreak}</span>
                             <Switch
                                 checked={isAcceptingOrders}
                                 onCheckedChange={handleToggleAcceptingOrders}
@@ -148,7 +189,7 @@ const ProviderDashboard = () => {
                             onClick={() => alert("QR Scanner Opening...")}
                         >
                             <QrCode className="w-5 h-5" />
-                            <span>扫码核销</span>
+                            <span>{t.scanToRedeem}</span>
                         </Button>
                         <button className="w-10 h-10 rounded-2xl bg-muted hover:bg-muted/80 flex items-center justify-center relative transition-all">
                             <Bell className="w-5 h-5" />
@@ -169,16 +210,16 @@ const ProviderDashboard = () => {
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4 text-orange-500" />
-                                    待办事项 ({activeOrdersCount})
+                                    {t.todo} ({activeOrdersCount})
                                 </h2>
-                                <button onClick={() => navigate('/provider/orders')} className="text-xs font-bold text-primary hover:underline">查看全部</button>
+                                <button onClick={() => navigate('/provider/orders')} className="text-xs font-bold text-primary hover:underline">{t.viewAll}</button>
                             </div>
 
                             <div className="space-y-3">
                                 {isOrdersLoading ? (
                                     <div className="bg-white p-12 rounded-3xl border border-border/50 flex flex-col items-center justify-center gap-4 text-muted-foreground">
                                         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                                        <p className="text-sm font-bold">正在加载订单...</p>
+                                        <p className="text-sm font-bold">{t.loadingOrders}</p>
                                     </div>
                                 ) : pendingOrders.length > 0 ? (
                                     pendingOrders.map((order) => (
@@ -197,7 +238,7 @@ const ProviderDashboard = () => {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <p className="font-black text-sm">{order.snapshot?.masterTitle || '订单'}</p>
+                                                    <p className="font-black text-sm">{order.snapshot?.masterTitle || t.orderFallback}</p>
                                                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                                                         <span className="font-bold text-foreground">{order.pricing?.total?.formatted || `$${(order.pricing?.total?.amount || 0) / 100}`}</span>
                                                         <span>•</span>
@@ -216,7 +257,7 @@ const ProviderDashboard = () => {
                                                         className="rounded-xl font-bold bg-primary text-white"
                                                         onClick={() => navigate(`/chat?orderId=${order.id}`)}
                                                     >
-                                                        去报价
+                                                        {t.goQuote}
                                                     </Button>
                                                 ) : (
                                                     <>
@@ -226,7 +267,7 @@ const ProviderDashboard = () => {
                                                             className="rounded-xl font-bold border-green-200 text-green-700 hover:bg-green-50"
                                                             onClick={() => handleUpdateStatus(order.id, 'IN_PROGRESS')}
                                                         >
-                                                            开始执行
+                                                            {t.startWork}
                                                         </Button>
                                                         <Button
                                                             size="sm"
@@ -234,7 +275,7 @@ const ProviderDashboard = () => {
                                                             className="rounded-xl font-bold text-muted-foreground hover:bg-red-50 hover:text-red-500"
                                                             onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
                                                         >
-                                                            拒绝
+                                                            {t.decline}
                                                         </Button>
                                                     </>
                                                 )}
@@ -246,8 +287,8 @@ const ProviderDashboard = () => {
                                         <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                                         </div>
-                                        <p className="font-black text-foreground">全部处理完了，太棒了！ ✨</p>
-                                        <p className="text-xs mt-1">目前没有需要您处理的待办事项。</p>
+                                        <p className="font-black text-foreground">{t.allCaughtUpTitle}</p>
+                                        <p className="text-xs mt-1">{t.allCaughtUpDesc}</p>
                                     </div>
                                 )}
                             </div>
@@ -257,12 +298,12 @@ const ProviderDashboard = () => {
                         <section className="bg-white p-6 rounded-[32px] border border-border/50 shadow-sm">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h3 className="font-black text-lg">营收概览</h3>
-                                    <p className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-tight">本周主要经营指标</p>
+                                    <h3 className="font-black text-lg">{t.revenueOverview}</h3>
+                                    <p className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-tight">{t.revenueSubtitle}</p>
                                 </div>
                                 <div className="flex gap-2 bg-muted p-1 rounded-xl">
-                                    <button className="px-4 py-1.5 text-xs font-black bg-white rounded-lg shadow-sm">周</button>
-                                    <button className="px-4 py-1.5 text-xs font-black text-muted-foreground">月</button>
+                                    <button className="px-4 py-1.5 text-xs font-black bg-white rounded-lg shadow-sm">{t.week}</button>
+                                    <button className="px-4 py-1.5 text-xs font-black text-muted-foreground">{t.month}</button>
                                 </div>
                             </div>
 
@@ -292,15 +333,15 @@ const ProviderDashboard = () => {
                             <div className="grid grid-cols-3 gap-4 mt-10 pt-8 border-t">
                                 <div className="text-center border-r">
                                     <p className="text-2xl font-black text-foreground">{formatMoney(totalRevenue)}</p>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">总计收入</p>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{t.totalRevenue}</p>
                                 </div>
                                 <div className="text-center border-r">
                                     <p className="text-2xl font-black text-foreground">{myOrders.length}</p>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">总订单量</p>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{t.totalOrders}</p>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-2xl font-black text-green-600">{activeOrdersCount}</p>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">活跃订单</p>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{t.activeOrders}</p>
                                 </div>
                             </div>
                         </section>
@@ -313,7 +354,7 @@ const ProviderDashboard = () => {
                         <section className="bg-white p-6 rounded-[32px] border border-border/50 shadow-sm">
                             <h3 className="font-black text-sm uppercase tracking-widest text-foreground mb-4 flex items-center gap-2">
                                 <Package className="w-4 h-4 text-emerald-500" />
-                                快捷库存库
+                                {t.quickInventory}
                             </h3>
                             <div className="space-y-4">
                                 {myListingItems.map((item) => (
@@ -323,7 +364,7 @@ const ProviderDashboard = () => {
                                                 <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs">{(item.nameEn || item.nameZh)?.[0]}</div>
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold truncate max-w-[120px]">{item.nameEn || item.nameZh || '商品规格'}</p>
+                                                <p className="text-sm font-bold truncate max-w-[120px]">{item.nameEn || item.nameZh || t.itemFallback}</p>
                                                 <p className="text-[10px] font-black text-primary">${item.pricing.price.amount / 100}</p>
                                             </div>
                                         </div>
@@ -339,14 +380,14 @@ const ProviderDashboard = () => {
                                     className="w-full rounded-2xl text-xs font-bold text-primary hover:bg-primary/5 mt-2"
                                     onClick={() => navigate(`/provider/${currentUser.providerProfileId}?tab=inventory`)}
                                 >
-                                    进入完整库存管理 →
+                                    {t.fullInventory}
                                 </Button>
                             </div>
                         </section>
 
                         {/* 2. Management Shortcuts Grid */}
                         <section className="bg-[#1A1C1E] p-6 rounded-[32px] shadow-xl text-white">
-                            <h3 className="font-black text-sm uppercase tracking-widest text-white/50 mb-6">管理驾驶舱</h3>
+                            <h3 className="font-black text-sm uppercase tracking-widest text-white/50 mb-6">{t.cockpit}</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => navigate('/my-listings')}
@@ -355,7 +396,7 @@ const ProviderDashboard = () => {
                                     <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                                         <Package className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-black tracking-tight">我的发布</span>
+                                    <span className="text-xs font-black tracking-tight">{t.myListings}</span>
                                 </button>
                                 <button
                                     onClick={() => navigate('/provider/orders')}
@@ -364,7 +405,7 @@ const ProviderDashboard = () => {
                                     <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
                                         <Clock className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-black tracking-tight">订单流水</span>
+                                    <span className="text-xs font-black tracking-tight">{t.orderHistory}</span>
                                 </button>
                                 <button
                                     onClick={() => navigate('/chat')}
@@ -373,7 +414,7 @@ const ProviderDashboard = () => {
                                     <div className="w-10 h-10 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
                                         <MessageSquare className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-black tracking-tight">私信咨询</span>
+                                    <span className="text-xs font-black tracking-tight">{t.messages}</span>
                                 </button>
                                 <button
                                     onClick={() => navigate(`/provider/${currentUser.providerProfileId}?tab=coupons`)}
@@ -382,7 +423,7 @@ const ProviderDashboard = () => {
                                     <div className="w-10 h-10 rounded-2xl bg-rose-500/20 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
                                         <Ticket className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-black tracking-tight">优惠券</span>
+                                    <span className="text-xs font-black tracking-tight">{t.coupons}</span>
                                 </button>
                                 <button
                                     onClick={() => navigate('/publish')}
@@ -391,7 +432,7 @@ const ProviderDashboard = () => {
                                     <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white group-hover:rotate-90 transition-transform">
                                         <PlusCircle className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-black tracking-tight">新增服务</span>
+                                    <span className="text-xs font-black tracking-tight">{t.addListing}</span>
                                 </button>
                             </div>
                         </section>

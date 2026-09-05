@@ -38,8 +38,8 @@ const Terms = () => {
             {
                 title: language === 'zh' ? '4. 费用与支付' : '4. Fees and Payments',
                 content: language === 'zh'
-                    ? '用户同意支付所购买服务/商品的费用。平台可能会收取一定的服务费或佣金。所有支付通过安全的第三方支付处理商进行。除非另有说明，否则支付后不予退款，具体以取消政策为准。'
-                    : 'Users agree to pay for services/goods purchased. The platform may charge service fees or commissions. All payments are processed through secure third-party processors. Payments are non-refundable unless stated otherwise in the cancellation policy.'
+                    ? '目前平台不处理服务/商品的付款——买卖双方需自行在线下协商并完成付款。平台不对线下支付的金额、方式或纠纷承担责任。未来版本上线担保交易/在线支付功能后，本条款将相应更新。'
+                    : 'The platform does not currently process payment for services or goods — buyers and sellers arrange and complete payment directly, off-platform. The platform is not responsible for the amount, method, or any dispute arising from an off-platform payment. This section will be updated if/when an on-platform payment or escrow feature is introduced.'
             },
             {
                 title: language === 'zh' ? '5. 责任限制与免责' : '5. Limitation of Liability',
@@ -52,6 +52,12 @@ const Terms = () => {
                 content: language === 'zh'
                     ? '我们保留随时修改条款的权利。修改后的条款将在发布时生效。继续使用服务即表示您接受修改后的条款。'
                     : 'We reserve the right to modify these terms at any time. Changes are effective upon posting. Continued use of the service constitutes acceptance of the modified terms.'
+            },
+            {
+                title: language === 'zh' ? '7. 适用法律与管辖' : '7. Governing Law & Jurisdiction',
+                content: language === 'zh'
+                    ? '本条款受加拿大安大略省法律管辖并据其解释，不适用其法律冲突原则。因本条款或使用本平台引起的任何争议，双方同意提交安大略省有管辖权的法院专属管辖。'
+                    : 'These Terms are governed by and construed in accordance with the laws of the Province of Ontario, Canada, without regard to conflict of law principles. Any dispute arising out of or relating to these Terms or your use of the platform shall be subject to the exclusive jurisdiction of the courts of Ontario.'
             }
         ]
     };

@@ -46,6 +46,12 @@ const Privacy = () => {
                 content: language === 'zh'
                     ? '根据相关法律，您拥有访问、更正、删除个人信息的权利。您可以通过“设置”页面管理您的账户信息，或联系我们要注销账户。'
                     : 'Subject to applicable laws, you have the right to access, correct, and delete your personal information. You can manage your account info via "Settings" or contact us to delete your account.'
+            },
+            {
+                title: language === 'zh' ? '6. 适用法律与管辖' : '6. Governing Law & Jurisdiction',
+                content: language === 'zh'
+                    ? '本政策受加拿大安大略省法律管辖。我们对个人信息的收集、使用和披露遵循《个人信息保护和电子文件法》（PIPEDA）及安大略省适用的隐私法规。如您对我们处理个人信息的方式有疑虑，可联系加拿大隐私专员公署（Office of the Privacy Commissioner of Canada）寻求进一步指导。'
+                    : 'This policy is governed by the laws of the Province of Ontario, Canada. Our collection, use, and disclosure of personal information follows the Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable Ontario privacy regulations. If you have concerns about how we handle your personal information, you may contact the Office of the Privacy Commissioner of Canada for further guidance.'
             }
         ]
     };
