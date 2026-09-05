@@ -1,5 +1,10 @@
 import { ListingMaster, ListingItem, User, ProviderProfile } from "@/types/domain";
-// ... (imports)
+import { Link } from "react-router-dom";
+import { ArrowLeft, Calendar, MapPin, MessageCircle, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useConfigStore } from "@/stores/configStore";
+import { getTranslation } from "@/stores/listingStore";
 
 interface TaskDetailViewProps {
     master: ListingMaster;
@@ -68,7 +73,7 @@ export const TaskDetailView = ({ master, item, author, onQuote, onChat }: TaskDe
                 </div>
 
                 <Link to={`/provider/${author?.id}`} className="flex items-center gap-4 p-4 bg-muted/30 rounded-3xl mb-8 hover:bg-muted/50 transition-colors cursor-pointer block">
-                    <img src={author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${author.id}`} className="w-12 h-12 rounded-2xl bg-white shadow-sm object-cover" />
+                    <img src={author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${author?.id}`} className="w-12 h-12 rounded-2xl bg-white shadow-sm object-cover" />
                     <div>
                         <p className="text-xs font-bold text-muted-foreground uppercase">{t.postedBy}</p>
                         <p className="font-black text-lg">

@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { DashboardCards } from "@/components/profile/DashboardCards";
 import { MenuLinks } from "@/components/profile/MenuLinks";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -62,7 +63,7 @@ const Profile = () => {
             items: [
                 { icon: Package, label: t.orders, path: '/orders' },
                 { icon: Layout, label: t.listings, path: '/my-listings' },
-                { icon: CreditCard, label: t.wallet, path: '/wallet', badge: currentUser.beansBalance },
+                ...(PAYMENTS_ENABLED ? [{ icon: CreditCard, label: t.wallet, path: '/wallet', badge: currentUser.beansBalance }] : []),
                 { icon: MapPin, label: t.address, path: '/addresses' },
             ]
         },

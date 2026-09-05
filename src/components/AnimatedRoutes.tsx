@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "./PageTransition";
 import { Loading } from "./Loading";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 // Critical Path (Static Import)
 import Index from "../pages/Index";
@@ -70,8 +71,8 @@ export const AnimatedRoutes = () => {
                     <Route path="/messages" element={<PageTransition><Chat /></PageTransition>} />
                     <Route path="/orders" element={<PageTransition><Orders /></PageTransition>} />
                     <Route path="/orders/:id" element={<PageTransition><OrderDetail /></PageTransition>} />
-                    <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />
-                    <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />
+                    {PAYMENTS_ENABLED && <Route path="/checkout" element={<PageTransition><Checkout /></PageTransition>} />}
+                    {PAYMENTS_ENABLED && <Route path="/cart" element={<PageTransition><Cart /></PageTransition>} />}
                     <Route path="/community" element={<PageTransition><Community /></PageTransition>} />
                     <Route path="/community/:id" element={<PageTransition><CommunityPostDetail /></PageTransition>} />
                     <Route path="/user/:userId" element={<PageTransition><UserProfile /></PageTransition>} />
@@ -84,10 +85,10 @@ export const AnimatedRoutes = () => {
                     <Route path="/about" element={<PageTransition><About /></PageTransition>} />
                     <Route path="/settings/profile" element={<PageTransition><PersonalProfile /></PageTransition>} />
                     <Route path="/settings/language" element={<PageTransition><LanguageSettings /></PageTransition>} />
-                    <Route path="/wallet" element={<PageTransition><Wallet /></PageTransition>} />
+                    {PAYMENTS_ENABLED && <Route path="/wallet" element={<PageTransition><Wallet /></PageTransition>} />}
                     <Route path="/addresses" element={<PageTransition><Addresses /></PageTransition>} />
-                    <Route path="/scan/:id" element={<PageTransition><QuickScanCheckout /></PageTransition>} />
-                    <Route path="/payment-success" element={<PageTransition><PaymentSuccess /></PageTransition>} />
+                    {PAYMENTS_ENABLED && <Route path="/scan/:id" element={<PageTransition><QuickScanCheckout /></PageTransition>} />}
+                    {PAYMENTS_ENABLED && <Route path="/payment-success" element={<PageTransition><PaymentSuccess /></PageTransition>} />}
                     <Route path="/discover" element={<PageTransition><MapDiscovery /></PageTransition>} />
                     <Route path="/user/:userId/followers" element={<PageTransition><ComingSoon /></PageTransition>} />
                     <Route path="/user/:userId/following" element={<PageTransition><ComingSoon /></PageTransition>} />

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { SellerQuoteModal } from "@/components/checkout/SellerQuoteModal";
 import { useMessageStore } from "@/stores/messageStore";
 import { Order } from "@/types/orders";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 const Orders = () => {
     const navigate = useNavigate();
@@ -97,6 +98,19 @@ const Orders = () => {
     const handlePayOrder = async (orderId: string) => {
         const order = orders.find(o => o.id === orderId);
         if (!order) return;
+
+        // Payments/escrow are deferred to v2 (see src/config/launchFlags.ts) —
+        // confirm the order and let the two sides settle payment off-platform
+        // instead of collecting through Stripe.
+        if (!PAYMENTS_ENABLED) {
+            await updateOrderStatus(orderId, 'IN_PROGRESS');
+            toast.success(
+                order.pricing.total.amount > 0
+                    ? `Confirmed — please arrange payment (${order.pricing.total.formatted}) directly with them.`
+                    : 'Confirmed!'
+            );
+            return;
+        }
 
         // If it's a paid order (amount > 0), trigger Stripe
         if (order.pricing.total.amount > 0) {
@@ -365,7 +379,7 @@ const Orders = () => {
                                     {viewMode === 'buyer' && order.status === 'PENDING_PAYMENT' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
                                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'CANCELLED'); }}>Cancel</Button>
-                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); handlePayOrder(order.id); }}>Pay Now</Button>
+                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); handlePayOrder(order.id); }}>{PAYMENTS_ENABLED ? 'Pay Now' : 'Confirm'}</Button>
                                         </div>
                                     )}
                                     {viewMode === 'buyer' && order.status === 'IN_PROGRESS' && (
@@ -377,7 +391,7 @@ const Orders = () => {
                                     {viewMode === 'buyer' && order.status === 'WAITING_FOR_PRICE_APPROVAL' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
                                             <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleRejectQuote(order.id); }}>Reject</Button>
-                                            <Button size="sm" className="btn-action bg-blue-600 hover:bg-blue-700" onClick={(e) => { e.stopPropagation(); handleAcceptQuote(order.id); }}>Accept & Pay</Button>
+                                            <Button size="sm" className="btn-action bg-blue-600 hover:bg-blue-700" onClick={(e) => { e.stopPropagation(); handleAcceptQuote(order.id); }}>{PAYMENTS_ENABLED ? 'Accept & Pay' : 'Accept Quote'}</Button>
                                         </div>
                                     )}
 

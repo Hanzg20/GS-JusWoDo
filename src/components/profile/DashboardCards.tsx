@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { CreditCard, Milestone, Star } from "lucide-react";
 import { useConfigStore } from "@/stores/configStore";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 interface DashboardCardsProps {
     currentUser: any;
@@ -20,21 +21,25 @@ export function DashboardCards({ currentUser, isProvider }: DashboardCardsProps)
         becomePro: language === 'zh' ? '成为服务商' : 'Become a Pro',
         verifyNow: language === 'zh' ? '去认证' : 'Verify Now',
         earnBeans: language === 'zh' ? '赚取金豆' : 'Earn Beans',
+        comingSoon: language === 'zh' ? '即将上线' : 'Coming Soon',
     };
 
     return (
         <div className="grid grid-cols-2 gap-4">
-            {/* Wallet Card */}
+            {/* Wallet Card — top-up/withdraw is v2 (see src/config/launchFlags.ts),
+                so this is informational only until payments go live */}
             <div
-                className="bg-gradient-to-br from-amber-500 to-orange-600 p-5 rounded-[28px] text-white shadow-lg shadow-orange-500/20 active:scale-95 transition-all cursor-pointer group relative overflow-hidden"
-                onClick={() => navigate('/wallet')}
+                className={`bg-gradient-to-br from-amber-500 to-orange-600 p-5 rounded-[28px] text-white shadow-lg shadow-orange-500/20 transition-all group relative overflow-hidden ${PAYMENTS_ENABLED ? 'active:scale-95 cursor-pointer' : ''}`}
+                onClick={PAYMENTS_ENABLED ? () => navigate('/wallet') : undefined}
             >
                 <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-5 -mt-5 blur-xl group-hover:bg-white/20 transition-all" />
 
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-80 relative z-10">{t.walletTitle}</p>
                 <p className="text-3xl font-black mt-2 leading-none tracking-tight relative z-10">{currentUser.beansBalance}</p>
                 <div className="mt-4 flex items-center justify-between relative z-10">
-                    <span className="text-[10px] font-bold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full group-hover:bg-white/30 transition-all">{t.topUp}</span>
+                    <span className="text-[10px] font-bold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full group-hover:bg-white/30 transition-all">
+                        {PAYMENTS_ENABLED ? t.topUp : t.comingSoon}
+                    </span>
                     <CreditCard className="w-5 h-5 opacity-60" />
                 </div>
             </div>

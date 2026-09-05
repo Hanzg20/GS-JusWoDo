@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 interface QuoteRequestFlowProps {
     isOpen: boolean;
@@ -161,7 +162,9 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item }: QuoteRequest
             </div>
 
             <Button className="w-full h-12 text-lg font-bold" onClick={handleSubmit}>
-                {isVisitFee ? `Continue to Payment ($${item.pricing.price.amount / 100})` : 'Submit Request'}
+                {isVisitFee
+                    ? (PAYMENTS_ENABLED ? `Continue to Payment ($${item.pricing.price.amount / 100})` : 'Request Assessment')
+                    : 'Submit Request'}
             </Button>
             <div className="flex justify-center mt-4">
                 <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground">
@@ -181,14 +184,14 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item }: QuoteRequest
                 <h3 className="text-2xl font-black">Request Sent!</h3>
                 <p className="text-muted-foreground max-w-xs mx-auto">
                     {isVisitFee
-                        ? "Please complete the payment to confirm your visit."
+                        ? (PAYMENTS_ENABLED ? "Please complete the payment to confirm your visit." : "The provider will contact you to confirm the visit and arrange payment directly.")
                         : "The provider has been notified. Check your 'Orders' tab for their response."}
                 </p>
             </div>
 
             <div className="flex flex-col w-full gap-3 pt-4">
                 <Button className="w-full h-12 font-bold" onClick={() => navigate('/orders')}>
-                    {isVisitFee ? 'Pay Visit Fee' : 'View Status'}
+                    {isVisitFee ? (PAYMENTS_ENABLED ? 'Pay Visit Fee' : 'View Status') : 'View Status'}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={onClose}>
                     Close

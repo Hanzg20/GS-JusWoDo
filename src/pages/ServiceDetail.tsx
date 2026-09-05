@@ -8,6 +8,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { ListingMaster, ListingItem } from "@/types/domain";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { useServiceAreaMonitor } from "@/hooks/useGeofencing";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 // Sub-components
 import { ServiceHero } from "@/components/service-detail/ServiceHero";
@@ -97,50 +98,12 @@ const ServiceDetail = () => {
 
   if (!master) return <div className="p-8 text-center text-muted-foreground">{t.notFound}</div>;
 
-  // --- SPECIALIZED VIEWS ---
-  if (master.type === 'GOODS' && selectedItem) {
-    return (
-      <>
-        <SEO
-          title={`${getTranslation(master, 'title')} | $${selectedItem.pricing.price.amount / 100}`}
-          description={getTranslation(master, 'description').substring(0, 160)}
-          image={master.images[0]}
-          type="product"
-        />
-        <GoodsDetailView
-          master={master}
-          item={selectedItem}
-          items={items}
-          provider={provider}
-          onBuy={() => navigate(`/checkout?item_id=${selectedItem.id}`)}
-          onChat={() => navigate('/chat')}
-          onSelect={setSelectedItem}
-        />
-      </>
-    );
-  }
-
-  if (master.type === 'TASK' && selectedItem) {
-    return (
-      <>
-        <SEO
-          title={`${getTranslation(master, 'title')} | $${selectedItem.pricing.price.amount / 100}`}
-          description={getTranslation(master, 'description').substring(0, 160)}
-          image={master.images[0]}
-        />
-        <TaskDetailView
-          master={master}
-          item={selectedItem}
-          author={provider}
-          onQuote={() => setIsQuoteOpen(true)}
-          onChat={() => navigate('/chat')}
-        />
-      </>
-    );
-  }
-
-  // --- DEFAULT SERVICE VIEW ---
-
+  // Quote/Book/Buy all funnel through the same QuoteRequestFlow modal while
+  // payments are disabled (see src/config/launchFlags.ts) — it creates the
+  // order+conversation pair that both "review after contact, no payment
+  // required" (OrderDetail.tsx) and provider follow-up depend on. Rendered
+  // once below so it's available to every specialized view, not just the
+  // default one.
   const categoryInfo = refCodes.find(r => r.codeId === master.categoryId);
 
   // Animation Variants
@@ -165,97 +128,154 @@ const ServiceDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <SEO
-        title={`${getTranslation(master, 'title')} ${selectedItem ? `| $${selectedItem.pricing.price.amount / 100}` : ''}`}
-        description={getTranslation(master, 'description').substring(0, 160)}
-        image={master.images[0]}
-        type="product"
-      />
-
-      <ServiceHero
-        images={master.images}
-        title={getTranslation(master, 'title')}
-        description={getTranslation(master, 'description')}
-        providerName={provider ? (provider.businessNameEn || provider.businessNameZh || provider.name) : undefined}
-        providerId={provider?.id}
-        isLiked={isLiked}
-        onLikeToggle={() => setIsLiked(!isLiked)}
-      />
-
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="container max-w-4xl px-4 -mt-6 relative z-10"
-      >
-        <motion.div variants={itemVariants}>
-          <ServiceProviderCard
-            provider={provider}
-            master={master}
-            distance={distance}
-            isInArea={isInArea}
-            onChat={() => navigate('/chat')}
+    <>
+      {master.type === 'GOODS' && selectedItem ? (
+        <>
+          <SEO
+            title={`${getTranslation(master, 'title')} | $${selectedItem.pricing.price.amount / 100}`}
+            description={getTranslation(master, 'description').substring(0, 160)}
+            image={master.images[0]}
+            type="product"
           />
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <ServiceInfo
+          <GoodsDetailView
             master={master}
-            categoryName={categoryInfo ? getTranslation(categoryInfo, 'name') : undefined}
-          />
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <ServiceSkuPicker
+            item={selectedItem}
             items={items}
-            selectedItem={selectedItem}
+            provider={provider}
+            onBuy={() => PAYMENTS_ENABLED ? navigate(`/checkout?item_id=${selectedItem.id}`) : setIsQuoteOpen(true)}
+            onChat={() => navigate('/chat')}
             onSelect={setSelectedItem}
           />
-        </motion.div>
+        </>
+      ) : master.type === 'TASK' && selectedItem ? (
+        <>
+          <SEO
+            title={`${getTranslation(master, 'title')} | $${selectedItem.pricing.price.amount / 100}`}
+            description={getTranslation(master, 'description').substring(0, 160)}
+            image={master.images[0]}
+          />
+          <TaskDetailView
+            master={master}
+            item={selectedItem}
+            author={provider}
+            onQuote={() => setIsQuoteOpen(true)}
+            onChat={() => navigate('/chat')}
+          />
+        </>
+      ) : master.type === 'EVENT' && selectedItem ? (
+        <>
+          <SEO
+            title={getTranslation(master, 'title')}
+            description={getTranslation(master, 'description').substring(0, 160)}
+            image={master.images[0]}
+          />
+          <EventDetailView
+            master={master}
+            item={selectedItem}
+            provider={provider}
+            onChat={() => navigate('/chat')}
+          />
+        </>
+      ) : (
+        <div className="min-h-screen bg-background pb-32">
+          <SEO
+            title={`${getTranslation(master, 'title')} ${selectedItem ? `| $${selectedItem.pricing.price.amount / 100}` : ''}`}
+            description={getTranslation(master, 'description').substring(0, 160)}
+            image={master.images[0]}
+            type="product"
+          />
 
-        {(master.type === 'RENTAL' || master.type === 'CONSULTATION') && (
-          <motion.div variants={itemVariants} className="mt-6">
-            <ServiceConfiguration
-              master={master}
-              dateRange={dateRange}
-              setDateRange={setDateRange}
-              consultHours={consultHours}
-              setConsultHours={setConsultHours}
-            />
+          <ServiceHero
+            listingId={master.id}
+            images={master.images}
+            title={getTranslation(master, 'title')}
+            description={getTranslation(master, 'description')}
+            providerName={provider ? (provider.businessNameEn || provider.businessNameZh || provider.name) : undefined}
+            providerId={provider?.id}
+            isLiked={isLiked}
+            onLikeToggle={() => setIsLiked(!isLiked)}
+          />
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="container max-w-4xl px-4 -mt-6 relative z-10"
+          >
+            <motion.div variants={itemVariants}>
+              <ServiceProviderCard
+                provider={provider}
+                master={master}
+                distance={distance}
+                isInArea={isInArea}
+                onChat={() => navigate('/chat')}
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <ServiceInfo
+                master={master}
+                categoryName={categoryInfo ? getTranslation(categoryInfo, 'name') : undefined}
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <ServiceSkuPicker
+                items={items}
+                selectedItem={selectedItem}
+                onSelect={setSelectedItem}
+              />
+            </motion.div>
+
+            {(master.type === 'RENTAL' || master.type === 'CONSULTATION') && (
+              <motion.div variants={itemVariants} className="mt-6">
+                <ServiceConfiguration
+                  master={master}
+                  dateRange={dateRange}
+                  setDateRange={setDateRange}
+                  consultHours={consultHours}
+                  setConsultHours={setConsultHours}
+                />
+              </motion.div>
+            )}
+
+            <motion.div variants={itemVariants} className="mt-8">
+              {/* Enhanced Review List is internally loaded */}
+              <EnhancedReviewList listingId={master.id} />
+            </motion.div>
           </motion.div>
-        )}
 
-        <motion.div variants={itemVariants} className="mt-8">
-          {/* Enhanced Review List is internally loaded */}
-          <EnhancedReviewList listingId={master.id} />
-        </motion.div>
-      </motion.div>
+          <ServiceActions
+            master={master}
+            selectedItem={selectedItem}
+            onChat={() => navigate('/chat')}
+            onAction={() => {
+              if (master.attributes?.pricingMode === 'QUOTE') {
+                setIsQuoteOpen(true);
+              } else if (PAYMENTS_ENABLED) {
+                // Book Now / Rent Now
+                if (master.type === 'RENTAL' || master.type === 'SERVICE' || master.type === 'CONSULTATION') {
+                  setIsInstantPayOpen(true);
+                } else {
+                  // Fallback to URL nav if not using wizard
+                  const params = new URLSearchParams();
+                  params.append('item_id', selectedItem?.id || '');
+                  if (dateRange?.from) params.append('start', dateRange.from.toISOString());
+                  navigate(`/checkout?${params.toString()}`);
+                }
+              } else {
+                // Payments deferred to v2 — same request+chat flow as the QUOTE
+                // pricing mode instead of the (real-money-free but misleadingly
+                // "PAID") InstantPayFlow wizard or a live Stripe checkout.
+                setIsQuoteOpen(true);
+              }
+            }}
+          />
+        </div>
+      )}
 
-      <ServiceActions
-        master={master}
-        selectedItem={selectedItem}
-        onChat={() => navigate('/chat')}
-        onAction={() => {
-          if (master.attributes?.pricingMode === 'QUOTE') {
-            setIsQuoteOpen(true);
-          } else {
-            // Book Now / Rent Now
-            if (master.type === 'RENTAL' || master.type === 'SERVICE' || master.type === 'CONSULTATION') {
-              setIsInstantPayOpen(true);
-            } else {
-              // Fallback to URL nav if not using wizard
-              const params = new URLSearchParams();
-              params.append('item_id', selectedItem?.id || '');
-              if (dateRange?.from) params.append('start', dateRange.from.toISOString());
-              navigate(`/checkout?${params.toString()}`);
-            }
-          }
-        }}
-      />
-
-      {/* Modals */}
-      {selectedItem && (
+      {/* Modals — always available so GOODS/TASK views can open them too */}
+      {PAYMENTS_ENABLED && selectedItem && (
         <InstantPayFlow
           isOpen={isInstantPayOpen}
           onClose={() => setIsInstantPayOpen(false)}
@@ -274,7 +294,7 @@ const ServiceDetail = () => {
           item={selectedItem}
         />
       )}
-    </div>
+    </>
   );
 };
 

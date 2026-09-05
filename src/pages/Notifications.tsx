@@ -42,15 +42,6 @@ const Notifications = () => {
             actionPath: '/publish'
         },
         {
-            id: '2',
-            type: 'TRANSACTION',
-            title: language === 'zh' ? '获得新人奖励' : 'Welcome Bonus Received',
-            content: language === 'zh' ? '祝贺！您已获得 100 金豆奖励。' : 'Congratulations! You have received 100 JinBeans as a welcome bonus.',
-            isRead: true,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            actionPath: '/wallet'
-        },
-        {
             id: '3',
             type: 'COMMUNITY',
             title: language === 'zh' ? '实名认证建议' : 'Verification Recommended',

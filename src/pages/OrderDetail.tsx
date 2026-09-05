@@ -12,6 +12,7 @@ import { OrderStatus, Order } from "@/types/orders";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { QuoteDialog } from "@/components/orders/QuoteDialog";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 const OrderDetail = () => {
     const { id } = useParams();
@@ -39,6 +40,7 @@ const OrderDetail = () => {
         quoteApproveError: language === 'zh' ? '批准报价失败' : 'Failed to approve quote',
         payNow: language === 'zh' ? '立即支付' : 'Pay Now',
         payDeposit: language === 'zh' ? '支付押金' : 'Pay Deposit',
+        confirmOffline: language === 'zh' ? '确认订单（线下付款）' : 'Confirm (Pay Offline)',
         approvePrice: language === 'zh' ? '批准价格' : 'Approve Price',
         confirmComplete: language === 'zh' ? '确认完成' : 'Confirm Complete',
         writeReview: language === 'zh' ? '写评价' : 'Write Review',
@@ -169,6 +171,20 @@ const OrderDetail = () => {
 
     const handlePay = async () => {
         setIsLoading(true);
+        // Payments/escrow are deferred to v2 (see src/config/launchFlags.ts) —
+        // confirm the order and let the two sides settle payment
+        // off-platform instead of collecting through Stripe.
+        if (!PAYMENTS_ENABLED) {
+            try {
+                await updateOrderStatus(order.id, 'IN_PROGRESS');
+                toast.success(language === 'zh' ? '已确认，请与对方线下完成付款' : 'Confirmed — please arrange payment with them directly.');
+            } catch (e) {
+                toast.error(t.updateError);
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
         try {
             const { data, error } = await supabase.functions.invoke('create-checkout-session', {
                 headers: {
@@ -374,12 +390,12 @@ const OrderDetail = () => {
 
                                     {isBuyer && order.status === 'PENDING_PAYMENT' && (
                                         <Button className="flex-1 btn-action" onClick={handlePay} disabled={isLoading}>
-                                            {t.payNow}
+                                            {PAYMENTS_ENABLED ? t.payNow : t.confirmOffline}
                                         </Button>
                                     )}
                                     {isBuyer && order.status === 'PENDING_DEPOSIT' && (
                                         <Button className="flex-1 btn-action bg-orange-600 hover:bg-orange-700 text-white" onClick={handlePay} disabled={isLoading}>
-                                            {t.payDeposit}
+                                            {PAYMENTS_ENABLED ? t.payDeposit : t.confirmOffline}
                                         </Button>
                                     )}
                                     {isBuyer && order.status === 'WAITING_FOR_PRICE_APPROVAL' && (
@@ -393,7 +409,10 @@ const OrderDetail = () => {
                                         </Button>
                                     )}
 
-                                    {isBuyer && order.status === 'COMPLETED' && (
+                                    {/* Review doesn't require payment/completion — any contact (an
+                                        order was created the moment a message was sent) is enough,
+                                        same as Facebook Marketplace. */}
+                                    {isBuyer && order.status !== 'CANCELLED' && (
                                         <Button className="flex-1 bg-secondary hover:bg-secondary/90 text-white font-black uppercase tracking-widest rounded-xl" onClick={() => navigate(`/review/${order.id}`)}>
                                             {t.writeReview}
                                         </Button>

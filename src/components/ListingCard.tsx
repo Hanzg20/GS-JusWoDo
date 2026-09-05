@@ -27,7 +27,8 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
 
     const displayTitle = getLocalized(item.titleEn, item.titleZh);
     const displayBusinessName = provider ? getLocalized(provider.businessNameEn, provider.businessNameZh) : '';
-    const displayNodeName = nodeInfo ? getLocalized(nodeInfo.enName, nodeInfo.zhName) : undefined;
+    // Neighborhood names are always English — see NodePicker.tsx.
+    const displayNodeName = nodeInfo ? (nodeInfo.enName || nodeInfo.zhName) : undefined;
 
     // Cheapest item's full pricing (not just the amount) — the model field
     // is what actually tells us how to *say* the price, not just what
@@ -235,10 +236,11 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                                     {item.distanceApprox && '~'}{(item.distanceMeters / 1000).toFixed(1)}km
                                 </span>
                             )}
-                            {/* Rental-specific: deposit is the second most important
-                                number after the rate, kept on the same line so it
-                                doesn't grow the card past its fixed row height */}
-                            {item.type === 'RENTAL' && cheapestPricing?.deposit && cheapestPricing.deposit.amount > 0 && (
+                            {/* Any item can carry a deposit (RENTAL security holds,
+                                but also a SERVICE order deposit like a custom cake) —
+                                kept on the same line so it doesn't grow the card past
+                                its fixed row height */}
+                            {cheapestPricing?.deposit && cheapestPricing.deposit.amount > 0 && (
                                 <span className="ml-1 pl-1 border-l border-border/60 text-muted-foreground/70">
                                     {language === 'zh' ? '押金' : 'Dep.'} {priceLabel.isPrice ? priceLabel.currencySymbol : (language === 'zh' ? '¥' : '$')}{(cheapestPricing.deposit.amount / 100).toFixed(0)}
                                 </span>

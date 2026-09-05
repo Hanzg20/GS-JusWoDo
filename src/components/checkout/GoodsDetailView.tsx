@@ -8,6 +8,7 @@ import { getTranslation } from "@/stores/listingStore";
 import { useConfigStore } from "@/stores/configStore";
 import { ShareSheet } from "@/components/common/ShareSheet";
 import { MediaEmbed } from "@/components/Community/MediaEmbed";
+import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 
 interface GoodsDetailViewProps {
     master: ListingMaster;
@@ -32,7 +33,7 @@ export const GoodsDetailView = ({ master, item, items = [], provider, onBuy, onC
         condition: language === 'zh' ? '成色' : 'Condition',
         brand: language === 'zh' ? '品牌' : 'Brand',
         chat: language === 'zh' ? '联系卖家' : 'Chat',
-        buyNow: language === 'zh' ? '立即购买' : 'Buy Now',
+        buyNow: PAYMENTS_ENABLED ? (language === 'zh' ? '立即购买' : 'Buy Now') : (language === 'zh' ? '联系购买' : 'Chat to Buy'),
         postedBy: language === 'zh' ? '发布者' : 'Posted by',
         location: language === 'zh' ? '位置' : 'Location',
         selectOption: language === 'zh' ? '选择规格' : 'Select Option',

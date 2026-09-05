@@ -21,6 +21,9 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
         rentNow: language === 'zh' ? '立即租赁' : 'Rent Now',
         bookTime: language === 'zh' ? '预约时间' : 'Book Time',
         deposit: language === 'zh' ? '押金 (可退)' : 'Ref. Deposit',
+        free: language === 'zh' ? '免费' : 'Free',
+        haveThis: language === 'zh' ? '我有这个' : 'I Have This',
+        claimIt: language === 'zh' ? '免费领取' : 'Claim It',
     };
 
     const getActionButtonText = () => {
@@ -29,26 +32,33 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
             case 'RENTAL': return t.rentNow;
             case 'CONSULTATION': return t.bookTime;
             case 'SERVICE': return t.bookNow;
+            case 'WANTED': return t.haveThis;
+            case 'FREE_GIVEAWAY': return t.claimIt;
             default: return t.bookNow;
         }
     };
 
     const renderPricingCard = () => {
         if (!selectedItem) return null;
+        const isFree = selectedItem.pricing.price.amount === 0;
         return (
             <div className="flex flex-col">
-                <div className="flex items-baseline gap-1">
-                    <span className="text-xs font-bold text-muted-foreground">$</span>
-                    <span className="text-2xl font-black text-primary tracking-tighter">
-                        {selectedItem.pricing.price.amount / 100}
-                    </span>
-                    <span className="text-xs font-bold text-muted-foreground uppercase">
-                        /{selectedItem.pricing.unit || 'unit'}
-                    </span>
-                </div>
-                {master?.type === 'RENTAL' && (
+                {isFree ? (
+                    <span className="text-2xl font-black text-primary tracking-tighter">{t.free}</span>
+                ) : (
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-xs font-bold text-muted-foreground">$</span>
+                        <span className="text-2xl font-black text-primary tracking-tighter">
+                            {selectedItem.pricing.price.amount / 100}
+                        </span>
+                        <span className="text-xs font-bold text-muted-foreground uppercase">
+                            /{selectedItem.pricing.unit || 'unit'}
+                        </span>
+                    </div>
+                )}
+                {selectedItem.pricing.deposit && selectedItem.pricing.deposit.amount > 0 && (
                     <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md w-fit">
-                        {t.deposit}: ${selectedItem.pricing.deposit?.amount ? selectedItem.pricing.deposit.amount / 100 : 0}
+                        {t.deposit}: ${selectedItem.pricing.deposit.amount / 100}
                     </span>
                 )}
             </div>
@@ -72,7 +82,7 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
                     {/* Action Button */}
                     {master.attributes?.pricingMode === 'NEGOTIABLE' ? (
                         <Button
-                            onClick={onChat}
+                            onClick={onAction}
                             className="btn-action h-14 flex-1 max-w-[200px] text-sm font-black uppercase tracking-widest shadow-elevated rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                         >
                             {t.contactPrice}
