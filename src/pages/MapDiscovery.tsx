@@ -10,7 +10,7 @@ import { Loader2, MapPin, Filter, Star, X } from 'lucide-react';
 import { useLocation } from '@/hooks/useLocation';
 import { repositoryFactory } from '@/services/repositories/factory';
 import { ListingMaster, ListingType } from '@/types/domain';
-import { useConfigStore } from '@/stores/configStore';
+import { useConfigStore, SERVICE_AREA_RADIUS_METERS } from '@/stores/configStore';
 import { toast } from 'sonner';
 import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
@@ -43,12 +43,14 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Custom Icons for different types
+// Custom Icons for different types — avoiding blue/green entirely since
+// OpenStreetMap tiles are themselves blue (water) and green (parks), which
+// made markers nearly invisible against the basemap.
 const getIcon = (type: ListingType) => {
-    let color = '#3b82f6'; // Default blue
-    if (type === 'GOODS') color = '#10b981'; // Green
-    if (type === 'TASK') color = '#f59e0b'; // Orange
-    if (type === 'RENTAL') color = '#8b5cf6'; // Purple
+    let color = '#dc2626'; // Default: crimson
+    if (type === 'GOODS') color = '#db2777'; // Magenta
+    if (type === 'TASK') color = '#f59e0b'; // Amber
+    if (type === 'RENTAL') color = '#7c3aed'; // Purple
 
     return L.divIcon({
         html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
@@ -113,7 +115,12 @@ const MapDiscovery = () => {
     const searchQuery = searchParams.get('q');
     const searchCategory = searchParams.get('category');
 
-    const fetchListings = useCallback(async (lat: number, lng: number, radius: number = 5000) => {
+    // Default radius matches the whole pilot service area, not a tight
+    // walkable distance — with only a handful of listings total, all
+    // clustered in one neighborhood, a small default (previously 5km) meant
+    // almost nobody saw anything unless they were standing right in that
+    // neighborhood or happened to pan/zoom there manually.
+    const fetchListings = useCallback(async (lat: number, lng: number, radius: number = SERVICE_AREA_RADIUS_METERS) => {
         setLoading(true);
         try {
             const repo = repositoryFactory.getListingRepository();

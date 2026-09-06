@@ -66,15 +66,18 @@ export const calculateCompleteness = (
  */
 export const validateField = (
     field: FieldDefinition,
-    value: any
+    value: any,
+    language: 'zh' | 'en' = 'zh'
 ): string | null => {
+    const isZh = language === 'zh';
+
     // Required validation
     if (field.importance === 'required') {
         if (value === undefined || value === null || value === '') {
-            return `${field.label}为必填项`;
+            return isZh ? `${field.label}为必填项` : `${field.label} is required`;
         }
         if (Array.isArray(value) && value.length === 0) {
-            return `${field.label}为必填项`;
+            return isZh ? `${field.label}为必填项` : `${field.label} is required`;
         }
     }
 
@@ -85,37 +88,37 @@ export const validateField = (
         // Min/Max for numbers
         if (field.type === 'number' && typeof value === 'number') {
             if (min !== undefined && value < min) {
-                return `${field.label}不能小于${min}`;
+                return isZh ? `${field.label}不能小于${min}` : `${field.label} cannot be less than ${min}`;
             }
             if (max !== undefined && value > max) {
-                return `${field.label}不能大于${max}`;
+                return isZh ? `${field.label}不能大于${max}` : `${field.label} cannot be more than ${max}`;
             }
         }
 
         // Min/Max for text length
         if ((field.type === 'text' || field.type === 'textarea') && typeof value === 'string') {
             if (min !== undefined && value.length < min) {
-                return `${field.label}至少需要${min}个字符`;
+                return isZh ? `${field.label}至少需要${min}个字符` : `${field.label} needs at least ${min} characters`;
             }
             if (max !== undefined && value.length > max) {
-                return `${field.label}不能超过${max}个字符`;
+                return isZh ? `${field.label}不能超过${max}个字符` : `${field.label} cannot exceed ${max} characters`;
             }
         }
 
         // Min/Max for arrays
         if (Array.isArray(value)) {
             if (min !== undefined && value.length < min) {
-                return `${field.label}至少需要${min}项`;
+                return isZh ? `${field.label}至少需要${min}项` : `${field.label} needs at least ${min}`;
             }
             if (max !== undefined && value.length > max) {
-                return `${field.label}不能超过${max}项`;
+                return isZh ? `${field.label}不能超过${max}项` : `${field.label} cannot exceed ${max}`;
             }
         }
 
         // Pattern validation
         if (pattern && typeof value === 'string') {
             if (!pattern.test(value)) {
-                return `${field.label}格式不正确`;
+                return isZh ? `${field.label}格式不正确` : `${field.label} format is invalid`;
             }
         }
 
@@ -123,7 +126,7 @@ export const validateField = (
         if (custom) {
             const result = custom(value);
             if (result !== true) {
-                return typeof result === 'string' ? result : `${field.label}验证失败`;
+                return typeof result === 'string' ? result : (isZh ? `${field.label}验证失败` : `${field.label} failed validation`);
             }
         }
     }
@@ -136,7 +139,8 @@ export const validateField = (
  */
 export const validateAll = (
     formData: FormData,
-    config: ListingFieldsConfig
+    config: ListingFieldsConfig,
+    language: 'zh' | 'en' = 'zh'
 ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
     const allFields = config.groups.flatMap(g => g.fields);
@@ -172,7 +176,7 @@ export const validateAll = (
             }
         }
 
-        const error = validateField(field, formData[field.name]);
+        const error = validateField(field, formData[field.name], language);
         if (error) {
             errors[field.name] = error;
         }

@@ -58,6 +58,9 @@ const iconMap: Record<string, LucideIcon> = {
   // Pillars (homepage top-level nav)
   "MessageSquareQuote": Icons.MessageSquareQuote,
   "Gift": Icons.Gift,
+  "ClipboardList": Icons.ClipboardList,
+  "Camera": Icons.Camera,
+  "RefreshCw": Icons.RefreshCw,
 };
 
 /**

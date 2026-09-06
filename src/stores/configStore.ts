@@ -7,7 +7,11 @@ import { haversineMeters } from '@/lib/geo';
 // Nearest known node must be within this radius for the area to count as
 // "in service" — wide enough to cover Ottawa-Gatineau and surrounding rural
 // fringes, tight enough to exclude Montreal (~190km) or Toronto (~400km).
-const SERVICE_AREA_RADIUS_METERS = 60000;
+// Exported since MapDiscovery.tsx's default search radius reuses it — the
+// pilot's whole listing base fits inside one service area, so a map search
+// should too, rather than defaulting to a few km that only covers whichever
+// single neighborhood the viewer happens to be standing in.
+export const SERVICE_AREA_RADIUS_METERS = 60000;
 
 interface ConfigState {
     activeNodeId: string; // The selected Pilot Node (e.g. NODE_LEES)

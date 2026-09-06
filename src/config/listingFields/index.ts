@@ -1,46 +1,48 @@
 import { ListingFieldsConfig, ListingType, UserRole } from '@/types/listingFields';
-import { buyerGoodsFields, providerGoodsFields } from './goodsFields';
-import { providerServiceFields } from './serviceFields';
-import { rentalFields } from './rentalFields';
-import { taskFields } from './taskFields';
-import { giveawayFields } from './giveawayFields';
-import { wantedFields } from './wantedFields';
-import { eventFields } from './eventFields';
+import { getBuyerGoodsFields, getProviderGoodsFields } from './goodsFields';
+import { getProviderServiceFields } from './serviceFields';
+import { getRentalFields } from './rentalFields';
+import { getTaskFields } from './taskFields';
+import { getGiveawayFields } from './giveawayFields';
+import { getWantedFields } from './wantedFields';
+import { getEventFields } from './eventFields';
+
+type Lang = 'zh' | 'en';
 
 // Default fields for types that don't have specific config yet
-const defaultBasicFields: ListingFieldsConfig = {
+const getDefaultBasicFields = (language: Lang): ListingFieldsConfig => ({
     type: 'GOODS', // Placeholder, will be overridden
     role: 'buyer', // Placeholder
     groups: [
         {
-            title: '基础信息',
+            title: language === 'zh' ? '基础信息' : 'Basic Info',
             fields: [
                 {
                     name: 'title',
-                    label: '标题',
+                    label: language === 'zh' ? '标题' : 'Title',
                     type: 'text',
                     importance: 'required',
-                    placeholder: '简短清晰的标题',
+                    placeholder: language === 'zh' ? '简短清晰的标题' : 'A short, clear title',
                     validation: { min: 5, max: 100 }
                 },
                 {
                     name: 'images',
-                    label: '图片',
+                    label: language === 'zh' ? '图片' : 'Photos',
                     type: 'images',
                     importance: 'required',
                     validation: { min: 1, max: 6 }
                 },
                 {
                     name: 'description',
-                    label: '详细描述',
+                    label: language === 'zh' ? '详细描述' : 'Description',
                     type: 'textarea',
                     importance: 'required',
-                    placeholder: '详细说明...',
+                    placeholder: language === 'zh' ? '详细说明...' : 'Add details...',
                     rows: 5
                 },
                 {
                     name: 'price',
-                    label: '价格 (CAD)',
+                    label: language === 'zh' ? '价格 (CAD)' : 'Price (CAD)',
                     type: 'number',
                     importance: 'recommended',
                     placeholder: '0.00'
@@ -48,45 +50,49 @@ const defaultBasicFields: ListingFieldsConfig = {
             ]
         }
     ]
-};
+});
 
 /**
  * Get field configuration for a specific listing type and user role
  */
 export const getFieldsForType = (
     type: ListingType,
-    isProvider: boolean
+    isProvider: boolean,
+    language: Lang = 'zh'
 ): ListingFieldsConfig => {
     const role: UserRole = isProvider ? 'provider' : 'buyer';
+    const defaultBasicFields = getDefaultBasicFields(language);
 
     const fieldMap: Record<string, Record<UserRole, ListingFieldsConfig>> = {
         'GOODS': {
-            // Was mapping 'buyer' to providerGoodsFields too — buyerGoodsFields
-            // (the simplified, Facebook-Marketplace-style form) was defined but
-            // never actually reachable.
-            buyer: buyerGoodsFields,
-            provider: providerGoodsFields,
-            all: buyerGoodsFields,
+            // Always the simplified, Facebook-Marketplace-style form now —
+            // post-gig's "Sell Items" category no longer distinguishes
+            // buyer/provider (see 2026-09-05 decision), so the detail form
+            // it leads to shouldn't either. getProviderGoodsFields still
+            // exists but nothing routes to it anymore.
+            buyer: getBuyerGoodsFields(language),
+            provider: getBuyerGoodsFields(language),
+            all: getBuyerGoodsFields(language),
         },
         'RENTAL': {
-            buyer: rentalFields,
-            provider: rentalFields,
-            all: rentalFields,
+            buyer: getRentalFields(language),
+            provider: getRentalFields(language),
+            all: getRentalFields(language),
         },
         'SERVICE': {
             buyer: { ...defaultBasicFields, type: 'SERVICE', role: 'buyer' },
-            provider: providerServiceFields,
-            all: providerServiceFields,
+            provider: getProviderServiceFields(language),
+            all: getProviderServiceFields(language),
         },
         'TASK': {
-            buyer: taskFields,
-            provider: taskFields,
-            all: taskFields,
+            buyer: getTaskFields(language),
+            provider: getTaskFields(language),
+            all: getTaskFields(language),
         },
         'EVENT': {
-            buyer: eventFields,
-            provider: eventFields,
-            all: eventFields,
+            buyer: getEventFields(language),
+            provider: getEventFields(language),
+            all: getEventFields(language),
         },
         'OTHER': {
             buyer: { ...defaultBasicFields, type: 'GOODS', role: 'buyer' },
@@ -110,4 +116,4 @@ export const getFieldsForType = (
 /**
  * Export all field configs
  */
-export { buyerGoodsFields, providerGoodsFields };
+export { getBuyerGoodsFields, getProviderGoodsFields, getGiveawayFields, getWantedFields };

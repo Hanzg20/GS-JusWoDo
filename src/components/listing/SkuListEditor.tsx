@@ -3,6 +3,7 @@ import { Plus, Trash2, Tag, DollarSign, Package, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useConfigStore } from '@/stores/configStore';
 
 interface SkuItem {
     id: string;
@@ -19,6 +20,8 @@ interface SkuListEditorProps {
 }
 
 const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) => {
+    const { language } = useConfigStore();
+
     const handleAdd = () => {
         const newItem: SkuItem = {
             id: Math.random().toString(36).substr(2, 9),
@@ -42,9 +45,9 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
         <div className="space-y-4">
             {value.length === 0 && (
                 <div className="text-center py-8 border-2 border-dashed rounded-2xl bg-muted/30">
-                    <p className="text-sm text-muted-foreground mb-4">尚未添加任何规格/价格方案</p>
+                    <p className="text-sm text-muted-foreground mb-4">{language === 'zh' ? '尚未添加任何规格/价格方案' : 'No options added yet'}</p>
                     <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="gap-2">
-                        <Plus className="w-4 h-4" /> 添加第一个规格
+                        <Plus className="w-4 h-4" /> {language === 'zh' ? '添加第一个规格' : 'Add First Option'}
                     </Button>
                 </div>
             )}
@@ -54,7 +57,7 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
                     <div key={item.id} className="relative group bg-card border rounded-2xl p-4 transition-all hover:shadow-sm">
                         <div className="flex items-start justify-between mb-4">
                             <span className="text-xs font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                规格 #{index + 1}
+                                {language === 'zh' ? `规格 #${index + 1}` : `Option #${index + 1}`}
                             </span>
                             <Button
                                 type="button"
@@ -70,12 +73,12 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold flex items-center gap-1 text-muted-foreground">
-                                    <Tag className="w-3 h-3" /> 规格名称
+                                    <Tag className="w-3 h-3" /> {language === 'zh' ? '规格名称' : 'Option Name'}
                                 </label>
                                 <Input
                                     value={item.name}
                                     onChange={(e) => handleChange(item.id, { name: e.target.value })}
-                                    placeholder="如：基础套餐、VIP装"
+                                    placeholder={language === 'zh' ? '如：基础套餐、VIP装' : 'e.g. Basic Plan, VIP Bundle'}
                                     className="bg-muted/30 border-none focus-visible:ring-1"
                                 />
                             </div>
@@ -83,7 +86,7 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold flex items-center gap-1 text-muted-foreground">
-                                        <DollarSign className="w-3 h-3" /> 价格 (CAD)
+                                        <DollarSign className="w-3 h-3" /> {language === 'zh' ? '价格 (CAD)' : 'Price (CAD)'}
                                     </label>
                                     <Input
                                         type="number"
@@ -95,7 +98,7 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold flex items-center gap-1 text-muted-foreground">
-                                        <Package className="w-3 h-3" /> 库存/名额
+                                        <Package className="w-3 h-3" /> {language === 'zh' ? '库存/名额' : 'Stock/Slots'}
                                     </label>
                                     <Input
                                         type="number"
@@ -109,12 +112,12 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
 
                             <div className="md:col-span-2 space-y-2">
                                 <label className="text-xs font-bold flex items-center gap-1 text-muted-foreground">
-                                    <FileText className="w-3 h-3" /> 额外补充 (可选)
+                                    <FileText className="w-3 h-3" /> {language === 'zh' ? '额外补充 (可选)' : 'Additional Notes (optional)'}
                                 </label>
                                 <Textarea
                                     value={item.description}
                                     onChange={(e) => handleChange(item.id, { description: e.target.value })}
-                                    placeholder="简要说明此规格的包含内容..."
+                                    placeholder={language === 'zh' ? '简要说明此规格的包含内容...' : "Briefly describe what's included in this option..."}
                                     rows={2}
                                     className="bg-muted/30 border-none focus-visible:ring-1 resize-none"
                                 />
@@ -131,7 +134,7 @@ const SkuListEditor: React.FC<SkuListEditorProps> = ({ value = [], onChange }) =
                     onClick={handleAdd}
                     className="w-full border-dashed rounded-2xl py-6 hover:bg-primary/5 hover:border-primary/30 transition-all border-2"
                 >
-                    <Plus className="w-4 h-4 mr-2" /> 继续添加规格
+                    <Plus className="w-4 h-4 mr-2" /> {language === 'zh' ? '继续添加规格' : 'Add Another Option'}
                 </Button>
             )}
         </div>

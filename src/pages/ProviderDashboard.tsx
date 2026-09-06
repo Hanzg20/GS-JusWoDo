@@ -15,6 +15,7 @@ import { useOrderStore } from "@/stores/orderStore";
 import { useListingStore } from "@/stores/listingStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -66,7 +67,10 @@ const ProviderDashboard = () => {
         orderHistory: language === 'zh' ? '订单流水' : 'Order History',
         messages: language === 'zh' ? '私信咨询' : 'Messages',
         coupons: language === 'zh' ? '优惠券' : 'Coupons',
-        addListing: language === 'zh' ? '新增服务' : 'Add Listing',
+        addListing: language === 'zh' ? '新增' : 'Add New',
+        addService: language === 'zh' ? '服务' : 'Service',
+        addProGoods: language === 'zh' ? '商品' : 'Goods',
+        addRental: language === 'zh' ? '租赁' : 'Rental',
         statusUpdated: (status: string) => language === 'zh' ? `订单状态已更新为 ${status}` : `Order status updated to ${status}`,
     };
 
@@ -425,15 +429,23 @@ const ProviderDashboard = () => {
                                     </div>
                                     <span className="text-xs font-black tracking-tight">{t.coupons}</span>
                                 </button>
-                                <button
-                                    onClick={() => navigate('/publish')}
-                                    className="p-4 rounded-[24px] bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all flex flex-col gap-3 group"
-                                >
-                                    <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white group-hover:rotate-90 transition-transform">
-                                        <PlusCircle className="w-5 h-5" />
-                                    </div>
-                                    <span className="text-xs font-black tracking-tight">{t.addListing}</span>
-                                </button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className="p-4 rounded-[24px] bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all flex flex-col gap-3 group w-full"
+                                        >
+                                            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white group-hover:rotate-90 transition-transform">
+                                                <PlusCircle className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs font-black tracking-tight">{t.addListing}</span>
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => navigate('/publish?type=SERVICE')}>{t.addService}</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => navigate('/publish?type=GOODS&pro=1')}>{t.addProGoods}</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => navigate('/publish?type=RENTAL')}>{t.addRental}</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </section>
 

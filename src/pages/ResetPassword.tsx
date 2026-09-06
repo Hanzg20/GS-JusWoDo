@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useConfigStore } from "@/stores/configStore";
 
 const ResetPassword = () => {
     const navigate = useNavigate();
+    const { language } = useConfigStore();
     const [loading, setLoading] = useState(false);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -24,13 +26,47 @@ const ResetPassword = () => {
         special: false
     });
 
+    const t = {
+        linkInvalidToast: language === 'zh' ? '重置链接无效或已过期' : 'Reset link is invalid or has expired',
+        strengthWeak: language === 'zh' ? '弱' : 'Weak',
+        strengthMedium: language === 'zh' ? '中等' : 'Medium',
+        strengthStrong: language === 'zh' ? '强' : 'Strong',
+        strengthVeryStrong: language === 'zh' ? '非常强' : 'Very Strong',
+        pwMismatch: language === 'zh' ? '两次输入的密码不一致' : 'Passwords do not match',
+        pwTooShort: language === 'zh' ? '密码长度至少为 8 位' : 'Password must be at least 8 characters',
+        pwNeedsLetterNumber: language === 'zh' ? '密码必须包含字母和数字' : 'Password must contain both letters and numbers',
+        resetSuccessToast: language === 'zh' ? '密码重置成功！' : 'Password reset successful!',
+        pwSameAsOld: language === 'zh' ? '新密码不能与旧密码相同' : 'New password cannot be the same as the old one',
+        resetFailedRetry: language === 'zh' ? '重置失败，请重试' : 'Reset failed — please try again',
+        linkExpiredTitle: language === 'zh' ? '链接已失效' : 'Link Expired',
+        linkExpiredHint: language === 'zh' ? '重置链接无效或已过期，请重新申请密码重置' : 'The reset link is invalid or has expired — please request a new one',
+        reapply: language === 'zh' ? '重新申请' : 'Request New Link',
+        resetSuccessTitle: language === 'zh' ? '密码重置成功！' : 'Password Reset!',
+        resetSuccessHint: language === 'zh' ? '您的密码已成功重置，正在跳转到登录页...' : 'Your password has been reset — redirecting to login...',
+        redirectingIn3s: language === 'zh' ? '3秒后自动跳转' : 'Redirecting in 3 seconds',
+        resetPasswordTitle: language === 'zh' ? '重置密码' : 'Reset Password',
+        resetPasswordSubtitle: language === 'zh' ? '设置您的新密码' : 'Set your new password',
+        newPassword: language === 'zh' ? '新密码' : 'New Password',
+        enterNewPassword: language === 'zh' ? '输入新密码' : 'Enter new password',
+        passwordStrengthLabel: language === 'zh' ? '密码强度' : 'Password Strength',
+        atLeast8Chars: language === 'zh' ? '至少8个字符' : 'At least 8 characters',
+        containsUppercase: language === 'zh' ? '包含大写字母' : 'Contains uppercase letter',
+        containsLowercase: language === 'zh' ? '包含小写字母' : 'Contains lowercase letter',
+        containsNumber: language === 'zh' ? '包含数字' : 'Contains a number',
+        confirmNewPassword: language === 'zh' ? '确认新密码' : 'Confirm New Password',
+        reenterNewPassword: language === 'zh' ? '再次输入新密码' : 'Re-enter new password',
+        pwNoMatch: language === 'zh' ? '密码不匹配' : "Passwords don't match",
+        resetting: language === 'zh' ? '重置中...' : 'Resetting...',
+        confirmReset: language === 'zh' ? '确认重置' : 'Confirm Reset',
+    };
+
     useEffect(() => {
         // Check if we have a valid session from the reset link
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 setValidToken(false);
-                toast.error("重置链接无效或已过期");
+                toast.error(t.linkInvalidToast);
             }
         };
         checkSession();
@@ -57,10 +93,10 @@ const ResetPassword = () => {
 
     const getPasswordStrengthText = () => {
         const score = Object.values(passwordStrength).filter(Boolean).length;
-        if (score <= 2) return "弱";
-        if (score <= 3) return "中等";
-        if (score <= 4) return "强";
-        return "非常强";
+        if (score <= 2) return t.strengthWeak;
+        if (score <= 3) return t.strengthMedium;
+        if (score <= 4) return t.strengthStrong;
+        return t.strengthVeryStrong;
     };
 
     const handleResetPassword = async (e: React.FormEvent) => {
@@ -70,19 +106,19 @@ const ResetPassword = () => {
 
         // Validation
         if (password !== confirmPassword) {
-            setError("两次输入的密码不一致");
+            setError(t.pwMismatch);
             setLoading(false);
             return;
         }
 
         if (password.length < 8) {
-            setError("密码长度至少为 8 位");
+            setError(t.pwTooShort);
             setLoading(false);
             return;
         }
 
         if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-            setError("密码必须包含字母和数字");
+            setError(t.pwNeedsLetterNumber);
             setLoading(false);
             return;
         }
@@ -95,7 +131,7 @@ const ResetPassword = () => {
             if (updateError) throw updateError;
 
             setSuccess(true);
-            toast.success("密码重置成功！");
+            toast.success(t.resetSuccessToast);
 
             // Auto redirect to login after 3 seconds
             setTimeout(() => {
@@ -104,8 +140,8 @@ const ResetPassword = () => {
 
         } catch (err: any) {
             const msg = err.message.includes('same password')
-                ? '新密码不能与旧密码相同'
-                : "重置失败，请重试";
+                ? t.pwSameAsOld
+                : t.resetFailedRetry;
             setError(msg);
             toast.error(msg);
             console.error(err);
@@ -122,16 +158,16 @@ const ResetPassword = () => {
                         <Shield className="w-10 h-10 text-red-600" />
                     </div>
                     <div className="space-y-2">
-                        <h2 className="text-2xl font-bold">链接已失效</h2>
+                        <h2 className="text-2xl font-bold">{t.linkExpiredTitle}</h2>
                         <p className="text-muted-foreground">
-                            重置链接无效或已过期，请重新申请密码重置
+                            {t.linkExpiredHint}
                         </p>
                     </div>
                     <Button
                         className="w-full py-6 font-bold text-lg rounded-xl btn-action"
                         onClick={() => navigate('/forgot-password')}
                     >
-                        重新申请
+                        {t.reapply}
                     </Button>
                 </div>
             </div>
@@ -149,14 +185,14 @@ const ResetPassword = () => {
                         <div className="absolute inset-0 w-20 h-20 bg-green-100 rounded-full mx-auto animate-ping" />
                     </div>
                     <div className="space-y-2">
-                        <h2 className="text-2xl font-bold">密码重置成功！</h2>
+                        <h2 className="text-2xl font-bold">{t.resetSuccessTitle}</h2>
                         <p className="text-muted-foreground">
-                            您的密码已成功重置，正在跳转到登录页...
+                            {t.resetSuccessHint}
                         </p>
                     </div>
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        3秒后自动跳转
+                        {t.redirectingIn3s}
                     </div>
                 </div>
             </div>
@@ -171,8 +207,8 @@ const ResetPassword = () => {
                     <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 shadow-glow">
                         <KeyRound className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-extrabold text-white">重置密码</h1>
-                    <p className="opacity-80 text-sm text-white">设置您的新密码</p>
+                    <h1 className="text-2xl font-extrabold text-white">{t.resetPasswordTitle}</h1>
+                    <p className="opacity-80 text-sm text-white">{t.resetPasswordSubtitle}</p>
                 </div>
 
                 {/* Form */}
@@ -181,7 +217,7 @@ const ResetPassword = () => {
                         {/* New Password */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">
-                                新密码
+                                {t.newPassword}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -190,7 +226,7 @@ const ResetPassword = () => {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="输入新密码"
+                                    placeholder={t.enterNewPassword}
                                     className="w-full pl-12 pr-12 py-4 rounded-xl border bg-muted/30 focus:border-primary focus:bg-background transition-all outline-none"
                                     autoFocus
                                 />
@@ -208,7 +244,7 @@ const ResetPassword = () => {
                         {password && (
                             <div className="space-y-2 animate-in fade-in duration-200">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">密码强度</span>
+                                    <span className="text-sm text-muted-foreground">{t.passwordStrengthLabel}</span>
                                     <span className={`text-sm font-medium ${getPasswordStrengthColor()}`}>
                                         {getPasswordStrengthText()}
                                     </span>
@@ -227,19 +263,19 @@ const ResetPassword = () => {
                                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                                     <div className={`flex items-center gap-1 ${passwordStrength.length ? 'text-green-600' : ''}`}>
                                         <div className={`w-1.5 h-1.5 rounded-full ${passwordStrength.length ? 'bg-green-600' : 'bg-muted'}`} />
-                                        至少8个字符
+                                        {t.atLeast8Chars}
                                     </div>
                                     <div className={`flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600' : ''}`}>
                                         <div className={`w-1.5 h-1.5 rounded-full ${passwordStrength.uppercase ? 'bg-green-600' : 'bg-muted'}`} />
-                                        包含大写字母
+                                        {t.containsUppercase}
                                     </div>
                                     <div className={`flex items-center gap-1 ${passwordStrength.lowercase ? 'text-green-600' : ''}`}>
                                         <div className={`w-1.5 h-1.5 rounded-full ${passwordStrength.lowercase ? 'bg-green-600' : 'bg-muted'}`} />
-                                        包含小写字母
+                                        {t.containsLowercase}
                                     </div>
                                     <div className={`flex items-center gap-1 ${passwordStrength.number ? 'text-green-600' : ''}`}>
                                         <div className={`w-1.5 h-1.5 rounded-full ${passwordStrength.number ? 'bg-green-600' : 'bg-muted'}`} />
-                                        包含数字
+                                        {t.containsNumber}
                                     </div>
                                 </div>
                             </div>
@@ -248,7 +284,7 @@ const ResetPassword = () => {
                         {/* Confirm Password */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">
-                                确认新密码
+                                {t.confirmNewPassword}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -257,7 +293,7 @@ const ResetPassword = () => {
                                     required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="再次输入新密码"
+                                    placeholder={t.reenterNewPassword}
                                     className={`w-full pl-12 pr-4 py-4 rounded-xl border bg-muted/30 focus:border-primary focus:bg-background transition-all outline-none ${confirmPassword && password !== confirmPassword ? 'border-red-500' : ''
                                         }`}
                                 />
@@ -266,7 +302,7 @@ const ResetPassword = () => {
                                 )}
                             </div>
                             {confirmPassword && password !== confirmPassword && (
-                                <p className="text-xs text-red-600">密码不匹配</p>
+                                <p className="text-xs text-red-600">{t.pwNoMatch}</p>
                             )}
                         </div>
 
@@ -287,10 +323,10 @@ const ResetPassword = () => {
                         {loading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                重置中...
+                                {t.resetting}
                             </div>
                         ) : (
-                            '确认重置'
+                            t.confirmReset
                         )}
                     </Button>
                 </form>

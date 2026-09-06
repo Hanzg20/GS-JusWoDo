@@ -37,6 +37,11 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
         ? items.reduce((min, cur) => cur.pricing.price.amount < min.pricing.price.amount ? cur : min, items[0]).pricing
         : null;
 
+    // GOODS listings are one item each (the simplified Sell Items form), so
+    // that item's own status is the listing's sold state — set via My
+    // Orders > I'm Selling > Mark as Completed (orderStore.ts).
+    const isSold = items.length > 0 && items.every(i => i.status === 'SOLD');
+
     // Price label driven by pricing.model — the "6 transaction models" this
     // field encodes (see product_requirements_document.md), so a task's
     // reward doesn't read like a store price, a rental shows its rate unit,
@@ -88,6 +93,21 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     glowClass: 'group-hover:shadow-orange-500/20'
                 };
             case 'GOODS':
+                // Matches the homepage's Products vs Secondhand Market split
+                // (attributes.goodsTier — which form created the listing,
+                // not who posted it, see 2026-09-06) instead of one generic
+                // "Market" badge for both.
+                return item.attributes?.goodsTier === 'PRODUCT'
+                    ? {
+                        badge: language === 'zh' ? '产品' : 'Product',
+                        bgClass: 'bg-gradient-to-br from-blue-500 to-blue-600',
+                        glowClass: 'group-hover:shadow-blue-500/20'
+                    }
+                    : {
+                        badge: language === 'zh' ? '闲置' : 'Secondhand',
+                        bgClass: 'bg-gradient-to-br from-purple-500 to-purple-600',
+                        glowClass: 'group-hover:shadow-purple-500/20'
+                    };
             case 'FREE_GIVEAWAY':
             case 'WANTED':
                 return {
@@ -126,11 +146,19 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                         alt={displayTitle}
                         onLoad={() => setImageLoaded(true)}
                         loading="lazy"
-                        className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'} ${isSold ? 'grayscale' : ''}`}
                     />
 
                     {/* Gradient Overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {isSold && (
+                        <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                            <span className="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg -rotate-6">
+                                {language === 'zh' ? '已售出' : 'Sold'}
+                            </span>
+                        </div>
+                    )}
 
                     {/* Rating Badge — hidden for Tasks (a help request isn't
                         "rated") and for anything with zero real reviews yet,

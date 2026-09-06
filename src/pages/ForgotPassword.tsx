@@ -4,14 +4,42 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useConfigStore } from "@/stores/configStore";
 
 const ForgotPassword = () => {
     const navigate = useNavigate();
+    const { language } = useConfigStore();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [countdown, setCountdown] = useState(0);
+
+    const t = {
+        resetLinkSent: language === 'zh' ? '重置链接已发送' : 'Reset link sent',
+        genericSendFailed: language === 'zh' ? '发送失败，请检查邮箱地址' : 'Failed to send — please check the email address',
+        rateLimited: language === 'zh' ? '发送频率过高，请等待 1 小时后再试' : 'Too many requests — please wait 1 hour and try again',
+        emailNotRegistered: language === 'zh' ? '该邮箱尚未注册' : "This email isn't registered yet",
+        sendFailedWithMsg: (msg: string) => language === 'zh' ? `发送失败: ${msg}` : `Failed to send: ${msg}`,
+        emailSentTitle: language === 'zh' ? '邮件已发送' : 'Email Sent',
+        emailSentPrefix: language === 'zh' ? '我们已向 ' : "We've sent a password reset link to ",
+        emailSentSuffix: language === 'zh' ? ' 发送了密码重置链接' : '',
+        checkInboxHint: language === 'zh' ? '请检查您的收件箱并点击链接重置密码' : 'Check your inbox and click the link to reset your password',
+        noEmailHint: language === 'zh' ? '没有收到邮件？请检查垃圾邮件文件夹' : "Didn't get the email? Check your spam folder",
+        resendWithCountdown: (s: number) => language === 'zh' ? `重新发送 (${s}秒)` : `Resend (${s}s)`,
+        resend: language === 'zh' ? '重新发送' : 'Resend',
+        backToLogin: language === 'zh' ? '返回登录' : 'Back to Login',
+        forgotPasswordTitle: language === 'zh' ? '忘记密码' : 'Forgot Password',
+        forgotPasswordSubtitle: language === 'zh' ? '我们将发送重置链接到您的邮箱' : "We'll send a reset link to your email",
+        enterRegisteredEmail: language === 'zh' ? '输入您的注册邮箱' : 'Enter your registered email',
+        infoWithinHourPrefix: language === 'zh' ? '发送重置链接后，请在 ' : 'After sending the reset link, please complete it within ',
+        infoWithinHourBold: language === 'zh' ? '1小时内' : '1 hour',
+        infoWithinHourSuffix: language === 'zh' ? ' 完成密码重置' : '',
+        sending: language === 'zh' ? '发送中...' : 'Sending...',
+        sendResetLink: language === 'zh' ? '发送重置链接' : 'Send Reset Link',
+        noAccount: language === 'zh' ? '还没有账号？' : "Don't have an account?",
+        registerNow: language === 'zh' ? '立即注册' : 'Register',
+    };
 
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,7 +54,7 @@ const ForgotPassword = () => {
             if (resetError) throw resetError;
 
             setSuccess(true);
-            toast.success("重置链接已发送");
+            toast.success(t.resetLinkSent);
 
             // Start countdown for resend button
             setCountdown(60);
@@ -43,22 +71,22 @@ const ForgotPassword = () => {
         } catch (err: any) {
             console.error('Reset password error:', err);
 
-            let msg = "发送失败，请检查邮箱地址";
+            let msg = t.genericSendFailed;
 
             // Check for rate limit (429 or specific text)
             if (err.status === 429 ||
                 err.message?.toLowerCase().includes('rate limit') ||
                 err.message?.toLowerCase().includes('rate_limit') ||
                 err.message?.includes('security purposes')) {
-                msg = '发送频率过高，请等待 1 小时后再试';
+                msg = t.rateLimited;
             }
             // Check for user not found
             else if (err.message?.toLowerCase().includes('not found')) {
-                msg = '该邮箱尚未注册';
+                msg = t.emailNotRegistered;
             }
             // Fallback: show specific error if available to help debugging
             else if (err.message) {
-                msg = `发送失败: ${err.message}`;
+                msg = t.sendFailedWithMsg(err.message);
             }
 
             setError(msg);
@@ -86,12 +114,12 @@ const ForgotPassword = () => {
                     </div>
 
                     <div className="text-center space-y-3">
-                        <h2 className="text-2xl font-bold">邮件已发送</h2>
+                        <h2 className="text-2xl font-bold">{t.emailSentTitle}</h2>
                         <p className="text-muted-foreground">
-                            我们已向 <span className="font-semibold text-foreground break-all">{email}</span> 发送了密码重置链接
+                            {t.emailSentPrefix}<span className="font-semibold text-foreground break-all">{email}</span>{t.emailSentSuffix}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                            请检查您的收件箱并点击链接重置密码
+                            {t.checkInboxHint}
                         </p>
                     </div>
 
@@ -100,7 +128,7 @@ const ForgotPassword = () => {
                         <div className="flex items-start gap-2">
                             <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5" />
                             <div className="text-sm text-muted-foreground">
-                                <p>没有收到邮件？请检查垃圾邮件文件夹</p>
+                                <p>{t.noEmailHint}</p>
                             </div>
                         </div>
                     </div>
@@ -113,11 +141,11 @@ const ForgotPassword = () => {
                             disabled={countdown > 0}
                         >
                             {countdown > 0 ? (
-                                <>重新发送 ({countdown}秒)</>
+                                <>{t.resendWithCountdown(countdown)}</>
                             ) : (
                                 <>
                                     <RefreshCw className="mr-2 w-5 h-5" />
-                                    重新发送
+                                    {t.resend}
                                 </>
                             )}
                         </Button>
@@ -126,7 +154,7 @@ const ForgotPassword = () => {
                             className="w-full py-6 font-bold text-lg rounded-xl btn-action"
                             onClick={() => navigate('/login')}
                         >
-                            返回登录
+                            {t.backToLogin}
                         </Button>
                     </div>
                 </div>
@@ -142,8 +170,8 @@ const ForgotPassword = () => {
                     <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 shadow-glow">
                         <Mail className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-extrabold text-white">忘记密码</h1>
-                    <p className="opacity-80 text-sm text-white">我们将发送重置链接到您的邮箱</p>
+                    <h1 className="text-2xl font-extrabold text-white">{t.forgotPasswordTitle}</h1>
+                    <p className="opacity-80 text-sm text-white">{t.forgotPasswordSubtitle}</p>
                 </div>
 
                 {/* Form */}
@@ -152,7 +180,7 @@ const ForgotPassword = () => {
                         {/* Email Input */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">
-                                输入您的注册邮箱
+                                {t.enterRegisteredEmail}
                             </label>
                             <div className="relative">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -171,7 +199,7 @@ const ForgotPassword = () => {
                         {/* Info Message */}
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                             <p className="text-sm text-blue-700">
-                                💡 发送重置链接后，请在 <strong>1小时内</strong> 完成密码重置
+                                💡 {t.infoWithinHourPrefix}<strong>{t.infoWithinHourBold}</strong>{t.infoWithinHourSuffix}
                             </p>
                         </div>
 
@@ -193,10 +221,10 @@ const ForgotPassword = () => {
                             {loading ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    发送中...
+                                    {t.sending}
                                 </div>
                             ) : (
-                                '发送重置链接'
+                                t.sendResetLink
                             )}
                         </Button>
 
@@ -205,16 +233,16 @@ const ForgotPassword = () => {
                             className="flex items-center justify-center gap-2 w-full py-3 text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span className="font-medium">返回登录</span>
+                            <span className="font-medium">{t.backToLogin}</span>
                         </Link>
                     </div>
 
                     {/* Footer Links */}
                     <div className="pt-4 border-t text-center space-y-2">
                         <p className="text-sm text-muted-foreground">
-                            还没有账号？
+                            {t.noAccount}
                             <Link to="/register" className="text-primary font-bold hover:underline ml-1">
-                                立即注册
+                                {t.registerNow}
                             </Link>
                         </p>
                     </div>

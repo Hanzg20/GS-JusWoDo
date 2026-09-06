@@ -4,6 +4,9 @@ import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+// Our own color overrides — must load after the plugin's default stylesheet
+// above, or its default yellow/green palette wins the cascade.
+import './MarkerCluster.css';
 
 interface MarkerData {
     id: string;

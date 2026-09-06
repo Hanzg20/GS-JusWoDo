@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { MapPin, Navigation, Search, X, Loader2, Check, Target } from "lucide-react";
 import { useLocation } from '@/hooks/useLocation';
+import { useConfigStore } from '@/stores/configStore';
 import { cn } from '@/lib/utils';
 
 // Fix Leaflet default marker icon
@@ -73,6 +74,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     defaultRadius = 10
 }) => {
     const { coords, loading: locationLoading } = useLocation();
+    const { language } = useConfigStore();
     const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(value || null);
     const [serviceRadius, setServiceRadius] = useState<number>(value?.serviceRadiusKm || defaultRadius);
     const [searchQuery, setSearchQuery] = useState('');
@@ -87,7 +89,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             const currentLocation = {
                 lat: coords.lat,
                 lng: coords.lng,
-                address: 'Current Location'
+                address: language === 'zh' ? '当前位置' : 'Current Location'
             };
             setMapCenter([coords.lat, coords.lng]);
             setSelectedLocation(currentLocation);
@@ -213,7 +215,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setShowMap(true)}
-                    placeholder="搜索地址或点击地图选择位置..."
+                    placeholder={language === 'zh' ? '搜索地址或点击地图选择位置...' : 'Search an address or click the map to pick a location...'}
                     className="pl-10 pr-10 h-12 rounded-xl"
                 />
                 {isSearching && (
@@ -243,7 +245,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     className="flex-1 rounded-xl"
                 >
                     <Navigation className="w-4 h-4 mr-2" />
-                    {locationLoading ? '定位中...' : '使用当前位置'}
+                    {locationLoading ? (language === 'zh' ? '定位中...' : 'Locating...') : (language === 'zh' ? '使用当前位置' : 'Use Current Location')}
                 </Button>
                 <Button
                     type="button"
@@ -253,7 +255,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     className="rounded-xl"
                 >
                     <MapPin className="w-4 h-4 mr-2" />
-                    {showMap ? '隐藏' : '显示'}地图
+                    {language === 'zh'
+                        ? `${showMap ? '隐藏' : '显示'}地图`
+                        : `${showMap ? 'Hide' : 'Show'} Map`}
                 </Button>
             </div>
 
@@ -265,7 +269,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-semibold text-emerald-900 flex items-center gap-2">
                                     <Target className="w-4 h-4" />
-                                    服务半径
+                                    {language === 'zh' ? '服务半径' : 'Service Radius'}
                                 </label>
                                 <span className="text-lg font-bold text-emerald-600">
                                     {serviceRadius} km
@@ -311,7 +315,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                         <div className="flex items-start gap-2">
                             <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-primary mb-1">已选择位置</p>
+                                <p className="text-xs font-semibold text-primary mb-1">{language === 'zh' ? '已选择位置' : 'Location Selected'}</p>
                                 <p className="text-xs text-muted-foreground line-clamp-2">
                                     {selectedLocation.address || `${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`}
                                 </p>
@@ -385,10 +389,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     {/* Map Instruction Overlay */}
                     <div className="absolute top-3 left-3 right-3 bg-background/90 backdrop-blur-md rounded-xl p-3 shadow-lg border pointer-events-none">
                         <p className="text-xs font-semibold text-center text-muted-foreground">
-                            👆 点击地图选择服务位置
+                            {language === 'zh' ? '👆 点击地图选择服务位置' : '👆 Click the map to choose a location'}
                             {showRadiusSelector && selectedLocation && (
                                 <span className="block mt-1 text-emerald-600">
-                                    🎯 覆盖半径：{serviceRadius} km
+                                    {language === 'zh' ? `🎯 覆盖半径：${serviceRadius} km` : `🎯 Coverage radius: ${serviceRadius} km`}
                                 </span>
                             )}
                         </p>

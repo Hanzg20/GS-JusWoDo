@@ -231,7 +231,7 @@ export interface ListingItem extends BaseEntity {
     deposit?: Money;
   };
 
-  status: 'AVAILABLE' | 'UNAVAILABLE' | 'OUT_OF_STOCK';
+  status: 'AVAILABLE' | 'UNAVAILABLE' | 'OUT_OF_STOCK' | 'PENDING' | 'SOLD';
   sortOrder?: number;
 
   // Industry specific attributes (JSONB equivalent)

@@ -27,18 +27,13 @@ const Header = () => {
     }
   }, [currentUser?.id, loadUnreadCount]);
 
-  // Ordinary neighbors post lightweight community content (LitePost);
-  // providers get routed straight into the structured service/listing
-  // flow instead — see conversation 2026-09-05 on the two posting entry
-  // points ("Post Need/Service" was previously wired to LitePost for
-  // everyone regardless of role, so a provider clicking it could never
-  // actually create a bookable service).
-  const isProvider = currentUser?.roles?.includes('PROVIDER');
-
   // Localized text dictionary
   const t = {
-    postBuyer: language === 'zh' ? '发个动态' : 'Post Update',
-    postProvider: language === 'zh' ? '发布服务/商品' : 'Post Service/Listing',
+    // Same destination and same simplified form for everyone now (see
+    // 2026-09-05 decisions unifying the category picker and Sell Items
+    // form) — the button label shouldn't imply a role split that no
+    // longer exists.
+    post: language === 'zh' ? '发布' : 'Post',
     brandName: language === 'zh' ? '渥帮 JWD' : 'JWD Ottawa',
   };
 
@@ -80,7 +75,7 @@ const Header = () => {
             className="rounded-full h-9 px-4 font-bold text-xs gap-1.5 shadow-sm bg-primary text-white hover:bg-primary/90 hidden sm:flex"
             onClick={() => navigate('/post-gig')}
           >
-            <PlusCircle className="w-4 h-4" /> {isProvider ? t.postProvider : t.postBuyer}
+            <PlusCircle className="w-4 h-4" /> {t.post}
           </Button>
 
           {/* Mobile Search Toggle — not on homepage, BentoHero already has a search bar there */}

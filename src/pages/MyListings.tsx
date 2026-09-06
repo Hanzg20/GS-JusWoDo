@@ -12,6 +12,7 @@ import { useOrderStore } from "@/stores/orderStore";
 import { useProviderStore } from "@/stores/providerStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 const MyListings = () => {
@@ -33,9 +34,43 @@ const MyListings = () => {
     // Use the providerProfileId directly from the authenticated user session.
     // This is more reliable than searching the 'providers' store which might not be loaded.
     const profileId = currentUser.providerProfileId || currentUser.id;
+    const isProvider = currentUser.roles?.includes('PROVIDER');
 
     // Filter listings where this user is the "Provider/Poster"
     const myListings = listings.filter(l => l.providerId === profileId);
+
+    // Pro hub (this page + ProviderDashboard) is a separate, professional-only
+    // surface from the homepage's Post button — not a menu that offers both.
+    // A provider's "Create New" picks among the three professional listing
+    // types (reusing the existing SERVICE/GOODS/RENTAL field configs, routed
+    // via Publish.tsx's ?type= deep link); the casual Sell Items/Post a Task
+    // flow lives only behind the homepage Post button (see 2026-09-05
+    // clarification), for buyer and provider alike.
+    const renderCreateNewButton = (
+        buttonProps: { variant?: 'default' | 'outline'; className: string; children: React.ReactNode }
+    ) => {
+        if (!isProvider) {
+            return (
+                <Button onClick={() => navigate('/post-gig')} variant={buttonProps.variant} className={buttonProps.className}>
+                    {buttonProps.children}
+                </Button>
+            );
+        }
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant={buttonProps.variant} className={buttonProps.className}>
+                        {buttonProps.children}
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate('/publish?type=SERVICE')}>Service</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/publish?type=GOODS&pro=1')}>Goods</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/publish?type=RENTAL')}>Rental</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
 
     const getListingStats = (listingId: string) => {
         const items = listingItems.filter(i => i.masterId === listingId);
@@ -95,13 +130,10 @@ const MyListings = () => {
                             Manage your {myListings.length} active listings & demands
                         </p>
                     </div>
-                    <Button
-                        onClick={() => navigate('/post-gig')}
-                        className="btn-action gap-2 h-12 px-6 rounded-2xl shadow-warm"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Create New
-                    </Button>
+                    {renderCreateNewButton({
+                        className: "btn-action gap-2 h-12 px-6 rounded-2xl shadow-warm",
+                        children: <><Plus className="w-5 h-5" /> Create New</>
+                    })}
                 </div>
 
                 {/* Grid Overlay */}
@@ -110,9 +142,11 @@ const MyListings = () => {
                         <div className="text-center py-24 card-warm border-dashed border-2 border-muted bg-transparent">
                             <Layout className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
                             <p className="text-lg font-black text-muted-foreground mb-6">No posts found yet</p>
-                            <Button onClick={() => navigate('/post-gig')} variant="outline" className="rounded-xl font-bold">
-                                Post your first task or item
-                            </Button>
+                            {renderCreateNewButton({
+                                variant: "outline",
+                                className: "rounded-xl font-bold",
+                                children: isProvider ? "Add your first listing" : "Post your first task or item"
+                            })}
                         </div>
                     ) : (
                         myListings.map((listing) => {
@@ -145,6 +179,18 @@ const MyListings = () => {
                                                             {listing.status === 'ARCHIVED' && (
                                                                 <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-muted font-black text-[10px] uppercase tracking-tighter">
                                                                     Offline
+                                                                </Badge>
+                                                            )}
+                                                            {/* Set from My Orders > I'm Selling > Mark as Completed on a
+                                                                GOODS order — see orderStore.ts's updateOrderStatus. */}
+                                                            {firstItem?.status === 'SOLD' && (
+                                                                <Badge className="bg-slate-800 text-white hover:bg-slate-800 border-none font-black text-[10px] uppercase tracking-tighter">
+                                                                    Sold
+                                                                </Badge>
+                                                            )}
+                                                            {firstItem?.status === 'PENDING' && (
+                                                                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-none font-black text-[10px] uppercase tracking-tighter">
+                                                                    Pending
                                                                 </Badge>
                                                             )}
                                                             <span className="text-[10px] font-black text-muted-foreground uppercase opacity-50"># {listing.id.slice(0, 8)}</span>

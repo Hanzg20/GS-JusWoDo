@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, Bell, ChevronRight, Image, MapPin } from "lucide-react";
+import { useConfigStore } from "@/stores/configStore";
 
 interface Conversation {
   id: string;
@@ -12,55 +13,73 @@ interface Conversation {
   isSystem?: boolean;
 }
 
-const mockConversations: Conversation[] = [
+const getMockConversations = (language: 'zh' | 'en'): Conversation[] => [
   {
     id: "1",
-    name: "李阿姨",
+    name: language === 'zh' ? "李阿姨" : "Auntie Li",
     avatar: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=100&h=100&fit=crop&crop=face",
-    lastMessage: "好的，下午3点到您家",
-    time: "刚刚",
+    lastMessage: language === 'zh' ? "好的，下午3点到您家" : "Sure, I'll be at your place at 3pm",
+    time: language === 'zh' ? "刚刚" : "Just now",
     unread: 2,
-    serviceTitle: "深度保洁订单",
+    serviceTitle: language === 'zh' ? "深度保洁订单" : "Deep Cleaning Order",
   },
   {
     id: "2",
-    name: "王大厨",
+    name: language === 'zh' ? "王大厨" : "Chef Wang",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    lastMessage: "今天的菜已经准备好了",
-    time: "10分钟前",
+    lastMessage: language === 'zh' ? "今天的菜已经准备好了" : "Today's meal is ready",
+    time: language === 'zh' ? "10分钟前" : "10 min ago",
     unread: 0,
-    serviceTitle: "家常菜套餐",
+    serviceTitle: language === 'zh' ? "家常菜套餐" : "Home-Style Meal Package",
   },
   {
     id: "3",
-    name: "小张",
+    name: language === 'zh' ? "小张" : "Xiao Zhang",
     avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face",
-    lastMessage: "[图片]",
-    time: "1小时前",
+    lastMessage: language === 'zh' ? "[图片]" : "[Image]",
+    time: language === 'zh' ? "1小时前" : "1 hour ago",
     unread: 0,
-    serviceTitle: "代取快递",
+    serviceTitle: language === 'zh' ? "代取快递" : "Package Pickup",
   },
   {
     id: "system",
-    name: "系统通知",
+    name: language === 'zh' ? "系统通知" : "System Notice",
     avatar: "",
-    lastMessage: "您的订单已完成，请评价~",
-    time: "昨天",
+    lastMessage: language === 'zh' ? "您的订单已完成，请评价~" : "Your order is complete — please leave a review~",
+    time: language === 'zh' ? "昨天" : "Yesterday",
     unread: 1,
     isSystem: true,
   },
 ];
 
-const quickReplies = ["我在路上", "已到楼下", "服务完成", "请稍等"];
+const getQuickReplies = (language: 'zh' | 'en') =>
+  language === 'zh'
+    ? ["我在路上", "已到楼下", "服务完成", "请稍等"]
+    : ["On my way", "Downstairs", "Service done", "One moment"];
 
 const Messages = () => {
+  const { language } = useConfigStore();
   const [activeTab, setActiveTab] = useState<"all" | "trade" | "system">("all");
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
 
+  const t = {
+    title: language === 'zh' ? '消息中心' : 'Messages',
+    searchPlaceholder: language === 'zh' ? '搜索联系人...' : 'Search contacts...',
+    relatedOrder: language === 'zh' ? '关联订单:' : 'Related order:',
+    messagePlaceholder: language === 'zh' ? '输入消息...' : 'Type a message...',
+    send: language === 'zh' ? '发送' : 'Send',
+    sampleMsg1: language === 'zh' ? '您好，下午3点可以吗？' : 'Hi, is 3pm okay?',
+    sampleMsg2: language === 'zh' ? '可以，B栋3单元302' : 'Sure, Building B, Unit 3, #302',
+    justNow: language === 'zh' ? '刚刚' : 'Just now',
+  };
+
+  const mockConversations = getMockConversations(language);
+  const quickReplies = getQuickReplies(language);
+
   const tabs = [
-    { id: "all" as const, label: "全部" },
-    { id: "trade" as const, label: "交易沟通" },
-    { id: "system" as const, label: "系统通知" },
+    { id: "all" as const, label: language === 'zh' ? "全部" : "All" },
+    { id: "trade" as const, label: language === 'zh' ? "交易沟通" : "Order Chats" },
+    { id: "system" as const, label: language === 'zh' ? "系统通知" : "System" },
   ];
 
   const filteredConversations = mockConversations.filter((conv) => {
@@ -94,7 +113,7 @@ const Messages = () => {
           {chat.serviceTitle && (
             <div className="px-4 py-2 bg-muted/50 border-b border-border/50">
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">关联订单:</span>
+                <span className="text-muted-foreground">{t.relatedOrder}</span>
                 <span className="font-medium text-foreground">{chat.serviceTitle}</span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
               </div>
@@ -108,7 +127,7 @@ const Messages = () => {
           <div className="flex justify-start">
             <div className="max-w-[75%]">
               <div className="bg-card rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
-                <p className="text-foreground">您好，下午3点可以吗？</p>
+                <p className="text-foreground">{t.sampleMsg1}</p>
               </div>
               <p className="text-xs text-muted-foreground mt-1 ml-1">14:30</p>
             </div>
@@ -117,7 +136,7 @@ const Messages = () => {
           <div className="flex justify-end">
             <div className="max-w-[75%]">
               <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-2.5">
-                <p>可以，B栋3单元302</p>
+                <p>{t.sampleMsg2}</p>
               </div>
               <p className="text-xs text-muted-foreground mt-1 mr-1 text-right">14:31</p>
             </div>
@@ -128,7 +147,7 @@ const Messages = () => {
               <div className="bg-card rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
                 <p className="text-foreground">{chat.lastMessage}</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1 ml-1">刚刚</p>
+              <p className="text-xs text-muted-foreground mt-1 ml-1">{t.justNow}</p>
             </div>
           </div>
         </div>
@@ -158,11 +177,11 @@ const Messages = () => {
             </button>
             <input
               type="text"
-              placeholder="输入消息..."
+              placeholder={t.messagePlaceholder}
               className="flex-1 px-4 py-2.5 rounded-2xl bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <button className="px-5 py-2.5 rounded-2xl bg-primary text-primary-foreground font-medium">
-              发送
+              {t.send}
             </button>
           </div>
         </div>
@@ -176,7 +195,7 @@ const Messages = () => {
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/50">
         <div className="container py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-foreground">消息中心</h1>
+            <h1 className="text-xl font-bold text-foreground">{t.title}</h1>
             <button className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors">
               <Bell className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -187,7 +206,7 @@ const Messages = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="搜索联系人..."
+              placeholder={t.searchPlaceholder}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>

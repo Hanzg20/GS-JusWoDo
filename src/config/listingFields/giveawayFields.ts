@@ -1,41 +1,43 @@
 import { ListingFieldsConfig } from '@/types/listingFields';
 
-export const giveawayFields: ListingFieldsConfig = {
+type Lang = 'zh' | 'en';
+
+export const getGiveawayFields = (language: Lang): ListingFieldsConfig => ({
     type: 'GOODS', // Using GOODS type but flavored as giveaway
     role: 'all',
     groups: [
         {
-            title: '赠送信息',
+            title: language === 'zh' ? '赠送信息' : 'Giveaway Info',
             fields: [
                 {
                     name: 'title',
-                    label: '物品名称',
+                    label: language === 'zh' ? '物品名称' : 'Item Name',
                     type: 'text',
                     importance: 'required',
-                    placeholder: '例如：闲置搬家纸箱、多余的盆栽',
+                    placeholder: language === 'zh' ? '例如：闲置搬家纸箱、多余的盆栽' : 'e.g. Spare moving boxes, extra potted plants',
                 },
                 {
                     name: 'images',
-                    label: '物品图片',
+                    label: language === 'zh' ? '物品图片' : 'Item Photos',
                     type: 'images',
                     importance: 'required',
                 },
                 {
                     name: 'description',
-                    label: '详情说明',
+                    label: language === 'zh' ? '详情说明' : 'Details',
                     type: 'textarea',
                     importance: 'required',
-                    placeholder: '请说明物品新旧程度及领取方式...',
+                    placeholder: language === 'zh' ? '请说明物品新旧程度及领取方式...' : 'Describe the condition and how to pick it up...',
                     rows: 4,
                 }
             ]
         },
         {
-            title: '领取规则',
+            title: language === 'zh' ? '领取规则' : 'Pickup Rules',
             fields: [
                 {
                     name: 'price',
-                    label: '价格',
+                    label: language === 'zh' ? '价格' : 'Price',
                     type: 'number',
                     importance: 'required',
                     placeholder: '0',
@@ -43,22 +45,22 @@ export const giveawayFields: ListingFieldsConfig = {
                 },
                 {
                     name: 'pickupLocation',
-                    label: '领取地点',
+                    label: language === 'zh' ? '领取地点' : 'Pickup Location',
                     type: 'location',
                     importance: 'required',
                 },
                 {
                     name: 'giveawayCondition',
-                    label: '赠送对象要求',
+                    label: language === 'zh' ? '赠送对象要求' : 'Who Can Claim It',
                     type: 'select',
                     importance: 'optional',
                     options: [
-                        { value: 'ANYONE', label: '先到先得 (先联系先得)' },
-                        { value: 'NEIGHBOR_ONLY', label: '认证邻居优先' },
-                        { value: 'CHARITY', label: '优先给有需要的人' },
+                        { value: 'ANYONE', label: language === 'zh' ? '先到先得 (先联系先得)' : 'First come, first served' },
+                        { value: 'NEIGHBOR_ONLY', label: language === 'zh' ? '认证邻居优先' : 'Verified neighbors first' },
+                        { value: 'CHARITY', label: language === 'zh' ? '优先给有需要的人' : 'Priority to those in need' },
                     ]
                 }
             ]
         }
     ]
-};
+});

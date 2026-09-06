@@ -66,6 +66,30 @@ export const useOrderStore = create<OrderState>((set, get) => ({
                 orders: state.orders.map(o => o.id === orderId ? updatedOrder : o),
                 isLoading: false
             }));
+
+            // Completing a GOODS order means that item sold — reflect it on
+            // the listing itself (My Posts / other buyers' browse results),
+            // not just on this one order record. See 2026-09-06: "mark
+            // sold" happens from My Orders > I'm Selling, but the resulting
+            // SOLD status needs to show up wherever the listing is seen.
+            if (status === 'COMPLETED' && updatedOrder.itemId) {
+                try {
+                    const { useListingStore } = await import('@/stores/listingStore');
+                    const master = useListingStore.getState().listings.find(l => l.id === updatedOrder.masterId);
+                    if (master?.type === 'GOODS') {
+                        const itemRepo = repositoryFactory.getListingItemRepository();
+                        const updatedItem = await itemRepo.update(updatedOrder.itemId, { status: 'SOLD' as any });
+                        useListingStore.setState((state: any) => ({
+                            listingItems: state.listingItems.map((i: any) => i.id === updatedOrder.itemId ? updatedItem : i)
+                        }));
+                    }
+                } catch (cascadeError) {
+                    // Order completion itself already succeeded above — don't
+                    // fail the whole action just because the listing-side
+                    // mirror update had a problem.
+                    console.error('Failed to mark listing item as sold:', cascadeError);
+                }
+            }
         } catch (error: any) {
             console.error('Failed to update order status:', error);
             set({ error: error.message, isLoading: false });

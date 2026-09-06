@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { useAuthStore } from "@/stores/authStore";
+import { useConfigStore } from "@/stores/configStore";
 import { Order } from "@/types/orders";
 import { toast } from "sonner";
 import ImageUploader from "@/components/common/ImageUploader";
@@ -17,6 +18,7 @@ const ReviewSubmission = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [rating, setRating] = useState(5);
@@ -50,7 +52,12 @@ const ReviewSubmission = () => {
     }, [id]);
 
     const handleSubmit = async () => {
-        if (!order || !currentUser) return;
+        if (!currentUser) {
+            toast.error(language === 'zh' ? '请先登录后再提交评价' : 'Please log in to submit a review');
+            navigate('/login');
+            return;
+        }
+        if (!order) return;
         setIsSubmitting(true);
         try {
             const reviewRepo = repositoryFactory.getReviewRepository();

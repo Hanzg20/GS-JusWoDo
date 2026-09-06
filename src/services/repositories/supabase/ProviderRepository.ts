@@ -28,7 +28,10 @@ export class SupabaseProviderRepository implements IProviderRepository {
                 address: row.location_address,
                 radiusKm: row.service_radius_km || 5,
             } : { lat: 0, lng: 0, address: '', radiusKm: 5 },
-            isActive: row.is_active || false,
+            // The view selects p.status (text), not an is_active column —
+            // this always read as false before, since row.is_active never
+            // existed on the row at all.
+            isActive: row.status !== 'INACTIVE',
             metadata: row.metadata || {},
             createdAt: row.created_at,
             updatedAt: row.updated_at,
@@ -61,8 +64,16 @@ export class SupabaseProviderRepository implements IProviderRepository {
             } : undefined,
             location_address: profile.location?.address,
             service_radius_km: profile.location?.radiusKm,
-            is_active: profile.isActive,
-            metadata: profile.metadata
+            // provider_profiles has no is_active column (it uses `status`,
+            // text, defaulting to 'ACTIVE') — sending is_active made every
+            // insert through this repo fail with PGRST204 ("column not
+            // found"), silently breaking the auto-provisioning path in
+            // listingStore.ts (the only caller that ever set isActive).
+            ...(profile.isActive === false ? { status: 'INACTIVE' } : {}),
+            // Same story as is_active above — provider_profiles has no
+            // metadata column either. Harmless today (no caller sets it,
+            // and Supabase-js drops undefined-valued keys before sending),
+            // but a landmine for whoever passes one next.
         };
     }
 
@@ -73,7 +84,10 @@ export class SupabaseProviderRepository implements IProviderRepository {
             .eq('id', id)
             .single();
 
-        if (error) return null;
+        if (error) {
+            console.error('Failed to fetch provider profile:', id, error);
+            return null;
+        }
         return this.mapFromView(data);
     }
 
@@ -96,11 +110,19 @@ export class SupabaseProviderRepository implements IProviderRepository {
             .single();
 
         if (error) throw error;
-        // Re-fetch from view to return complete object? Or just return basic map
-        // For simplicity and performance, we'll map what we have, but avatar might be missing
-        // Better: return this.getById(data.id) to ensure consistency, but expensive.
-        // Let's stick to basic map for now or fetch view.
-        return this.getById(data.id) as Promise<ProviderProfile>;
+
+        // Re-fetch from the view for the complete object (avatar, stats,
+        // etc. that only the view joins in). getById() swallows its own
+        // errors and returns null on any failure — silently propagating
+        // that null here used to surface as a cryptic "Cannot read
+        // properties of null" deep in whatever the caller did next (e.g.
+        // Publish.tsx's auto-provisioning path), instead of a message that
+        // actually says what happened.
+        const created = await this.getById(data.id);
+        if (!created) {
+            throw new Error('Provider profile was created but could not be read back.');
+        }
+        return created;
     }
 
     async update(id: string, data: Partial<ProviderProfile>): Promise<ProviderProfile> {

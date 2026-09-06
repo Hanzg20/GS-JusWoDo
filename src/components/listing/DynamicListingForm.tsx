@@ -4,6 +4,7 @@ import { calculateCompleteness, validateAll, shouldDisplayField } from '@/utils/
 import FormFieldRenderer from './FormFieldRenderer';
 import CompletenessIndicator from './CompletenessIndicator';
 import { Button } from '@/components/ui/button';
+import { useConfigStore } from '@/stores/configStore';
 
 interface DynamicListingFormProps {
     config: ListingFieldsConfig;
@@ -18,8 +19,10 @@ const DynamicListingForm: React.FC<DynamicListingFormProps> = ({
     initialData = {},
     onSubmit,
     onCancel,
-    submitLabel = '✨ 确认发布'
+    submitLabel
 }) => {
+    const { language } = useConfigStore();
+    const resolvedSubmitLabel = submitLabel ?? (language === 'zh' ? '✨ 确认发布' : '✨ Confirm & Publish');
     // Initialize formData with all fields from config to avoid uncontrolled -> controlled warnings
     const [formData, setFormData] = useState<FormData>(() => {
         const data = { ...initialData };
@@ -76,7 +79,7 @@ const DynamicListingForm: React.FC<DynamicListingFormProps> = ({
 
     const handleSubmit = async () => {
         // Validate all fields
-        const validation = validateAll(formData, config);
+        const validation = validateAll(formData, config, language);
 
         if (!validation.isValid) {
             setErrors(validation.errors);
@@ -146,7 +149,7 @@ const DynamicListingForm: React.FC<DynamicListingFormProps> = ({
                         className="flex-1"
                         disabled={isSubmitting}
                     >
-                        取消
+                        {language === 'zh' ? '取消' : 'Cancel'}
                     </Button>
                 )}
                 <Button
@@ -155,7 +158,7 @@ const DynamicListingForm: React.FC<DynamicListingFormProps> = ({
                     className="flex-[2] btn-action"
                     disabled={isSubmitting || completeness.missingRequired.length > 0}
                 >
-                    {isSubmitting ? (submitLabel.includes('修改') ? '保存中...' : '发布中...') : submitLabel}
+                    {isSubmitting ? (language === 'zh' ? '提交中...' : 'Submitting...') : resolvedSubmitLabel}
                 </Button>
             </div>
 
@@ -163,7 +166,9 @@ const DynamicListingForm: React.FC<DynamicListingFormProps> = ({
             {completeness.missingRequired.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                     <p className="text-sm font-bold text-red-700">
-                        ⚠️ 还有 {completeness.missingRequired.length} 个必填项未完成
+                        {language === 'zh'
+                            ? `⚠️ 还有 ${completeness.missingRequired.length} 个必填项未完成`
+                            : `⚠️ ${completeness.missingRequired.length} required field${completeness.missingRequired.length > 1 ? 's' : ''} left`}
                     </p>
                 </div>
             )}

@@ -37,9 +37,10 @@
     font-weight: 800;
 }
 
-/* 小型聚类 (< 10 个标记) */
+/* 小型聚类 (< 10 个标记) — 避免蓝/绿，OSM底图本身大量蓝色水域和绿色公园，
+   蓝绿色标记会淹没在底图里 */
 .marker-cluster-small div {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
 
 /* 中型聚类 (10-49 个标记) */
@@ -56,7 +57,7 @@
 
 /* 大型聚类 (≥ 50 个标记) */
 .marker-cluster-large div {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
     width: 60px;
     height: 60px;
 }

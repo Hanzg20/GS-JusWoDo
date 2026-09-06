@@ -2,6 +2,7 @@ import { UserLevel } from '@/types/gamification';
 import { motion } from 'framer-motion';
 import { TrendingUp, Award, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useConfigStore } from '@/stores/configStore';
 
 interface UserLevelCardProps {
   userLevel: UserLevel;
@@ -9,6 +10,15 @@ interface UserLevelCardProps {
 }
 
 export const UserLevelCard = ({ userLevel, className = '' }: UserLevelCardProps) => {
+  const { language } = useConfigStore();
+  const t = {
+    expToNext: (exp: number) => language === 'zh' ? `还需 ${exp} 经验升级` : `${exp} EXP to next level`,
+    maxLevel: language === 'zh' ? '已达满级' : 'Max level reached',
+    totalExp: language === 'zh' ? '总经验' : 'Total EXP',
+    levelUpProgress: language === 'zh' ? '升级进度' : 'Level progress',
+    perksTitle: language === 'zh' ? '等级特权' : 'Level Perks',
+    footerTip: language === 'zh' ? '发帖、互动和完成任务都能获得经验值' : 'Earn EXP by posting, engaging, and completing tasks',
+  };
   const progressPercent = userLevel.expRequired > 0
     ? ((userLevel.expCurrent - (userLevel.level > 1 ? userLevel.expRequired : 0)) /
        (userLevel.expRequired - (userLevel.level > 1 ? userLevel.expRequired : 0))) * 100
@@ -40,7 +50,7 @@ export const UserLevelCard = ({ userLevel, className = '' }: UserLevelCardProps)
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {expToNextLevel > 0 ? `还需 ${expToNextLevel} 经验升级` : '已达满级'}
+              {expToNextLevel > 0 ? t.expToNext(expToNextLevel) : t.maxLevel}
             </p>
           </div>
         </div>
@@ -50,7 +60,7 @@ export const UserLevelCard = ({ userLevel, className = '' }: UserLevelCardProps)
           <div className="text-2xl font-bold" style={{ color: userLevel.color }}>
             {userLevel.expCurrent.toLocaleString()}
           </div>
-          <div className="text-xs text-muted-foreground">总经验</div>
+          <div className="text-xs text-muted-foreground">{t.totalExp}</div>
         </div>
       </div>
 
@@ -58,7 +68,7 @@ export const UserLevelCard = ({ userLevel, className = '' }: UserLevelCardProps)
       {expToNextLevel > 0 && (
         <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">升级进度</span>
+            <span className="text-muted-foreground">{t.levelUpProgress}</span>
             <span className="font-medium">{Math.round(progressPercent)}%</span>
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden relative">
@@ -91,7 +101,7 @@ export const UserLevelCard = ({ userLevel, className = '' }: UserLevelCardProps)
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Award className="w-4 h-4" style={{ color: userLevel.color }} />
-            <span>等级特权</span>
+            <span>{t.perksTitle}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {userLevel.perks.map((perk, index) => (
@@ -110,7 +120,7 @@ export const UserLevelCard = ({ userLevel, className = '' }: UserLevelCardProps)
       {/* 提示 */}
       <div className="mt-4 pt-4 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
         <TrendingUp className="w-4 h-4" />
-        <span>发帖、互动和完成任务都能获得经验值</span>
+        <span>{t.footerTip}</span>
       </div>
     </div>
   );

@@ -130,6 +130,12 @@ export class SupabaseListingRepository implements IListingRepository {
         nodeId?: string,
         categoryId?: string,
         type?: ListingType,
+        // GOODS split by which form created it, not who posted it — a
+        // merchant can post a personal secondhand item through the
+        // homepage's simple flow too (see 2026-09-06). Only applied by the
+        // plain keyword-search branch below; the semantic/radius RPC
+        // branches don't take it yet.
+        goodsTier?: 'PRODUCT' | 'SECONDHAND',
         isSemantic?: boolean,
         lat?: number,
         lng?: number,
@@ -205,6 +211,7 @@ export class SupabaseListingRepository implements IListingRepository {
             }
 
             if (options.type) qb = qb.eq('type', options.type);
+            if (options.goodsTier) qb = qb.eq('attributes->>goodsTier', options.goodsTier);
 
             // Sort: default newest-first, or by rating / review count
             switch (options.sortBy) {

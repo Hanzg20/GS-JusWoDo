@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import ImageUploader from '@/components/common/ImageUploader';
 import { useAuthStore } from '@/stores/authStore';
+import { useConfigStore } from '@/stores/configStore';
 import SkuListEditor from './SkuListEditor';
 import LocationPicker from '@/components/LocationPicker';
 
@@ -23,6 +24,7 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     onChange
 }) => {
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
 
     const renderField = () => {
         switch (field.type) {
@@ -68,7 +70,7 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
                 return (
                     <Select value={value} onValueChange={onChange}>
                         <SelectTrigger className={error ? 'border-red-500' : ''}>
-                            <SelectValue placeholder={field.placeholder || '请选择'} />
+                            <SelectValue placeholder={field.placeholder || (language === 'zh' ? '请选择' : 'Please select')} />
                         </SelectTrigger>
                         <SelectContent>
                             {field.options?.map(option => (

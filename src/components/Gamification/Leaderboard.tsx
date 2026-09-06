@@ -4,6 +4,7 @@ import { Trophy, TrendingUp, TrendingDown, Minus, Crown, Medal, Award } from 'lu
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
+import { useConfigStore } from '@/stores/configStore';
 
 interface LeaderboardProps {
   period?: 'weekly' | 'monthly' | 'alltime';
@@ -16,8 +17,19 @@ export const Leaderboard = ({
   onPeriodChange,
   className = ''
 }: LeaderboardProps) => {
+  const { language } = useConfigStore();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const t = {
+    heading: language === 'zh' ? '社区排行榜' : 'Community Leaderboard',
+    subheading: language === 'zh' ? '基于贡献度和活跃度' : 'Based on contribution and activity',
+    weekly: language === 'zh' ? '本周' : 'Weekly',
+    monthly: language === 'zh' ? '本月' : 'Monthly',
+    alltime: language === 'zh' ? '总榜' : 'All-Time',
+    achievementsCount: (n: number) => language === 'zh' ? `${n} 个成就` : `${n} achievements`,
+    footerTip: language === 'zh' ? '排行榜每小时更新一次 • 继续努力提升排名！' : 'Leaderboard updates hourly • Keep going to climb the ranks!',
+  };
 
   // 模拟数据加载
   useEffect(() => {
@@ -28,29 +40,29 @@ export const Leaderboard = ({
         {
           rank: 1,
           userId: '1',
-          userName: '张三',
+          userName: language === 'zh' ? '张三' : 'Alex Chen',
           avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zhang',
           score: 15680,
           level: 6,
           achievements: 28,
-          badge: '社区领袖',
+          badge: language === 'zh' ? '社区领袖' : 'Community Leader',
           trend: 'up'
         },
         {
           rank: 2,
           userId: '2',
-          userName: '李四',
+          userName: language === 'zh' ? '李四' : 'Jordan Lee',
           avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=li',
           score: 14520,
           level: 5,
           achievements: 24,
-          badge: '交易大师',
+          badge: language === 'zh' ? '交易大师' : 'Trade Master',
           trend: 'stable'
         },
         {
           rank: 3,
           userId: '3',
-          userName: '王五',
+          userName: language === 'zh' ? '王五' : 'Sam Wang',
           avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=wang',
           score: 13890,
           level: 5,
@@ -60,7 +72,7 @@ export const Leaderboard = ({
         {
           rank: 4,
           userId: '4',
-          userName: '赵六',
+          userName: language === 'zh' ? '赵六' : 'Casey Zhao',
           score: 12340,
           level: 5,
           achievements: 20,
@@ -69,7 +81,7 @@ export const Leaderboard = ({
         {
           rank: 5,
           userId: '5',
-          userName: '孙七',
+          userName: language === 'zh' ? '孙七' : 'Riley Sun',
           score: 11200,
           level: 4,
           achievements: 18,
@@ -78,7 +90,7 @@ export const Leaderboard = ({
         {
           rank: 6,
           userId: '6',
-          userName: '周八',
+          userName: language === 'zh' ? '周八' : 'Morgan Zhou',
           score: 10500,
           level: 4,
           achievements: 17,
@@ -87,7 +99,7 @@ export const Leaderboard = ({
         {
           rank: 7,
           userId: '7',
-          userName: '吴九',
+          userName: language === 'zh' ? '吴九' : 'Jamie Wu',
           score: 9800,
           level: 4,
           achievements: 15,
@@ -96,7 +108,7 @@ export const Leaderboard = ({
         {
           rank: 8,
           userId: '8',
-          userName: '郑十',
+          userName: language === 'zh' ? '郑十' : 'Taylor Zheng',
           score: 9200,
           level: 4,
           achievements: 14,
@@ -105,7 +117,7 @@ export const Leaderboard = ({
         {
           rank: 9,
           userId: '9',
-          userName: '陈小明',
+          userName: language === 'zh' ? '陈小明' : 'Xiaoming Chen',
           score: 8600,
           level: 3,
           achievements: 12,
@@ -114,7 +126,7 @@ export const Leaderboard = ({
         {
           rank: 10,
           userId: '10',
-          userName: '林小红',
+          userName: language === 'zh' ? '林小红' : 'Xiaohong Lin',
           score: 8100,
           level: 3,
           achievements: 11,
@@ -123,7 +135,7 @@ export const Leaderboard = ({
       ]);
       setIsLoading(false);
     }, 800);
-  }, [period]);
+  }, [period, language]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -174,8 +186,8 @@ export const Leaderboard = ({
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-lg">社区排行榜</h3>
-              <p className="text-xs text-muted-foreground">基于贡献度和活跃度</p>
+              <h3 className="font-bold text-lg">{t.heading}</h3>
+              <p className="text-xs text-muted-foreground">{t.subheading}</p>
             </div>
           </div>
         </div>
@@ -194,7 +206,7 @@ export const Leaderboard = ({
                 }
               `}
             >
-              {p === 'weekly' ? '本周' : p === 'monthly' ? '本月' : '总榜'}
+              {p === 'weekly' ? t.weekly : p === 'monthly' ? t.monthly : t.alltime}
             </button>
           ))}
         </div>
@@ -243,7 +255,7 @@ export const Leaderboard = ({
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>Lv.{entry.level}</span>
                   <span>•</span>
-                  <span>{entry.achievements} 个成就</span>
+                  <span>{t.achievementsCount(entry.achievements)}</span>
                 </div>
               </div>
 
@@ -264,7 +276,7 @@ export const Leaderboard = ({
       {/* 底部提示 */}
       <div className="p-4 border-t border-border bg-muted/30 text-center">
         <p className="text-xs text-muted-foreground">
-          排行榜每小时更新一次 • 继续努力提升排名！
+          {t.footerTip}
         </p>
       </div>
     </div>

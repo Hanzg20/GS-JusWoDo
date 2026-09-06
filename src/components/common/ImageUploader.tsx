@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
+import { useConfigStore } from '@/stores/configStore';
 
 interface ImageUploaderProps {
     bucketName: string;
@@ -21,6 +23,8 @@ const ImageUploader = ({
     existingImages = [],
     folderPath = 'uploads'
 }: ImageUploaderProps) => {
+    const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
     const [uploading, setUploading] = useState(false);
     const [previews, setPreviews] = useState<string[]>(existingImages);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +40,15 @@ const ImageUploader = ({
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
+
+        // Storage RLS requires an authenticated role — without this check the
+        // upload silently fails with a generic "row-level security policy"
+        // error that gives the visitor no idea logging in would fix it.
+        if (!currentUser) {
+            toast.error(language === 'zh' ? '请先登录后再上传图片' : 'Please log in to upload images');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
 
         if (previews.length + files.length > maxFiles) {
             toast.error(`You can only upload up to ${maxFiles} images.`);
@@ -90,10 +103,20 @@ const ImageUploader = ({
                 }
             }
 
-            const updatedPreviews = [...previews, ...newUrls];
-            setPreviews(updatedPreviews);
-            onUpload(updatedPreviews);
-            toast.success('Images uploaded successfully!');
+            // Only report success (and only commit the new URLs) for files that
+            // actually made it — every failure already got its own error toast
+            // above; claiming success on top of that when newUrls is empty is
+            // exactly the "reports success, nothing actually uploaded" bug.
+            if (newUrls.length > 0) {
+                const updatedPreviews = [...previews, ...newUrls];
+                setPreviews(updatedPreviews);
+                onUpload(updatedPreviews);
+                toast.success(
+                    newUrls.length === files.length
+                        ? 'Images uploaded successfully!'
+                        : `${newUrls.length} of ${files.length} images uploaded.`
+                );
+            }
         } catch (error) {
             console.error('Upload process error:', error);
             toast.error('An unexpected error occurred during upload.');

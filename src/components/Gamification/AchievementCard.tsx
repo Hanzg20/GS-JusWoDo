@@ -2,6 +2,7 @@ import { Achievement } from '@/types/gamification';
 import { motion } from 'framer-motion';
 import { Lock, Check, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useConfigStore } from '@/stores/configStore';
 
 interface AchievementCardProps {
   achievement: Achievement;
@@ -15,12 +16,12 @@ const rarityColors = {
   legendary: 'from-amber-500 to-amber-600'
 };
 
-const rarityLabels = {
-  common: '普通',
-  rare: '稀有',
-  epic: '史诗',
-  legendary: '传说'
-};
+const getRarityLabels = (language: 'zh' | 'en') => ({
+  common: language === 'zh' ? '普通' : 'Common',
+  rare: language === 'zh' ? '稀有' : 'Rare',
+  epic: language === 'zh' ? '史诗' : 'Epic',
+  legendary: language === 'zh' ? '传说' : 'Legendary'
+});
 
 const rarityBorders = {
   common: 'border-gray-400',
@@ -30,6 +31,14 @@ const rarityBorders = {
 };
 
 export const AchievementCard = ({ achievement, onClick }: AchievementCardProps) => {
+  const { language } = useConfigStore();
+  const rarityLabels = getRarityLabels(language);
+  const t = {
+    progress: language === 'zh' ? '进度' : 'Progress',
+    unlockedSuffix: language === 'zh' ? '解锁' : 'unlocked',
+    reward: language === 'zh' ? '奖励:' : 'Reward:',
+    titleLabel: language === 'zh' ? '称号:' : 'Title:',
+  };
   const isUnlocked = achievement.unlocked || false;
   const progress = achievement.progress || 0;
   const progressPercent = Math.min((progress / achievement.requirement.target) * 100, 100);
@@ -95,7 +104,7 @@ export const AchievementCard = ({ achievement, onClick }: AchievementCardProps) 
       {!isUnlocked && achievement.requirement.type === 'count' && (
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">进度</span>
+            <span className="text-muted-foreground">{t.progress}</span>
             <span className="font-medium">
               {progress} / {achievement.requirement.target}
             </span>
@@ -115,23 +124,23 @@ export const AchievementCard = ({ achievement, onClick }: AchievementCardProps) 
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
           <Star className="w-3 h-3" />
           <span>
-            {new Date(achievement.unlockedAt).toLocaleDateString('zh-CN', {
+            {new Date(achievement.unlockedAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', {
               month: 'short',
               day: 'numeric'
             })}
-            解锁
+            {' '}{t.unlockedSuffix}
           </span>
         </div>
       )}
 
       {/* 奖励 */}
       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-        <span className="text-xs text-muted-foreground">奖励:</span>
+        <span className="text-xs text-muted-foreground">{t.reward}</span>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-primary">+{achievement.rewards.exp} EXP</span>
           {achievement.rewards.title && (
             <Badge variant="secondary" className="text-xs">
-              称号: {achievement.rewards.title}
+              {t.titleLabel} {achievement.rewards.title}
             </Badge>
           )}
         </div>

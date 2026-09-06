@@ -87,13 +87,20 @@ const CategoryListing = () => {
         setSelectedCategoryId(undefined);
     }, [type]);
 
+    // "products" and "secondhand" are both really GOODS underneath — split
+    // by which form created the listing (see 2026-09-06), not a real type
+    // of their own. Every other segment maps straight to its ListingType.
+    const resolvedType = type === 'products' || type === 'secondhand' ? 'GOODS' : (type?.toUpperCase() as any) || undefined;
+    const goodsTier = type === 'products' ? 'PRODUCT' : type === 'secondhand' ? 'SECONDHAND' : undefined;
+
     useEffect(() => {
         searchListings({
             query: query || undefined,
             isSemantic: isSmartSearch && !!query,
             nodeId: currentUser?.nodeId || activeNodeId,
             categoryId: selectedCategoryId,
-            type: (type?.toUpperCase() as any) || undefined,
+            type: resolvedType,
+            goodsTier,
             sortBy
         });
     }, [type, query, isSmartSearch, selectedCategoryId, sortBy, currentUser?.nodeId, activeNodeId]);
@@ -108,6 +115,8 @@ const CategoryListing = () => {
             case 'rental': return language === 'zh' ? '社区租赁' : 'Community Rental';
             case 'consultation': return language === 'zh' ? '专家咨询' : 'Expert Advice';
             case 'goods': return language === 'zh' ? '闲置物品' : 'Marketplace';
+            case 'products': return language === 'zh' ? '产品' : 'Products';
+            case 'secondhand': return language === 'zh' ? '闲置市场' : 'Secondhand Market';
             case 'task': return language === 'zh' ? '社区任务' : 'Local Tasks';
             default: return language === 'zh' ? '发现' : 'Explore All';
         }

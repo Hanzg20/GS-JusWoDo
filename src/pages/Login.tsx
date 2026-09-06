@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
+import { useConfigStore } from "@/stores/configStore";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +24,50 @@ import { motion, AnimatePresence } from "framer-motion";
 const Login = () => {
     const navigate = useNavigate();
     const { currentUser, isLoading: authLoading } = useAuthStore();
+    const { language } = useConfigStore();
     const [loading, setLoading] = useState(false);
+
+    const t = {
+        heroTitle: language === 'zh' ? <>让邻里互助<br />变得更简单</> : <>Neighbor help,<br />made simple</>,
+        heroSubtitle: language === 'zh' ? '加入 JUSTWEDO 社区，发现身边的美好服务，与邻居一起 Get Things Done.' : 'Join the JUSTWEDO community, discover great local services, and get things done with your neighbors.',
+        heroQuote: language === 'zh' ? '"这是我在渥太华用过最温馨的社区平台"' : '"The warmest community platform I\'ve used in Ottawa"',
+        welcomeBackMobile: language === 'zh' ? '欢迎回来' : 'Welcome back',
+        welcomeBackMobileSub: language === 'zh' ? '登录 JUSTWEDO 开启邻里互助之旅' : 'Log in to JUSTWEDO and start helping your neighbors',
+        loginTitle: language === 'zh' ? '登录' : 'Log In',
+        loginSubtitle: language === 'zh' ? '很高兴再次见到您！' : 'Great to see you again!',
+        phoneOrEmailLabel: language === 'zh' ? '手机号或邮箱' : 'Phone or Email',
+        phoneOrEmailPlaceholder: language === 'zh' ? '手机号 (Canada) 或 邮箱' : 'Phone (Canada) or Email',
+        getCode: language === 'zh' ? '获取验证码' : 'Get Code',
+        emailLabel: language === 'zh' ? '邮箱' : 'Email',
+        passwordLabel: language === 'zh' ? '密码' : 'Password',
+        forgotPassword: language === 'zh' ? '忘记密码？' : 'Forgot password?',
+        loggingIn: language === 'zh' ? '登录中...' : 'Logging in...',
+        loginNow: language === 'zh' ? '立即登录' : 'Log In',
+        codeSentTo: language === 'zh' ? '验证码已发送至' : 'Code sent to',
+        change: language === 'zh' ? '更换' : 'Change',
+        codeLabel: language === 'zh' ? '6 位验证码' : '6-Digit Code',
+        verifying: language === 'zh' ? '验证中...' : 'Verifying...',
+        confirmLogin: language === 'zh' ? '确认登录' : 'Confirm',
+        noCode: language === 'zh' ? '没收到验证码？' : "Didn't get a code?",
+        resendIn: (s: number) => language === 'zh' ? `${s}秒后可重发` : `Resend in ${s}s`,
+        resend: language === 'zh' ? '重新发送' : 'Resend',
+        usePasswordLogin: language === 'zh' ? '使用邮箱密码登录' : 'Log in with email & password',
+        useOtpLogin: language === 'zh' ? '使用手机验证码登录' : 'Log in with phone code',
+        thirdPartyLogin: language === 'zh' ? '第三方登录' : 'Or continue with',
+        noAccount: language === 'zh' ? '还没有账号？' : "Don't have an account?",
+        startExperience: language === 'zh' ? '开启体验' : 'Sign Up',
+        errInvalidIdentifier: language === 'zh' ? '请输入有效的手机号或邮箱' : 'Please enter a valid phone number or email',
+        errInvalid6Digit: language === 'zh' ? '请输入6位验证码' : 'Please enter the 6-digit code',
+        errSendFailed: language === 'zh' ? '发送失败' : 'Failed to send',
+        errCodeSentPhone: (id: string) => language === 'zh' ? `验证码已发送至 ${id}` : `Code sent to ${id}`,
+        errCodeSentEmail: language === 'zh' ? '验证码已发送到您的邮箱' : 'Code sent to your email',
+        errLoginSuccess: language === 'zh' ? '登录成功' : 'Logged in successfully',
+        errCodeInvalidToast: language === 'zh' ? '验证码无效' : 'Invalid code',
+        errCodeInvalidOrExpired: language === 'zh' ? '验证码无效或已过期' : 'Invalid or expired code',
+        errWrongCreds: language === 'zh' ? '邮箱或密码错误' : 'Incorrect email or password',
+        errLoginFailed: language === 'zh' ? '登录失败' : 'Login failed',
+        errSocialFailed: (p: string) => language === 'zh' ? `${p} 登录失败` : `${p} login failed`,
+    };
 
     // Smart input that detects phone or email
     const [identifier, setIdentifier] = useState("");
@@ -97,7 +141,7 @@ const Login = () => {
         if (e) e.preventDefault();
         setError(null);
         if (!identifierType) {
-            setError("请输入有效的手机号或邮箱");
+            setError(t.errInvalidIdentifier);
             return;
         }
         setLoading(true);
@@ -109,20 +153,20 @@ const Login = () => {
                     options: { channel: 'sms' }
                 });
                 if (otpError) throw otpError;
-                toast.success(`验证码已发送至 ${identifier}`);
+                toast.success(t.errCodeSentPhone(identifier));
             } else {
                 const { error: otpError } = await supabase.auth.signInWithOtp({
                     email: identifier.trim(),
                     options: { emailRedirectTo: window.location.origin }
                 });
                 if (otpError) throw otpError;
-                toast.success("验证码已发送到您的邮箱");
+                toast.success(t.errCodeSentEmail);
             }
             setStep('VERIFY');
             setTimer(60);
         } catch (err: any) {
-            setError(err.message || "发送失败");
-            toast.error(err.message || "发送失败");
+            setError(err.message || t.errSendFailed);
+            toast.error(err.message || t.errSendFailed);
         } finally {
             setLoading(false);
         }
@@ -132,7 +176,7 @@ const Login = () => {
         e.preventDefault();
         setError(null);
         if (otpCode.length !== 6) {
-            setError("请输入6位验证码");
+            setError(t.errInvalid6Digit);
             return;
         }
         setLoading(true);
@@ -153,12 +197,12 @@ const Login = () => {
             }
 
             if (verifyResult.error) throw verifyResult.error;
-            toast.success("登录成功");
+            toast.success(t.errLoginSuccess);
             // AuthStore will handle the state change automatically via onAuthStateChange
             navigate("/");
         } catch (err: any) {
-            setError("验证码无效或已过期");
-            toast.error("验证码无效");
+            setError(t.errCodeInvalidOrExpired);
+            toast.error(t.errCodeInvalidToast);
         } finally {
             setLoading(false);
         }
@@ -174,11 +218,11 @@ const Login = () => {
                 password,
             });
             if (loginError) throw loginError;
-            toast.success("登录成功");
+            toast.success(t.errLoginSuccess);
             navigate("/");
         } catch (err: any) {
-            setError("邮箱或密码错误");
-            toast.error("登录失败");
+            setError(t.errWrongCreds);
+            toast.error(t.errLoginFailed);
         } finally {
             setLoading(false);
         }
@@ -193,14 +237,14 @@ const Login = () => {
             });
             if (error) throw error;
         } catch (err: any) {
-            toast.error(`${provider} 登录失败`);
+            toast.error(t.errSocialFailed(provider));
             setLoading(false);
         }
     };
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 overflow-hidden relative">
-            <SEO title="登录 / Login" />
+            <SEO title={language === 'zh' ? '登录' : 'Login'} />
             {/* Background Orbs */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/10 rounded-full blur-[120px] animate-pulse" />
@@ -217,10 +261,10 @@ const Login = () => {
                             <Sparkles className="w-6 h-6 text-white" />
                         </div>
                         <h2 className="text-4xl font-black mb-4 leading-tight">
-                            让邻里互助<br />变得更简单
+                            {t.heroTitle}
                         </h2>
                         <p className="text-white/80 text-lg max-w-sm">
-                            加入 JUSTWEDO 社区，发现身边的美好服务，与邻居一起 Get Things Done.
+                            {t.heroSubtitle}
                         </p>
                     </div>
 
@@ -236,7 +280,7 @@ const Login = () => {
                             </div>
                         </div>
                         <p className="text-sm font-medium text-white/70 italic">
-                            "这是我在渥太华用过最温馨的社区平台"
+                            {t.heroQuote}
                         </p>
                     </div>
 
@@ -253,13 +297,13 @@ const Login = () => {
                             <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
                                 <Sparkles className="w-8 h-8 text-white" />
                             </div>
-                            <h1 className="text-3xl font-black text-slate-900">欢迎回来</h1>
-                            <p className="text-muted-foreground mt-2">登录 JUSTWEDO 开启邻里互助之旅</p>
+                            <h1 className="text-3xl font-black text-slate-900">{t.welcomeBackMobile}</h1>
+                            <p className="text-muted-foreground mt-2">{t.welcomeBackMobileSub}</p>
                         </div>
 
                         <div className="hidden lg:block mb-10">
-                            <h1 className="text-3xl font-black text-slate-900">登录</h1>
-                            <p className="text-muted-foreground mt-2">很高兴再次见到您！</p>
+                            <h1 className="text-3xl font-black text-slate-900">{t.loginTitle}</h1>
+                            <p className="text-muted-foreground mt-2">{t.loginSubtitle}</p>
                         </div>
 
                         <div className="space-y-6">
@@ -275,7 +319,7 @@ const Login = () => {
                                         {!showPasswordLogin ? (
                                             <form onSubmit={handleSendOtp} className="space-y-4">
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-bold text-slate-700 ml-1">手机号或邮箱</label>
+                                                    <label className="text-sm font-bold text-slate-700 ml-1">{t.phoneOrEmailLabel}</label>
                                                     <div className="relative group">
                                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
                                                             {identifierType === 'phone' ? <Phone className="w-5 h-5" /> : <Mail className="w-5 h-5" />}
@@ -285,7 +329,7 @@ const Login = () => {
                                                             required
                                                             value={identifier}
                                                             onChange={(e) => handleIdentifierChange(e.target.value)}
-                                                            placeholder="手机号 (Canada) 或 邮箱"
+                                                            placeholder={t.phoneOrEmailPlaceholder}
                                                             className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-medium"
                                                         />
                                                     </div>
@@ -311,7 +355,7 @@ const Login = () => {
                                                         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                     ) : (
                                                         <span className="flex items-center gap-2">
-                                                            获取验证码 <ArrowRight className="w-5 h-5" />
+                                                            {t.getCode} <ArrowRight className="w-5 h-5" />
                                                         </span>
                                                     )}
                                                 </Button>
@@ -320,7 +364,7 @@ const Login = () => {
                                             <form onSubmit={handlePasswordLogin} className="space-y-4">
                                                 <div className="space-y-4">
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-bold text-slate-700 ml-1">邮箱</label>
+                                                        <label className="text-sm font-bold text-slate-700 ml-1">{t.emailLabel}</label>
                                                         <div className="relative group">
                                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                                             <input
@@ -335,9 +379,9 @@ const Login = () => {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <div className="flex items-center justify-between px-1">
-                                                            <label className="text-sm font-bold text-slate-700">密码</label>
+                                                            <label className="text-sm font-bold text-slate-700">{t.passwordLabel}</label>
                                                             <Link to="/forgot-password" className="text-xs text-primary font-bold hover:underline">
-                                                                忘记密码？
+                                                                {t.forgotPassword}
                                                             </Link>
                                                         </div>
                                                         <div className="relative group">
@@ -373,7 +417,7 @@ const Login = () => {
                                                     disabled={loading}
                                                     className="w-full py-7 rounded-2xl font-black text-lg bg-slate-900 hover:bg-slate-800 shadow-xl transition-all"
                                                 >
-                                                    {loading ? "登录中..." : "立即登录"}
+                                                    {loading ? t.loggingIn : t.loginNow}
                                                 </Button>
                                             </form>
                                         )}
@@ -391,20 +435,20 @@ const Login = () => {
                                                 {identifierType === 'phone' ? <Phone className="w-5 h-5" /> : <Mail className="w-5 h-5" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-xs text-primary/60 font-bold uppercase tracking-wider">验证码已发送至</p>
+                                                <p className="text-xs text-primary/60 font-bold uppercase tracking-wider">{t.codeSentTo}</p>
                                                 <p className="text-sm font-black truncate">{identifier}</p>
                                             </div>
                                             <button
                                                 onClick={() => setStep('INPUT')}
                                                 className="text-xs font-bold text-primary hover:underline underline-offset-4"
                                             >
-                                                更换
+                                                {t.change}
                                             </button>
                                         </div>
 
                                         <form onSubmit={handleVerifyOtp} className="space-y-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold text-slate-700 ml-1">6 位验证码</label>
+                                                <label className="text-sm font-bold text-slate-700 ml-1">{t.codeLabel}</label>
                                                 <input
                                                     type="text"
                                                     required
@@ -429,13 +473,13 @@ const Login = () => {
                                                 disabled={loading || otpCode.length !== 6}
                                                 className="w-full py-7 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 shadow-xl transition-all"
                                             >
-                                                {loading ? "验证中..." : "确认登录"}
+                                                {loading ? t.verifying : t.confirmLogin}
                                             </Button>
 
                                             <p className="text-center text-sm text-muted-foreground pt-2">
-                                                没收到验证码？{" "}
+                                                {t.noCode}{" "}
                                                 {timer > 0 ? (
-                                                    <span className="text-slate-400 font-bold">{timer}秒后可重发</span>
+                                                    <span className="text-slate-400 font-bold">{t.resendIn(timer)}</span>
                                                 ) : (
                                                     <button
                                                         type="button"
@@ -443,7 +487,7 @@ const Login = () => {
                                                         disabled={loading}
                                                         className="text-primary font-bold hover:underline"
                                                     >
-                                                        重新发送
+                                                        {t.resend}
                                                     </button>
                                                 )}
                                             </p>
@@ -463,9 +507,9 @@ const Login = () => {
                                         className="w-full py-3 text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center justify-center gap-2"
                                     >
                                         {!showPasswordLogin ? (
-                                            <><Lock className="w-4 h-4" /> 使用邮箱密码登录</>
+                                            <><Lock className="w-4 h-4" /> {t.usePasswordLogin}</>
                                         ) : (
-                                            <><Phone className="w-4 h-4" /> 使用手机验证码登录</>
+                                            <><Phone className="w-4 h-4" /> {t.useOtpLogin}</>
                                         )}
                                     </button>
                                 </div>
@@ -473,7 +517,7 @@ const Login = () => {
 
                             {/* OAuth Tier */}
                             <div className="pt-6 border-t border-slate-100 space-y-4">
-                                <p className="text-xs font-black text-slate-400 text-center uppercase tracking-widest">第三方登录</p>
+                                <p className="text-xs font-black text-slate-400 text-center uppercase tracking-widest">{t.thirdPartyLogin}</p>
                                 <div className="grid grid-cols-2 gap-4">
                                     <button
                                         onClick={() => handleSocialLogin('google')}
@@ -504,9 +548,9 @@ const Login = () => {
                             {/* Bottom tier */}
                             <div className="pt-6 text-center">
                                 <p className="text-slate-500 font-medium">
-                                    还没有账号？{" "}
+                                    {t.noAccount}{" "}
                                     <Link to="/register" className="text-primary font-black hover:underline inline-flex items-center gap-1 group">
-                                        <UserPlus className="w-4 h-4" /> 开启体验
+                                        <UserPlus className="w-4 h-4" /> {t.startExperience}
                                     </Link>
                                 </p>
                             </div>
