@@ -18,7 +18,7 @@ import { toast } from "sonner";
 const MyListings = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
-    const { listings, listingItems, fetchListings, deleteListing, updateListing } = useListingStore();
+    const { listings, listingItems, fetchListings, deleteListing, updateListing, updateItemStatus } = useListingStore();
     const { orders } = useOrderStore();
     const { providers } = useProviderStore();
 
@@ -108,10 +108,15 @@ const MyListings = () => {
         }
     };
 
-    const getTypeBadge = (type: string) => {
-        switch (type) {
+    // Matches ListingCard.tsx's badge split — Products vs Secondhand by
+    // which form created the listing (attributes.goodsTier), not a single
+    // generic "Good" for all of GOODS.
+    const getTypeBadge = (listing: { type: string; attributes?: any }) => {
+        switch (listing.type) {
             case 'TASK': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none font-black text-[10px] uppercase tracking-tighter">Demand</Badge>;
-            case 'GOODS': return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none font-black text-[10px] uppercase tracking-tighter">Good</Badge>;
+            case 'GOODS': return listing.attributes?.goodsTier === 'PRODUCT'
+                ? <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100 border-none font-black text-[10px] uppercase tracking-tighter">Product</Badge>
+                : <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none font-black text-[10px] uppercase tracking-tighter">Secondhand</Badge>;
             case 'RENTAL': return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none font-black text-[10px] uppercase tracking-tighter">Rental</Badge>;
             default: return <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">Service</Badge>;
         }
@@ -165,7 +170,7 @@ const MyListings = () => {
                                                 className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                                             />
                                             <div className="absolute top-3 left-3">
-                                                {getTypeBadge(listing.type)}
+                                                {getTypeBadge(listing)}
                                             </div>
                                         </div>
 
@@ -175,7 +180,7 @@ const MyListings = () => {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <div className="flex items-center gap-2">
-                                                            {getTypeBadge(listing.type)}
+                                                            {getTypeBadge(listing)}
                                                             {listing.status === 'ARCHIVED' && (
                                                                 <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-muted font-black text-[10px] uppercase tracking-tighter">
                                                                     Offline
@@ -212,6 +217,31 @@ const MyListings = () => {
                                                 </div>
 
                                                 <div className="flex items-center gap-2 shrink-0">
+                                                    {/* Direct sold/pending control — not every sale goes through
+                                                        an in-app order (e.g. agreed off-platform after a chat),
+                                                        so this can't only live behind My Orders > I'm Selling. */}
+                                                    {/* Secondhand only, not a merchant's Product catalog —
+                                                        those restock and use their own stock field, they
+                                                        don't have a one-off "sold" state. */}
+                                                    {listing.type === 'GOODS' && (listing as any).attributes?.goodsTier !== 'PRODUCT' && firstItem && (
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                                                                    title="标记售出状态"
+                                                                >
+                                                                    <Tag className="w-4 h-4 text-muted-foreground" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'AVAILABLE')}>Available</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'PENDING')}>Pending</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'SOLD')}>Sold</DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    )}
                                                     <Button
                                                         variant="outline"
                                                         size="icon"

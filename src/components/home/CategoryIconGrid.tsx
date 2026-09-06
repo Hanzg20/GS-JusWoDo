@@ -37,7 +37,7 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
 
   return (
     <div className="py-2 px-1">
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4">
         {pillars.map((pillar, idx) => {
           const extra = pillar.extraData || {};
           const Icon = getIcon(extra.icon);

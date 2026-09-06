@@ -76,7 +76,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
                 try {
                     const { useListingStore } = await import('@/stores/listingStore');
                     const master = useListingStore.getState().listings.find(l => l.id === updatedOrder.masterId);
-                    if (master?.type === 'GOODS') {
+                    // Secondhand only — a merchant's Product catalog item
+                    // shouldn't get permanently marked SOLD just because one
+                    // order completed; it restocks via its own stock field.
+                    if (master?.type === 'GOODS' && (master as any).attributes?.goodsTier !== 'PRODUCT') {
                         const itemRepo = repositoryFactory.getListingItemRepository();
                         const updatedItem = await itemRepo.update(updatedOrder.itemId, { status: 'SOLD' as any });
                         useListingStore.setState((state: any) => ({

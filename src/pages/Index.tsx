@@ -8,7 +8,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
 import { MasonryGrid } from "@/components/Community/MasonryGrid";
-import { ArrowRight, Sparkles, Flame, Wrench, Package, Camera, MessageSquareQuote } from "lucide-react";
+import { ArrowRight, Sparkles, Flame, Wrench, ShoppingBag, ClipboardList, RefreshCw, Camera, MessageSquareQuote } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ListingCard } from "@/components/ListingCard";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
@@ -17,7 +17,11 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BentoHero } from "@/components/home/BentoHero";
 import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 
-type TabType = 'all' | 'services' | 'goods' | 'rentals' | 'community';
+// Matches CategoryIconGrid's 6 pillars exactly (same /category/:type slugs)
+// — this tab bar used to have its own separate, out-of-sync taxonomy (one
+// generic "Goods" tab, no Task tab at all, plural "rentals" that didn't
+// even match the working /category/rental route). See 2026-09-06.
+type TabType = 'all' | 'service' | 'products' | 'task' | 'secondhand' | 'rental' | 'community';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -33,9 +37,11 @@ const Index = () => {
   // Localization Dictionary
   const t = {
     all: isZh ? '🔥 热门推荐' : '🔥 Trending',
-    services: isZh ? '🧹 本地服务' : '🧹 Services',
-    goods: isZh ? '🏷️ 邻里闲置' : '🏷️ Goods',
-    rentals: isZh ? '📸 共享租赁' : '📸 Rentals',
+    service: isZh ? '🧹 本地服务' : '🧹 Services',
+    products: isZh ? '🛍️ 产品' : '🛍️ Products',
+    task: isZh ? '📋 任务' : '📋 Tasks',
+    secondhand: isZh ? '🔄 闲置市场' : '🔄 Secondhand',
+    rental: isZh ? '📸 租赁' : '📸 Rentals',
     community: isZh ? '💬 邻里动态' : '💬 Neighbors',
     viewMore: isZh ? '查看更多' : 'View More',
     emptyTitle: isZh ? 'Ottawa & Kanata 社区建设中' : 'Community Under Construction',
@@ -86,11 +92,18 @@ const Index = () => {
   // Filter listings by active tab
   const currentFilteredListings = useMemo(() => {
     switch (activeTab) {
-      case 'services':
+      case 'service':
         return listings.filter(l => l.type === 'SERVICE');
-      case 'goods':
-        return listings.filter(l => l.type === 'GOODS');
-      case 'rentals':
+      // Products vs Secondhand: same GOODS type, split by which form
+      // created the listing (attributes.goodsTier), not who posted it —
+      // see CategoryListing.tsx / Publish.tsx, 2026-09-06.
+      case 'products':
+        return listings.filter(l => l.type === 'GOODS' && (l as any).attributes?.goodsTier === 'PRODUCT');
+      case 'secondhand':
+        return listings.filter(l => l.type === 'GOODS' && (l as any).attributes?.goodsTier !== 'PRODUCT');
+      case 'task':
+        return listings.filter(l => l.type === 'TASK');
+      case 'rental':
         return listings.filter(l => l.type === 'RENTAL');
       case 'all':
       default:
@@ -130,9 +143,11 @@ const Index = () => {
 
   const tabs: { id: TabType; label: string; icon: any }[] = [
     { id: 'all', label: t.all, icon: Flame },
-    { id: 'services', label: t.services, icon: Wrench },
-    { id: 'goods', label: t.goods, icon: Package },
-    { id: 'rentals', label: t.rentals, icon: Camera },
+    { id: 'service', label: t.service, icon: Wrench },
+    { id: 'products', label: t.products, icon: ShoppingBag },
+    { id: 'task', label: t.task, icon: ClipboardList },
+    { id: 'secondhand', label: t.secondhand, icon: RefreshCw },
+    { id: 'rental', label: t.rental, icon: Camera },
     { id: 'community', label: t.community, icon: MessageSquareQuote },
   ];
 

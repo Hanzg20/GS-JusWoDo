@@ -17,6 +17,7 @@ interface ListingState {
     searchListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, goodsTier?: 'PRODUCT' | 'SECONDHAND', limit?: number, offset?: number, sortBy?: 'rating' | 'reviews' | 'newest' }) => Promise<void>;
     loadMoreListings: (options: { query?: string, isSemantic?: boolean, nodeId?: string, categoryId?: string, type?: ListingType, goodsTier?: 'PRODUCT' | 'SECONDHAND', limit?: number, offset?: number, sortBy?: 'rating' | 'reviews' | 'newest' }) => Promise<void>;
     toggleItemAvailability: (itemId: string) => Promise<void>;
+    updateItemStatus: (itemId: string, status: ListingItem['status']) => Promise<void>;
 }
 
 import { repositoryFactory } from '@/services/repositories/factory';
@@ -244,6 +245,31 @@ export const useListingStore = create<ListingState>((set, get) => ({
         } catch (err: any) {
             console.error('Failed to toggle item availability:', err);
             toast.error("操作失败");
+        }
+    },
+
+    // Direct seller control for My Posts — not every sale goes through an
+    // in-app order (e.g. agreed off-platform after a chat), so this can't
+    // only happen via My Orders > I'm Selling > Mark as Completed (which
+    // still cascades here too, see orderStore.ts's updateOrderStatus).
+    updateItemStatus: async (itemId, status) => {
+        try {
+            const repo = repositoryFactory.getListingItemRepository();
+            const updatedItem = await repo.update(itemId, { status });
+
+            set((state) => ({
+                listingItems: state.listingItems.map(i => i.id === itemId ? updatedItem : i)
+            }));
+
+            const labels: Record<string, string> = {
+                AVAILABLE: 'Marked as available',
+                PENDING: 'Marked as pending',
+                SOLD: 'Marked as sold',
+            };
+            toast.success(labels[status] || 'Status updated');
+        } catch (err: any) {
+            console.error('Failed to update item status:', err);
+            toast.error('Failed to update status');
         }
     }
 }));

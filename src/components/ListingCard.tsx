@@ -37,10 +37,15 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
         ? items.reduce((min, cur) => cur.pricing.price.amount < min.pricing.price.amount ? cur : min, items[0]).pricing
         : null;
 
-    // GOODS listings are one item each (the simplified Sell Items form), so
-    // that item's own status is the listing's sold state — set via My
-    // Orders > I'm Selling > Mark as Completed (orderStore.ts).
-    const isSold = items.length > 0 && items.every(i => i.status === 'SOLD');
+    // Secondhand GOODS only (one item each, the simplified Sell Items
+    // form) — a merchant's Product catalog restocks via its own stock
+    // field, it doesn't have a one-off "sold" state. Status is set from My
+    // Posts directly, or via My Orders > I'm Selling > Mark as Completed
+    // (see listingStore.ts's updateItemStatus / orderStore.ts's
+    // updateOrderStatus).
+    const isSecondhandGoods = item.type === 'GOODS' && item.attributes?.goodsTier !== 'PRODUCT';
+    const isSold = isSecondhandGoods && items.length > 0 && items.every(i => i.status === 'SOLD');
+    const isPending = isSecondhandGoods && !isSold && items.length > 0 && items.some(i => i.status === 'PENDING');
 
     // Price label driven by pricing.model — the "6 transaction models" this
     // field encodes (see product_requirements_document.md), so a task's
@@ -157,6 +162,12 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                             <span className="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg -rotate-6">
                                 {language === 'zh' ? '已售出' : 'Sold'}
                             </span>
+                        </div>
+                    )}
+
+                    {isPending && (
+                        <div className="absolute bottom-3 right-3 bg-yellow-400 text-yellow-950 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide shadow-lg">
+                            {language === 'zh' ? '待定' : 'Pending'}
                         </div>
                     )}
 
