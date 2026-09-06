@@ -120,7 +120,24 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     bgClass: 'bg-gradient-to-br from-green-500 to-green-600',
                     glowClass: 'group-hover:shadow-green-500/20'
                 };
-            default: // SERVICE, CONSULTATION, OTHER
+            case 'SERVICE':
+                // Unlike GOODS, SERVICE only has one posting form/path (pro
+                // hub's providerServiceFields) — no separate simple-vs-
+                // professional form to key off of — so who's providing it
+                // (provider.identity) is the only signal available, and the
+                // correct one here (see 2026-09-06).
+                return provider?.identity === 'MERCHANT'
+                    ? {
+                        badge: language === 'zh' ? '商户' : 'Business',
+                        bgClass: 'bg-gradient-to-br from-primary to-primary/80',
+                        glowClass: 'group-hover:shadow-primary/20'
+                    }
+                    : {
+                        badge: language === 'zh' ? '达人' : 'Handyman',
+                        bgClass: 'bg-gradient-to-br from-teal-500 to-teal-600',
+                        glowClass: 'group-hover:shadow-teal-500/20'
+                    };
+            default: // CONSULTATION, OTHER
                 return {
                     badge: language === 'zh' ? '服务' : 'Service',
                     bgClass: 'bg-gradient-to-br from-primary to-primary/80',

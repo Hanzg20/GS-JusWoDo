@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     TrendingUp, Package, Star, DollarSign, Clock,
@@ -10,6 +10,7 @@ import { useListingStore } from "@/stores/listingStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrderStore } from "@/stores/orderStore";
 import { useProviderStore } from "@/stores/providerStore";
+import { repositoryFactory } from "@/services/repositories/factory";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -21,10 +22,24 @@ const MyListings = () => {
     const { listings, listingItems, fetchListings, deleteListing, updateListing, updateItemStatus } = useListingStore();
     const { orders } = useOrderStore();
     const { providers } = useProviderStore();
+    // Business vs Handyman badge on SERVICE listings needs provider.identity,
+    // which the User object doesn't carry and the providers store often
+    // hasn't loaded here (see the comment on profileId below) — fetched
+    // directly instead. NEIGHBOR-identity providers can still hold the
+    // PROVIDER role (BecomeProvider.tsx lets a handyman pick either
+    // identity), so isProvider alone can't stand in for this.
+    const [myIdentity, setMyIdentity] = useState<'NEIGHBOR' | 'MERCHANT' | null>(null);
 
     useEffect(() => {
         fetchListings();
     }, []);
+
+    useEffect(() => {
+        if (!currentUser?.providerProfileId) return;
+        repositoryFactory.getProviderRepository().getById(currentUser.providerProfileId)
+            .then(profile => setMyIdentity(profile?.identity || null))
+            .catch(err => console.error('Failed to load provider identity:', err));
+    }, [currentUser?.providerProfileId]);
 
     if (!currentUser) {
         navigate('/login');
@@ -118,6 +133,13 @@ const MyListings = () => {
                 ? <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100 border-none font-black text-[10px] uppercase tracking-tighter">Product</Badge>
                 : <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none font-black text-[10px] uppercase tracking-tighter">Secondhand</Badge>;
             case 'RENTAL': return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none font-black text-[10px] uppercase tracking-tighter">Rental</Badge>;
+            case 'SERVICE':
+                // Every listing here is mine, so myIdentity (fetched once
+                // above) applies to all of them — same signal as
+                // ListingCard.tsx's Business/Handyman split.
+                return myIdentity === 'MERCHANT'
+                    ? <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">Business</Badge>
+                    : <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100 border-none font-black text-[10px] uppercase tracking-tighter">Handyman</Badge>;
             default: return <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">Service</Badge>;
         }
     };
