@@ -43,7 +43,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/10 shadow-sm">
-      <div className="container flex items-center justify-between h-16 px-4 max-w-7xl mx-auto gap-4">
+      <div className="container flex items-center justify-between h-16 px-4 max-w-7xl mx-auto gap-2 sm:gap-4">
         {/* Logo & Location */}
         <div className="flex items-center gap-3 shrink-0">
           <Link to="/" className="flex items-center gap-2.5 focus:scale-95 transition-transform">
@@ -97,11 +97,15 @@ const Header = () => {
             </Button>
           )}
 
-          {/* Messages Notification Bell */}
+          {/* Messages Notification Bell — same destination and same
+              unread badge as MobileBottomNav's "Messages" tab, which is
+              always on-screen on mobile, so this was pure duplication
+              fighting the picker/icons for room on a narrow header.
+              Desktop has no bottom nav, so it stays there. */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative rounded-full w-9 h-9"
+            className="relative rounded-full w-9 h-9 hidden md:inline-flex"
             onClick={() => navigate('/messages')}
           >
             <Bell className="w-4.5 h-4.5 text-slate-600" />
