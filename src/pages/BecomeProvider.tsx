@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/authStore";
 import { useProviderStore } from "@/stores/providerStore";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore, writeNodeId } from "@/stores/configStore";
 import { NodePicker } from "@/components/NodePicker";
 import { toast } from "sonner";
 
@@ -33,7 +33,7 @@ const BecomeProvider = () => {
             setFormData(prev => ({
                 ...prev,
                 nameZh: currentUser.name || '',
-                nodeId: prev.nodeId || currentUser.nodeId || activeNodeId,
+                nodeId: prev.nodeId || currentUser.nodeId || writeNodeId(activeNodeId),
             }));
         }
     }, [currentUser, activeNodeId]);

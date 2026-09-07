@@ -4,22 +4,31 @@ import { toast } from 'sonner';
 import { RefCode } from '@/types/domain';
 import { haversineMeters } from '@/lib/geo';
 
-// Launch-phase call: pilot listing/post density is still thin enough that
-// hard-filtering a feed down to one node (NODE_LEES et al) risks showing
-// new users an empty page even when relevant content exists a few km away
-// in another node — worse for a cold-start marketplace than showing
+// Sentinel activeNodeId meaning "every node, not just one" — a real,
+// user-selectable choice in NodePicker.tsx (shown as "Ottawa (All)"), and
+// also the actual default a fresh visitor starts on (see activeNodeId
+// below). Launch-phase call: pilot listing/post density is still thin
+// enough that starting someone hard-scoped to one node (NODE_LEES et al)
+// risked showing an empty page even when relevant content existed a few km
+// away in another node — worse for a cold-start marketplace than showing
 // something slightly farther away with its distance tag attached. Revisit
-// once density grows per-node (flip to false, or make it conditional on a
-// per-node listing count once that's worth the complexity).
-//
-// Only wraps the *read* side (call sites that filter a feed); activeNodeId
-// itself is untouched, so publish/register flows still assign a real node —
-// passing this sentinel there would silently corrupt data (a listing whose
-// node_id nothing ever queries for again).
-const SHOW_ALL_OTTAWA = true;
+// once density grows per-node (change the default below to a real node, or
+// make it conditional on a per-node listing count once that's worth the
+// complexity) — picking a specific neighborhood already filters for real,
+// this only concerns the starting point.
+export const NODE_ALL = 'ALL';
 
 export function browseNodeId(nodeId: string): string | undefined {
-    return SHOW_ALL_OTTAWA ? undefined : nodeId;
+    return nodeId === NODE_ALL ? undefined : nodeId;
+}
+
+// The inverse case: publish/register flows need one real node_id to write,
+// even when activeNodeId is currently NODE_ALL — writing the literal
+// string "ALL" as a node_id would create a listing/profile nothing ever
+// queries for again. Falls back to the same NODE_LEES default these flows
+// already used before NODE_ALL existed.
+export function writeNodeId(nodeId: string): string {
+    return nodeId === NODE_ALL ? 'NODE_LEES' : nodeId;
 }
 
 // Nearest known node must be within this radius for the area to count as
@@ -67,7 +76,7 @@ const detectBrowserLanguage = (): 'en' | 'zh' => {
 export const useConfigStore = create<ConfigState>()(
     persist(
         (set, get) => ({
-            activeNodeId: 'NODE_LEES', // Default to Lees for Phase 1
+            activeNodeId: NODE_ALL, // Launch default — see NODE_ALL above
             refCodes: [],
             language: 'en', // Default language (will be auto-detected on first run)
             isLanguageAutoDetected: false,

@@ -1,6 +1,5 @@
 import { SmartSearchBar } from "@/components/SmartSearchBar";
 import { useConfigStore } from "@/stores/configStore";
-import { supabase } from "@/lib/supabase";
 import { useEffect, useState, useRef } from "react";
 import { Star, Map } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -21,23 +20,8 @@ export function BentoHero({ featuredListings = [] }: BentoHeroProps) {
     const { language } = useConfigStore();
     const isZh = language === 'zh';
 
-    const [onlineCount, setOnlineCount] = useState(328);
     const [api, setApi] = useState<CarouselApi>();
     const autoplayRef = useRef<ReturnType<typeof setInterval>>();
-
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const { data, error } = await supabase.rpc('get_platform_stats');
-                if (!error && data?.usersCount) {
-                    setOnlineCount(data.usersCount);
-                }
-            } catch (err) {
-                console.error('Failed to fetch platform stats:', err);
-            }
-        };
-        fetchStats();
-    }, []);
 
     // Lightweight autoplay (no extra embla plugin dependency) — pauses
     // when there's nothing to rotate through.
@@ -139,19 +123,6 @@ export function BentoHero({ featuredListings = [] }: BentoHeroProps) {
                     </Carousel>
                 )}
 
-                {/* Brand + online count — kept short, no redundant tagline
-                    (the 3 pillar cards below already say what JWD does) */}
-                <div className="flex items-center gap-2">
-                    <span className="text-base">📍</span>
-                    <h1 className="text-sm font-black text-slate-900 tracking-tight">
-                        {isZh ? '渥太华 JWD' : 'Ottawa JWD'}
-                    </h1>
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-600 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-primary/10 shadow-3xs">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="font-bold text-slate-800">{onlineCount}</span>
-                        <span className="text-slate-500 font-medium">{isZh ? '邻居在线' : 'online'}</span>
-                    </div>
-                </div>
             </div>
         </div>
     );

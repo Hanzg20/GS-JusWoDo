@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useListingStore } from "@/stores/listingStore";
 import { useCommunity } from "@/context/CommunityContext";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore, writeNodeId } from "@/stores/configStore";
 import { toast } from "sonner";
 import DynamicListingForm from "@/components/listing/DynamicListingForm";
 import { getFieldsForType, getProviderGoodsFields } from "@/config/listingFields";
@@ -338,7 +338,7 @@ const Publish = () => {
                 // for a brand-new listing. Without this, re-saving a listing
                 // silently reassigns it to a different neighborhood (and its
                 // stale lat/lng no longer matches), breaking distance display.
-                nodeId: (isEditMode && formData._originalNodeId) || activeNodeId || 'NODE_LEES',
+                nodeId: (isEditMode && formData._originalNodeId) || writeNodeId(activeNodeId),
                 status: 'PUBLISHED',
                 location: {
                     fullAddress: locationAddress,

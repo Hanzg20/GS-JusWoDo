@@ -10,6 +10,7 @@ import ImageUploader from "../../components/common/ImageUploader";
 import { useAuthStore } from "@/stores/authStore";
 import { useListingStore } from "@/stores/listingStore";
 import { useCommunity } from "@/context/CommunityContext";
+import { writeNodeId } from "@/stores/configStore";
 import { toast } from "sonner";
 import { PricingModel } from "@/types/domain";
 import { Switch } from "@/components/ui/switch";
@@ -75,7 +76,7 @@ const PublishService = () => {
                 images,
                 type: selectedType || 'SERVICE' as any,
                 categoryId: selectedCategory?.codeId || 'GENERAL',
-                nodeId: activeNodeId, // 使用当前活动的社区节点
+                nodeId: writeNodeId(activeNodeId), // 使用当前活动的社区节点（若为"全部"则回退到真实节点）
                 status: 'PUBLISHED' as const,
                 tags: [],
                 location: location ? {

@@ -3,6 +3,7 @@ import { Users, Zap, Star, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { useCommunity } from "@/context/CommunityContext";
+import { browseNodeId } from "@/stores/configStore";
 
 /**
  * Community Highlights Bar
@@ -58,7 +59,7 @@ export function CommunityHighlights() {
     const fetchStats = async () => {
       try {
         const statsRepo = repositoryFactory.getCommunityStatsRepository();
-        const data = await statsRepo.getStats(activeNodeId);
+        const data = await statsRepo.getStats(browseNodeId(activeNodeId));
 
         setStats([
           {

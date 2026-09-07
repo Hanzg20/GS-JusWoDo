@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore, writeNodeId } from "@/stores/configStore";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -18,7 +18,7 @@ const Register = () => {
     // Default to whatever this browser session already detected/picked
     // (see configStore.ts) rather than hardcoding one neighborhood for
     // every new signup.
-    const [nodeId, setNodeId] = useState(activeNodeId);
+    const [nodeId, setNodeId] = useState(writeNodeId(activeNodeId));
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 

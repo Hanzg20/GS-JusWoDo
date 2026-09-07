@@ -1,5 +1,5 @@
-import { MapPin, ChevronDown, Check } from "lucide-react";
-import { useConfigStore } from "@/stores/configStore";
+import { MapPin, ChevronDown, Check, Globe } from "lucide-react";
+import { useConfigStore, NODE_ALL } from "@/stores/configStore";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -37,6 +37,13 @@ export function NodePicker({ className = "", value, onChange }: NodePickerProps)
     const selectedNodeId = value !== undefined ? value : activeNodeId;
     const handleSelect = (nodeId: string) => (onChange ? onChange(nodeId) : setActiveNode(nodeId));
 
+    // "Ottawa (All)" is a real choice, not just the launch-phase default
+    // (see NODE_ALL in configStore.ts) — but only in global/header mode.
+    // A controlled instance (value/onChange, e.g. BecomeProvider.tsx's
+    // "Neighborhood" field) is picking the one real node a profile/listing
+    // belongs to, where "All" isn't a meaningful answer.
+    const allowAll = onChange === undefined;
+
     const districts = refCodes
         .filter(r => r.type === 'DISTRICT')
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -47,9 +54,11 @@ export function NodePicker({ className = "", value, onChange }: NodePickerProps)
             .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
     const currentNode = refCodes.find(r => r.type === 'NODE' && r.codeId === selectedNodeId);
-    const currentLabel = currentNode
-        ? (currentNode.enName || currentNode.zhName)
-        : (isZh ? '选择社区' : 'Select Area');
+    const currentLabel = selectedNodeId === NODE_ALL
+        ? (isZh ? 'Ottawa 全部' : 'Ottawa (All)')
+        : currentNode
+            ? (currentNode.enName || currentNode.zhName)
+            : (isZh ? '选择社区' : 'Select Area');
 
     return (
         <DropdownMenu>
@@ -63,6 +72,21 @@ export function NodePicker({ className = "", value, onChange }: NodePickerProps)
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="max-h-96 w-64 overflow-y-auto rounded-2xl border-border/10">
+                {allowAll && (
+                    <>
+                        <DropdownMenuItem
+                            className="text-xs font-bold flex items-center justify-between"
+                            onClick={() => handleSelect(NODE_ALL)}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Globe className="w-3.5 h-3.5 text-primary" />
+                                {isZh ? 'Ottawa 全部' : 'Ottawa (All)'}
+                            </span>
+                            {selectedNodeId === NODE_ALL && <Check className="w-3.5 h-3.5 text-primary" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                    </>
+                )}
                 {districts.map((district, idx) => {
                     const nodes = nodesByDistrict(district.codeId);
                     if (nodes.length === 0) return null;
