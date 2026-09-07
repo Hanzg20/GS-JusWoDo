@@ -24,9 +24,9 @@ const SEO = ({
 
     // Defaults
     const siteName = language === 'zh' ? '渥帮 JWD' : 'JustWeDo Ottawa & Kanata';
-    const defaultTitle = language === 'zh' 
-        ? '渥帮 JWD - Ottawa & Kanata 本地极简社区服务平台' 
-        : 'JustWeDo - Ottawa & Kanata Community Services Marketplace';
+    const defaultTitle = language === 'zh'
+        ? '渥帮 JWD · 远亲不如近邻，邻里互助平台'
+        : 'JustWeDo Ottawa · Good Neighbors, Close to Home';
     const defaultDescription = language === 'zh'
         ? '渥帮 (JustWeDo) 专注于 Ottawa 及 Kanata (Kanata Lakes, Stittsville, Nepean 等) 本地社区。轻松查找与快速发布家政清洁、房屋维修、铲雪除草、宠物照顾、接送协助与邻里闲置互助。'
         : 'Connecting Ottawa & Kanata neighborhoods (Kanata Lakes, Stittsville, Barrhaven) with trusted local services including house cleaning, handyman, snow removal, pet care, and neighborly help.';
