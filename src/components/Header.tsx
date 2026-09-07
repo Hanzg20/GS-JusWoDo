@@ -36,8 +36,9 @@ const Header = () => {
     post: language === 'zh' ? '发布' : 'Post',
     // "Ottawa" used to repeat here (h1 said "JWD Ottawa" stacked over the
     // tagline's "Ottawa & Kanata") — dropped in favor of a plain "JWD",
-    // city name left to the tagline alone.
-    brandName: language === 'zh' ? '渥帮 JWD' : 'JWD',
+    // city name left to the tagline alone. Chinese brand is just "渥帮" —
+    // "JWD" is the English-side name, redundant/unreadable-as-a-word here.
+    brandName: language === 'zh' ? '渥帮' : 'JWD',
     tagline: language === 'zh' ? '让生活更轻松' : 'Make Life Easier',
   };
 
