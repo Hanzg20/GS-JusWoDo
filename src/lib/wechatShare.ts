@@ -1,14 +1,12 @@
 /**
  * 微信分享配置工具
  *
- * 要实现微信分享卡片预览效果，需要：
- * 1. 在微信公众平台注册并获取 AppID
- * 2. 配置 JS 安全域名
- * 3. 后端生成签名 (signature)
- * 4. 前端调用 wx.config 和 wx.updateAppMessageShareData
- *
- * 注意：微信分享卡片需要服务端配合，纯前端无法实现
+ * 签名由 supabase/functions/wechat-jsapi-signature 生成（AppSecret 不能进前端）。
+ * 该函数需要先在 Supabase 项目里设置 WECHAT_APP_ID / WECHAT_APP_SECRET secrets 并部署，
+ * 否则 getWxSignature 会静默失败，分享退回到 ShareSheet 的复制链接方案。
  */
+
+import { supabase } from './supabase';
 
 // 微信 JS-SDK 类型定义
 declare global {
@@ -19,6 +17,7 @@ declare global {
             error: (callback: (res: any) => void) => void;
             updateAppMessageShareData: (config: WxShareConfig) => void;
             updateTimelineShareData: (config: WxShareConfig) => void;
+            hideMenuItems: (config: { menuList: string[] }) => void;
         };
     }
 }
@@ -48,6 +47,27 @@ interface ShareData {
     url: string;
 }
 
+// Menu items hidden from WeChat's "..." panel so the page reads as an app
+// screen, not a web page. Keeps the two menu items our custom
+// updateAppMessageShareData/updateTimelineShareData calls actually drive
+// (share to friend / share to Moments) — everything hidden here is either
+// a redundant share channel or an escape hatch into "this is just a website"
+// (view in browser, read mode, copy link).
+const WECHAT_MENU_ITEMS_TO_HIDE = [
+    'menuItem:share:qq',
+    'menuItem:share:weiboApp',
+    'menuItem:share:facebook',
+    'menuItem:share:QZone',
+    'menuItem:share:email',
+    'menuItem:share:brand',
+    'menuItem:copyUrl',
+    'menuItem:originPage',
+    'menuItem:readMode',
+    'menuItem:openWithQQBrowser',
+    'menuItem:openWithSafari',
+    'menuItem:favorite',
+];
+
 /**
  * 加载微信 JS-SDK
  */
@@ -67,12 +87,7 @@ export function loadWxJsSdk(): Promise<void> {
 }
 
 /**
- * 获取微信分享签名 (需要后端接口)
- *
- * 后端需要：
- * 1. 获取 access_token: GET https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
- * 2. 获取 jsapi_ticket: GET https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi
- * 3. 生成签名: sha1(jsapi_ticket=XXX&noncestr=XXX&timestamp=XXX&url=XXX)
+ * 获取微信分享签名，调用 wechat-jsapi-signature Edge Function
  */
 export async function getWxSignature(url: string): Promise<{
     appId: string;
@@ -81,10 +96,14 @@ export async function getWxSignature(url: string): Promise<{
     signature: string;
 } | null> {
     try {
-        // TODO: 替换为你的后端接口
-        const response = await fetch(`/api/wechat/signature?url=${encodeURIComponent(url)}`);
-        if (!response.ok) return null;
-        return await response.json();
+        const { data, error } = await supabase.functions.invoke('wechat-jsapi-signature', {
+            body: { url }
+        });
+        if (error || !data || data.error) {
+            console.error('Failed to get WeChat signature:', error || data?.error);
+            return null;
+        }
+        return data;
     } catch (error) {
         console.error('Failed to get WeChat signature:', error);
         return null;
@@ -115,11 +134,12 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
             signature: signData.signature,
             jsApiList: [
                 'updateAppMessageShareData',
-                'updateTimelineShareData'
+                'updateTimelineShareData',
+                'hideMenuItems'
             ]
         });
 
-        // 4. 配置分享内容
+        // 4. 配置分享内容 + 隐藏菜单项（更像原生 App）
         window.wx?.ready(() => {
             // 分享给朋友
             window.wx?.updateAppMessageShareData({
@@ -140,6 +160,8 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
                 success: () => console.log('WeChat timeline share configured'),
                 fail: (err) => console.error('WeChat timeline share config failed:', err)
             });
+
+            window.wx?.hideMenuItems({ menuList: WECHAT_MENU_ITEMS_TO_HIDE });
         });
 
         window.wx?.error((res) => {

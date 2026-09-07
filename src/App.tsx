@@ -11,6 +11,7 @@ import { CommunityProvider } from "./context/CommunityContext";
 import { useConfigStore } from "./stores/configStore";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { AnimatedRoutes } from "./components/AnimatedRoutes";
+import { configWxShare, isWeChatBrowser } from "./lib/wechatShare";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,26 @@ const App = () => {
     };
     document.title = titles[language];
   }, [language]);
+
+  // WeChat in-app browser: run wx.config once on the entry URL so the
+  // "..." menu gets stripped down to just the two share actions we drive
+  // ourselves (see WECHAT_MENU_ITEMS_TO_HIDE) on every page, not only the
+  // ones that set their own richer share card. Pages like
+  // CommunityPostDetail call configWxShare again with post-specific data —
+  // that second call reuses the already-loaded SDK and just overrides the
+  // share title/desc/image, it doesn't undo the hidden menu items.
+  useEffect(() => {
+    if (!isWeChatBrowser()) return;
+    configWxShare({
+      title: document.title,
+      description: language === 'zh'
+        ? '渥太华 & Kanata 本地社区服务平台'
+        : 'Ottawa & Kanata local community services platform',
+      imageUrl: `${window.location.origin}/logo.png`,
+      url: window.location.href
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

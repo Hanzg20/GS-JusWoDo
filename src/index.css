@@ -13,6 +13,26 @@
   padding-top: env(safe-area-inset-top);
 }
 
+/* WeChat in-app browser: app-like polish (class set by src/main.tsx via
+   isWeChatBrowser(), scoped here so it never touches Safari/Chrome/PWA) */
+.in-wechat {
+  /* Kill rubber-band/bounce scroll so pull-past-the-edge doesn't reveal
+     WeChat's chrome underneath the page */
+  overscroll-behavior-y: none;
+}
+
+.in-wechat body {
+  /* WeChat's default blue/gray tap flash reads as a web page, not an app */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.in-wechat img {
+  /* Stops WeChat's long-press "save image" sheet from hijacking taps on
+     listing photos/avatars; native save is still available via the
+     custom share sheet, so nothing is actually lost */
+  -webkit-touch-callout: none;
+}
+
 /* Mobile-Optimized Touch Targets */
 @media (max-width: 768px) {
 

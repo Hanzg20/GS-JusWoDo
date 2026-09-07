@@ -2,6 +2,14 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "leaflet/dist/leaflet.css";
+import { isWeChatBrowser } from "./lib/wechatShare";
+
+// Tags <html> so index.css can scope the WeChat in-app-browser polish
+// (no bounce scroll, no tap-highlight flash, no image long-press callout)
+// without affecting Safari/Chrome/the PWA shell.
+if (typeof window !== 'undefined' && isWeChatBrowser()) {
+  document.documentElement.classList.add('in-wechat');
+}
 
 // PWA Service Worker 注册
 const IS_PWA_ENABLED = import.meta.env.VITE_ENABLE_PWA === 'true';
