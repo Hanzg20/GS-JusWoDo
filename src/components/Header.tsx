@@ -34,10 +34,11 @@ const Header = () => {
     // form) — the button label shouldn't imply a role split that no
     // longer exists.
     post: language === 'zh' ? '发布' : 'Post',
-    // "Ottawa" already appears in the tagline right below (see the h1's
-    // sibling span) — repeating it here read as "JWD Ottawa" stacked over
-    // "Ottawa & Kanata", saying the city name twice in a two-line lockup.
+    // "Ottawa" used to repeat here (h1 said "JWD Ottawa" stacked over the
+    // tagline's "Ottawa & Kanata") — dropped in favor of a plain "JWD",
+    // city name left to the tagline alone.
     brandName: language === 'zh' ? '渥帮 JWD' : 'JWD',
+    tagline: language === 'zh' ? '让生活更轻松' : 'Make Life Easier',
   };
 
   return (
@@ -49,7 +50,7 @@ const Header = () => {
             <img src="/logo.png" alt="渥帮 JWD Logo" className="w-9 h-9 rounded-xl object-cover shadow-sm" />
             <div className="flex flex-col">
               <h1 className="text-base font-black tracking-tight text-slate-900 leading-none">{t.brandName}</h1>
-              <span className="hidden sm:block text-[10px] font-semibold text-primary/80 tracking-wide mt-0.5">Ottawa & Kanata</span>
+              <span className="hidden sm:block text-[10px] font-semibold text-primary/80 tracking-wide mt-0.5">{t.tagline}</span>
             </div>
           </Link>
 
