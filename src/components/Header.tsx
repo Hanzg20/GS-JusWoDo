@@ -34,7 +34,10 @@ const Header = () => {
     // form) — the button label shouldn't imply a role split that no
     // longer exists.
     post: language === 'zh' ? '发布' : 'Post',
-    brandName: language === 'zh' ? '渥帮 JWD' : 'JWD Ottawa',
+    // "Ottawa" already appears in the tagline right below (see the h1's
+    // sibling span) — repeating it here read as "JWD Ottawa" stacked over
+    // "Ottawa & Kanata", saying the city name twice in a two-line lockup.
+    brandName: language === 'zh' ? '渥帮 JWD' : 'JWD',
   };
 
   return (
