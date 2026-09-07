@@ -23,14 +23,12 @@ const App = () => {
     initializeLanguage();
   }, [initializeLanguage]);
 
-  // Update document title based on language
-  useEffect(() => {
-    const titles = {
-      zh: '渥帮 JWD - 渥太华本地互助社区',
-      en: 'JWD - Get Things Done Together'
-    };
-    document.title = titles[language];
-  }, [language]);
+  // Browser tab title is owned entirely by SEO.tsx (react-helmet-async) —
+  // a <title> set here directly on document.title used to fight it: since
+  // this effect only reran on language change (not on navigation), it
+  // would stomp a page's own <SEO title="..."/> (e.g. ServiceDetail.tsx's
+  // "{listing name} | $price") back to this generic string the moment the
+  // user switched languages, even while deep on that page.
 
   // WeChat in-app browser: run wx.config once on the entry URL so the
   // "..." menu gets stripped down to just the two share actions we drive
