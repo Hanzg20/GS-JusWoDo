@@ -102,14 +102,16 @@ export class SupabaseListingRepository implements IListingRepository {
         return (data || []).map(this.mapFromDb);
     }
 
-    async getByNode(nodeId: string): Promise<ListingMaster[]> {
-        const { data, error } = await supabase
+    async getByNode(nodeId?: string): Promise<ListingMaster[]> {
+        let qb = supabase
             .from('listing_masters')
             .select('*')
-            .eq('node_id', nodeId)
             .eq('status', 'PUBLISHED')
             .order('created_at', { ascending: false });
 
+        if (nodeId) qb = qb.eq('node_id', nodeId);
+
+        const { data, error } = await qb;
         if (error) throw error;
         return (data || []).map(this.mapFromDb);
     }

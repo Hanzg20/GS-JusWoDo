@@ -46,14 +46,17 @@ const Header = () => {
             <img src="/logo.png" alt="渥帮 JWD Logo" className="w-9 h-9 rounded-xl object-cover shadow-sm" />
             <div className="flex flex-col">
               <h1 className="text-base font-black tracking-tight text-slate-900 leading-none">{t.brandName}</h1>
-              <span className="text-[10px] font-semibold text-primary/80 tracking-wide mt-0.5">Ottawa & Kanata</span>
+              <span className="hidden sm:block text-[10px] font-semibold text-primary/80 tracking-wide mt-0.5">Ottawa & Kanata</span>
             </div>
           </Link>
 
           {/* Community node picker — District > Node, see NodePicker.tsx
               (not to be confused with LocationPicker.tsx, the map/pin-drop
-              component used by the publish flow) */}
-          <NodePicker className="hidden sm:flex" />
+              component used by the publish flow). Shown on every screen size
+              — it used to be sm:flex-only and invisible on mobile entirely,
+              cutting off the one control that lets a phone user switch
+              neighborhoods. */}
+          <NodePicker className="flex" />
         </div>
 
         {/* Desktop Search Bar */}

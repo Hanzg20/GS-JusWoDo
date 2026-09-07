@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
 import { useCommunity } from "@/context/CommunityContext";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore, browseNodeId } from "@/stores/configStore";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
 import { MasonryGrid } from "@/components/Community/MasonryGrid";
@@ -72,7 +72,7 @@ const Index = () => {
       setIsLoading(true);
       try {
         const listingRepo = repositoryFactory.getListingRepository();
-        const nodeListings = await listingRepo.getByNode(activeNodeId);
+        const nodeListings = await listingRepo.getByNode(browseNodeId(activeNodeId));
         setListings(nodeListings);
       } catch (error) {
         console.error('Failed to load node listings:', error);
@@ -86,7 +86,7 @@ const Index = () => {
 
   // Load community feed (real 邻里互助 content, separate from listings)
   useEffect(() => {
-    fetchFeed({ nodeId: activeNodeId, scope: 'nearby' });
+    fetchFeed({ nodeId: browseNodeId(activeNodeId), scope: 'nearby' });
   }, [activeNodeId, fetchFeed]);
 
   // Filter listings by active tab

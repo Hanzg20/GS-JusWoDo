@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ListingMaster } from '@/types/domain';
 import { useCommunity } from '@/context/CommunityContext';
+import { browseNodeId } from '@/stores/configStore';
 
 interface SemanticSearchResult extends ListingMaster {
     similarity: number;
@@ -60,7 +61,7 @@ export const useSemanticSearch = (
                         query_embedding: queryEmbedding,
                         match_threshold: threshold,
                         match_count: limit,
-                        filter_node_id: activeNodeId
+                        filter_node_id: browseNodeId(activeNodeId)
                     }
                 );
 
@@ -87,13 +88,16 @@ export const useSemanticSearch = (
 
     const performTextSearch = async (searchQuery: string) => {
         try {
-            const { data, error: textSearchError } = await supabase
+            let qb = supabase
                 .from('listing_masters')
                 .select('*')
                 .or(`title_zh.ilike.%${searchQuery}%,title_en.ilike.%${searchQuery}%,description_zh.ilike.%${searchQuery}%`)
-                .eq('status', 'PUBLISHED')
-                .eq('node_id', activeNodeId)
-                .limit(limit);
+                .eq('status', 'PUBLISHED');
+
+            const filterNodeId = browseNodeId(activeNodeId);
+            if (filterNodeId) qb = qb.eq('node_id', filterNodeId);
+
+            const { data, error: textSearchError } = await qb.limit(limit);
 
             if (!textSearchError && data) {
                 // Map DB results to domain objects if needed, though they match mostly

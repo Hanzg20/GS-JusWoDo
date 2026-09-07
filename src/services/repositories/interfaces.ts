@@ -35,7 +35,7 @@ export interface IListingRepository {
     getAll(): Promise<ListingMaster[]>;
     getById(id: string): Promise<ListingMaster | null>;
     getByCategory(categoryId: string): Promise<ListingMaster[]>;
-    getByNode(nodeId: string): Promise<ListingMaster[]>; // New: Filter by pilot node
+    getByNode(nodeId?: string): Promise<ListingMaster[]>; // New: Filter by pilot node (omit to get every node)
     getByProvider(providerId: string): Promise<ListingMaster[]>;
     search(options: {
         query?: string,

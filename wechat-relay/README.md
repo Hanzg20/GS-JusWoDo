@@ -40,11 +40,22 @@ https://nodejs.org 下载 LTS 版本安装（一路下一步即可），装完�
 `sharedSecret` 不是微信给的，是你自己编的一个"暗号"——一会儿 Supabase 那边要填同一个值，
 两边对上了才允许中转，防止别人白嫖你的接口。
 
-### 4. 开放端口
+### 4. 开放端口（两层都要开，缺一层都连不通）
 
-腾讯云控制台 → 这台服务器 → 安全组 → 添加入站规则：TCP，端口 `8787`，来源建议限制成
-Supabase 的出口 IP 范围（如果限制不了就先开放给所有来源，反正接口本身有 `sharedSecret`
-校验）。
+**4a. 腾讯云安全组**（云平台层）：腾讯云控制台 → 这台服务器 → 安全组 → 添加入站规则：
+TCP，端口 `8787`，来源建议限制成 Supabase 的出口 IP 范围（如果限制不了就先开放给所有来源，
+反正接口本身有 `sharedSecret` 校验）。
+
+**4b. Windows 系统防火墙**（服务器 OS 层，Windows Server 默认会挡掉所有陌生入站连接，
+只开安全组不够）：在服务器上用管理员权限打开 PowerShell，运行：
+
+```
+New-NetFirewallRule -DisplayName "WeChat Relay 8787" -Direction Inbound -LocalPort 8787 -Protocol TCP -Action Allow
+```
+
+这两层任何一层没开，从外部访问都会直接超时（连接卡住、没有任何报错返回），本机用
+`Test-NetConnection -ComputerName 127.0.0.1 -Port 8787` 测是通的也不代表外部能连进来——
+loopback 测试完全绕开了这两层。
 
 ### 5. 启动服务
 
@@ -86,3 +97,6 @@ curl -X POST http://101.200.62.54:8787/signature -H "Content-Type: application/j
 拿到测试成功的确认后，把 `WECHAT_RELAY_URL`（`http://101.200.62.54:8787/signature`）和
 `WECHAT_RELAY_SECRET`（跟 config.json 里的 sharedSecret 一致）设进 Supabase secrets，
 Edge Function 会改成调用这个中转服务，而不是直连微信。
+
+
+New-NetFirewallRule -DisplayName "WeChat Relay 8787" -Direction Inbound -LocalPort 8787 -Protocol TCP -Action Allow

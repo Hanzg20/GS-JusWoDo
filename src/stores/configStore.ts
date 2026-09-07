@@ -4,6 +4,24 @@ import { toast } from 'sonner';
 import { RefCode } from '@/types/domain';
 import { haversineMeters } from '@/lib/geo';
 
+// Launch-phase call: pilot listing/post density is still thin enough that
+// hard-filtering a feed down to one node (NODE_LEES et al) risks showing
+// new users an empty page even when relevant content exists a few km away
+// in another node — worse for a cold-start marketplace than showing
+// something slightly farther away with its distance tag attached. Revisit
+// once density grows per-node (flip to false, or make it conditional on a
+// per-node listing count once that's worth the complexity).
+//
+// Only wraps the *read* side (call sites that filter a feed); activeNodeId
+// itself is untouched, so publish/register flows still assign a real node —
+// passing this sentinel there would silently corrupt data (a listing whose
+// node_id nothing ever queries for again).
+const SHOW_ALL_OTTAWA = true;
+
+export function browseNodeId(nodeId: string): string | undefined {
+    return SHOW_ALL_OTTAWA ? undefined : nodeId;
+}
+
 // Nearest known node must be within this radius for the area to count as
 // "in service" — wide enough to cover Ottawa-Gatineau and surrounding rural
 // fringes, tight enough to exclude Montreal (~190km) or Toronto (~400km).

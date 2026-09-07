@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
 import { useAuthStore } from "@/stores/authStore";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore, browseNodeId } from "@/stores/configStore";
 import { ListingCard } from "@/components/ListingCard";
 import { SlidersHorizontal, ArrowDownWideNarrow, Sparkles, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,7 @@ const CategoryListing = () => {
         searchListings({
             query: query || undefined,
             isSemantic: isSmartSearch && !!query,
-            nodeId: currentUser?.nodeId || activeNodeId,
+            nodeId: browseNodeId(currentUser?.nodeId || activeNodeId),
             categoryId: selectedCategoryId,
             type: resolvedType,
             goodsTier,
