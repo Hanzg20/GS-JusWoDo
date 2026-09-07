@@ -28,8 +28,8 @@ const SEO = ({
         ? '渥帮 · 渥太华便民平台 | 连接邻里，发现专业！'
         : "JWD · Ottawa's Everyday Life Platform | Connect Neighbors, Discover Pros";
     const defaultDescription = language === 'zh'
-        ? '渥帮 (JustWeDo) 专注于 Ottawa 及 Kanata (Kanata Lakes, Stittsville, Nepean 等) 本地社区。轻松查找与快速发布家政清洁、房屋维修、铲雪除草、宠物照顾、接送协助与邻里闲置互助。'
-        : 'Connecting Ottawa & Kanata neighborhoods (Kanata Lakes, Stittsville, Barrhaven) with trusted local services including house cleaning, handyman, snow removal, pet care, and neighborly help.';
+        ? '渥帮 (JustWeDo) 专注于 Ottawa 本地社区。轻松查找与快速发布家政清洁、房屋维修、铲雪除草、宠物照顾、接送协助与邻里闲置互助。'
+        : 'JustWeDo connects Ottawa neighborhoods with trusted local services — house cleaning, handyman, snow removal, pet care, rides, and neighborly help, easy to find and quick to post.';
     const defaultImage = 'https://www.justwedo.com/pwa-icons/icon-512x512.png';
     const siteUrl = 'https://www.justwedo.com';
 
