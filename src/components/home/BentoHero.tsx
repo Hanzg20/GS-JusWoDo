@@ -67,23 +67,13 @@ export function BentoHero({ featuredListings = [] }: BentoHeroProps) {
                     </Link>
                 </div>
 
-                {/* Quick search pills — Karrot-style trending keywords (location is
-                    already handled by the Ottawa/Kanata selector in Header, so this
-                    row stays single-purpose: what to search, not where). */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                    {(isZh
-                        ? [{ name: '🧹 家政清洁', query: '家政清洁' }, { name: '❄️ 除雪服务', query: '除雪服务' }, { name: '🌱 草坪护理', query: '草坪护理' }, { name: '🐾 宠物看护', query: '宠物看护' }, { name: '📚 家教辅导', query: '家教辅导' }]
-                        : [{ name: '🧹 House Cleaning', query: 'House Cleaning' }, { name: '❄️ Snow Removal', query: 'Snow Removal' }, { name: '🌱 Lawn Care', query: 'Lawn Care' }, { name: '🐾 Pet Sitting', query: 'Pet Sitting' }, { name: '📚 Tutoring', query: 'Tutoring' }]
-                    ).map((tag) => (
-                        <Link
-                            key={tag.query}
-                            to={`/category/service?q=${encodeURIComponent(tag.query)}`}
-                            className="text-xs font-semibold px-2.5 py-1 bg-white/90 border border-slate-200/80 rounded-full text-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-3xs"
-                        >
-                            {tag.name}
-                        </Link>
-                    ))}
-                </div>
+                {/* Warm one-line slogan — traded away the quick-search pills that
+                    used to live here (House Cleaning/Snow Removal/etc. shortcuts)
+                    in favor of something that says what JWD actually is: neighbors
+                    helping neighbors, not just a services directory. */}
+                <p className="text-center text-sm font-semibold text-slate-600">
+                    {isZh ? '远亲不如近邻，渥帮伴你左右' : 'Good neighbors, close to home'}
+                </p>
 
                 {/* Featured (top-rated, not paid) listings carousel */}
                 {featuredListings.length > 0 && (
