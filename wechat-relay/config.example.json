@@ -1,0 +1,6 @@
+{
+    "appId": "your_wechat_appid",
+    "appSecret": "your_wechat_appsecret",
+    "sharedSecret": "replace-with-a-long-random-string",
+    "port": 8787
+}
