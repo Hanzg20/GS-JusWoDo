@@ -63,6 +63,7 @@ export function ServiceHero({
                         imageUrl={images[currentImage]}
                         authorName={providerName}
                         authorAvatar={providerId ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${providerId}` : undefined}
+                        nativeShareReady
                         trigger={
                             <button className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30 hover:bg-white/40 transition-all hover:scale-105 active:scale-95">
                                 <Share2 className="w-5 h-5 text-white" />

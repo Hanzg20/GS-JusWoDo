@@ -257,6 +257,7 @@ const CommunityPostDetail = () => {
                             imageUrl={currentPost.images?.[0]}
                             authorName={currentPost.author?.name}
                             authorAvatar={currentPost.author?.avatar}
+                            nativeShareReady
                             trigger={
                                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                                     <Share2 className="w-4 h-4" />

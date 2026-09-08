@@ -70,6 +70,7 @@ export const GoodsDetailView = ({ master, item, items = [], provider, onBuy, onC
                                 : (provider?.name || 'Neighbor')
                         }
                         authorAvatar={provider?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${provider?.id || 'default'}`}
+                        nativeShareReady
                         trigger={
                             <button className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-xl">
                                 <Share2 className="w-5 h-5 text-white" />

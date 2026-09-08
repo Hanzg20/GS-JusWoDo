@@ -11,6 +11,7 @@ import { ShareCard } from "./ShareCard";
 import { useConfigStore } from "@/stores/configStore";
 import { getShareUrl } from "@/utils/url";
 import { QR_LOGO_BASE64 } from "@/constants/assets";
+import { isWeChatBrowser } from "@/lib/wechatShare";
 
 // Social platform icons as SVG components
 const WeChatIcon = () => (
@@ -47,6 +48,16 @@ interface ShareSheetProps {
     onOpenChange?: (open: boolean) => void;
     brandingTitle?: string;
     brandingSubtitle?: string;
+    // Set by pages that already call configWxShare() for this exact item
+    // (ServiceDetail.tsx, CommunityPostDetail.tsx) — meaning WeChat's own
+    // "···" menu is already configured with this item's real title/desc,
+    // not generic site defaults. Only then is it safe to point the user at
+    // "···" instead of generating a poster: it's the one truly one-tap
+    // native share (a webpage button can never trigger WeChat's send-to-
+    // contact UI itself, only configure what "···" produces), but pointing
+    // at it when the page hasn't configured real content would show a
+    // generic/wrong card instead.
+    nativeShareReady?: boolean;
 }
 
 export function ShareSheet({
@@ -60,7 +71,8 @@ export function ShareSheet({
     open,
     onOpenChange,
     brandingTitle,
-    brandingSubtitle
+    brandingSubtitle,
+    nativeShareReady = false
 }: ShareSheetProps) {
     const isDesktop = useMediaQuery("(min-width: 768px)");
     const { language } = useConfigStore();
@@ -172,19 +184,39 @@ export function ShareSheet({
 
     // Social sharing handlers
     //
-    // Both WeChat buttons generate the branded poster (ShareCard.tsx) and
-    // have the visitor save + send it themselves — same mechanism, not just
-    // a fallback for Moments. Earlier this routed "分享到微信" through
-    // WeChat's JS-SDK instead (wx.config + updateAppMessageShareData, then
-    // "tap ··· yourself") since that's the only way to influence WeChat's
-    // *native* link-preview card — but that card is small and fixed-size,
-    // and real user feedback (2026-09-08) was that it read as generic/too
-    // small compared to a proper share image (their reference point:
-    // 小红书, which shares an image, not a link). The rich image is the
-    // better default; WeChat's own "···" menu still gets configured
-    // correctly on page load (see ServiceDetail.tsx/CommunityPostDetail.tsx)
-    // for a visitor who shares via that route instead of this button.
+    // A page button can never trigger WeChat's own send-to-contact UI —
+    // only a user tapping WeChat's native "···" menu can do that; JS-SDK
+    // only lets us configure what "···" produces, not invoke it. So there
+    // are exactly two options for "分享到微信"/"朋友圈", and which one is
+    // right depends on whether "···" is actually available and correctly
+    // configured for this exact item right now:
+    //
+    // - Inside WeChat's in-app browser, on a page that already called
+    //   configWxShare() for this exact item (nativeShareReady — see
+    //   ServiceDetail.tsx/CommunityPostDetail.tsx), "···" is the real
+    //   one-tap native path with accurate item-specific content, so we just
+    //   point the visitor at it instead of making them go through a manual
+    //   generate-save-send flow.
+    // - Everywhere else (not in WeChat's browser at all, or nativeShareReady
+    //   is false because this page/card never configured "···" for this
+    //   item — e.g. ProviderHero, CommunityCardV2 — so "···" would show
+    //   generic/wrong content), "···" isn't a usable option, so fall back to
+    //   generating the branded poster (ShareCard.tsx) for the visitor to
+    //   save and send themselves. This was also the deliberate choice after
+    //   real user feedback (2026-09-08) that an early attempt at routing
+    //   "分享到微信" through "···" produced a card that read as generic/too
+    //   small — since traced to that attempt not being gated on
+    //   nativeShareReady, so "···" wasn't actually configured correctly yet.
+    const canUseNativeMenu = nativeShareReady && isWeChatBrowser();
+
     const handleShareToWeChat = async () => {
+        if (canUseNativeMenu) {
+            toast.info(
+                language === 'zh' ? "请点击右上角「···」分享给好友" : 'Tap "···" in the top-right corner to share',
+                { duration: 4000 }
+            );
+            return;
+        }
         if (!generatedImage) {
             await handleGeneratePoster();
         }
@@ -197,6 +229,13 @@ export function ShareSheet({
     };
 
     const handleShareToMoments = async () => {
+        if (canUseNativeMenu) {
+            toast.info(
+                language === 'zh' ? "请点击右上角「···」分享到朋友圈" : 'Tap "···" in the top-right corner to share to Moments',
+                { duration: 4000 }
+            );
+            return;
+        }
         if (!generatedImage) {
             await handleGeneratePoster();
         }
