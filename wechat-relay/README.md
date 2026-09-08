@@ -1,8 +1,15 @@
-# WeChat JS-SDK 中转服务
+# WeChat 中转服务
 
 微信的 access_token 接口要求请求来自公众号后台"IP白名单"里的固定 IP。Supabase Edge Function
 没有固定出口 IP，所以不能直接调用微信。这个小服务运行在有固定 IP、已经在白名单里的服务器上
-（101.200.62.54），替 Edge Function 完成"跟微信换 token/ticket/签名"这一步。
+（101.200.62.54），替 Edge Function 完成两件事：
+- `/signature`：JS-SDK 分享签名（跟微信换 token/ticket/签名）
+- `/oauth-userinfo`：微信登录（用授权 code 换用户 openid/昵称/头像）
+
+## 更新代码后要做的事
+
+`relay-server.js` 改过之后，**必须把这个文件重新传到服务器上覆盖旧的**，然后重启进程
+（Ctrl+C 再 `node relay-server.js`）才会生效——它只在启动时读一次代码/配置，不会自动热更新。
 
 ## 部署步骤（在这台腾讯云服务器的远程桌面里操作）
 

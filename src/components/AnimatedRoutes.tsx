@@ -14,6 +14,7 @@ const Publish = lazy(() => import("../pages/Publish"));
 const Profile = lazy(() => import("../pages/Profile"));
 const CategoryListing = lazy(() => import("../pages/CategoryListing"));
 const Login = lazy(() => import("../pages/Login"));
+const WeChatCallback = lazy(() => import("../pages/WeChatCallback"));
 const Register = lazy(() => import("../pages/Register"));
 const ForgotPassword = lazy(() => import("../pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("../pages/ResetPassword"));
@@ -64,6 +65,7 @@ export const AnimatedRoutes = () => {
                     <Route path="/category/:type" element={<PageTransition><CategoryListing /></PageTransition>} />
                     <Route path="/search" element={<PageTransition><CategoryListing /></PageTransition>} />
                     <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+                    <Route path="/auth/wechat/callback" element={<WeChatCallback />} />
                     <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
                     <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
                     <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />

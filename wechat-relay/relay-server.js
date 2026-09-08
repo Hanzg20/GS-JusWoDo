@@ -70,6 +70,38 @@ async function getJsApiTicket() {
     return ticket;
 }
 
+// WeChat login (公众号网页授权): exchanges the one-time `code` the browser
+// got redirected back with for a user-specific access_token + openid, then
+// fetches that user's nickname/avatar. This is a *different* access_token
+// than the global one above (scoped to one user, obtained via a
+// user-granted code rather than just knowing appid+secret) — routed
+// through this relay anyway rather than calling it straight from the
+// Supabase Edge Function, since we already got burned once assuming a
+// weixin.qq.com endpoint wasn't IP-restricted.
+async function fetchOAuthUserInfo(code) {
+    const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${appId}&secret=${appSecret}&code=${code}&grant_type=authorization_code`;
+    const tokenData = await httpsGetJson(tokenUrl);
+    if (!tokenData.access_token || !tokenData.openid) {
+        throw new Error(`WeChat OAuth token error: ${JSON.stringify(tokenData)}`);
+    }
+
+    // snsapi_base scope (silent, no consent screen) only returns openid —
+    // skip the userinfo call in that case rather than erroring.
+    if (tokenData.scope === 'snsapi_base') {
+        return { openid: tokenData.openid, nickname: null, headimgurl: null };
+    }
+
+    const userUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${tokenData.access_token}&openid=${tokenData.openid}&lang=zh_CN`;
+    const userData = await httpsGetJson(userUrl);
+    if (userData.errcode) {
+        // Consent-screen scope but userinfo still failed — fall back to
+        // just the openid rather than failing the whole login.
+        return { openid: tokenData.openid, nickname: null, headimgurl: null };
+    }
+
+    return { openid: userData.openid, nickname: userData.nickname || null, headimgurl: userData.headimgurl || null };
+}
+
 function randomNonceStr(len = 16) {
     return crypto.randomBytes(len).toString('hex').slice(0, len);
 }
@@ -78,26 +110,50 @@ function sha1Hex(input) {
     return crypto.createHash('sha1').update(input).digest('hex');
 }
 
-const server = http.createServer((req, res) => {
-    if (req.method !== 'POST' || req.url !== '/signature') {
+function readJsonBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', (chunk) => (body += chunk));
+        req.on('end', () => {
+            try {
+                resolve(JSON.parse(body || '{}'));
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
+}
+
+function sendJson(res, status, data) {
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
+}
+
+const server = http.createServer(async (req, res) => {
+    if (req.method !== 'POST') {
         res.writeHead(404);
         res.end();
         return;
     }
 
-    let body = '';
-    req.on('data', (chunk) => (body += chunk));
-    req.on('end', async () => {
+    let parsedBody;
+    try {
+        parsedBody = await readJsonBody(req);
+    } catch (err) {
+        sendJson(res, 400, { error: 'Invalid JSON body' });
+        return;
+    }
+
+    if (parsedBody.secret !== sharedSecret) {
+        sendJson(res, 401, { error: 'Unauthorized' });
+        return;
+    }
+
+    if (req.url === '/signature') {
         try {
-            const { url, secret } = JSON.parse(body || '{}');
-            if (secret !== sharedSecret) {
-                res.writeHead(401, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Unauthorized' }));
-                return;
-            }
+            const { url } = parsedBody;
             if (!url) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: "Missing 'url'" }));
+                sendJson(res, 400, { error: "Missing 'url'" });
                 return;
             }
 
@@ -107,14 +163,33 @@ const server = http.createServer((req, res) => {
             const raw = `jsapi_ticket=${ticket}&noncestr=${nonceStr}&timestamp=${timestamp}&url=${url}`;
             const signature = sha1Hex(raw);
 
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ appId, timestamp, nonceStr, signature }));
+            sendJson(res, 200, { appId, timestamp, nonceStr, signature });
         } catch (err) {
-            console.error('Relay error:', err);
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: String(err.message || err) }));
+            console.error('Relay error (/signature):', err);
+            sendJson(res, 500, { error: String(err.message || err) });
         }
-    });
+        return;
+    }
+
+    if (req.url === '/oauth-userinfo') {
+        try {
+            const { code } = parsedBody;
+            if (!code) {
+                sendJson(res, 400, { error: "Missing 'code'" });
+                return;
+            }
+
+            const userInfo = await fetchOAuthUserInfo(code);
+            sendJson(res, 200, userInfo);
+        } catch (err) {
+            console.error('Relay error (/oauth-userinfo):', err);
+            sendJson(res, 500, { error: String(err.message || err) });
+        }
+        return;
+    }
+
+    res.writeHead(404);
+    res.end();
 });
 
 server.listen(port, () => {
