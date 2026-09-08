@@ -11,6 +11,7 @@ import { ShareCard } from "./ShareCard";
 import { useConfigStore } from "@/stores/configStore";
 import { getShareUrl } from "@/utils/url";
 import { QR_LOGO_BASE64 } from "@/constants/assets";
+import { configWxShare, isWeChatBrowser } from "@/lib/wechatShare";
 
 // Social platform icons as SVG components
 const WeChatIcon = () => (
@@ -171,9 +172,33 @@ export function ShareSheet({
     };
 
     // Social sharing handlers
+    //
+    // WeChat's JS-SDK has no API to pop its native share picker open from a
+    // button tap — the only thing a page can do is set *what* that picker
+    // shows (wx.updateAppMessageShareData/updateTimelineShareData, see
+    // wechatShare.ts) once the visitor manually taps WeChat's own "···"
+    // menu. So when we're actually inside WeChat's browser, this button's
+    // job changes from "hand them a link to paste" (which makes no sense —
+    // they're already in WeChat) to "make sure ··· shows the right card,
+    // then point at ···" — outside WeChat, copy-link/poster-image are still
+    // the only real options, so that fallback stays.
     const handleShareToWeChat = async () => {
-        // WeChat doesn't have a direct web share API
-        // Best practice: copy link and show instructions
+        if (isWeChatBrowser()) {
+            await configWxShare({
+                title,
+                description: content,
+                imageUrl: imageUrl || `${window.location.origin}/logo.png`,
+                url: shareUrl,
+            });
+            toast.info(
+                language === 'zh'
+                    ? '请点击右上角"···"，选择「发送给朋友」'
+                    : 'Tap "···" in the top right, then "Send to Friend"',
+                { duration: 4000 }
+            );
+            return;
+        }
+
         await handleCopyLink();
         toast.info(
             language === 'zh'
@@ -184,7 +209,25 @@ export function ShareSheet({
     };
 
     const handleShareToMoments = async () => {
-        // For WeChat Moments, generate poster first then guide user
+        if (isWeChatBrowser()) {
+            await configWxShare({
+                title,
+                description: content,
+                imageUrl: imageUrl || `${window.location.origin}/logo.png`,
+                url: shareUrl,
+            });
+            toast.info(
+                language === 'zh'
+                    ? '请点击右上角"···"，选择「分享到朋友圈」'
+                    : 'Tap "···" in the top right, then "Share to Moments"',
+                { duration: 4000 }
+            );
+            return;
+        }
+
+        // Outside WeChat there's no way to reach Moments directly — the
+        // generated poster image is the best a visitor can do (save it,
+        // post it themselves from inside WeChat).
         if (!generatedImage) {
             await handleGeneratePoster();
         }

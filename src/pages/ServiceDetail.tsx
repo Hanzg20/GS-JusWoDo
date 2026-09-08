@@ -9,6 +9,7 @@ import { ListingMaster, ListingItem } from "@/types/domain";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { useServiceAreaMonitor } from "@/hooks/useGeofencing";
 import { PAYMENTS_ENABLED } from "@/config/launchFlags";
+import { configWxShare, isWeChatBrowser } from "@/lib/wechatShare";
 
 // Sub-components
 import { ServiceHero } from "@/components/service-detail/ServiceHero";
@@ -95,6 +96,26 @@ const ServiceDetail = () => {
 
     loadData();
   }, [id, listings, getProviderById]);
+
+  // Configures WeChat's native "···" share menu for this specific listing
+  // (title/price/photo) — without this, tapping "···" showed whatever the
+  // last-configured page was (or App.tsx's generic site-wide default), not
+  // this listing. Mirrors CommunityPostDetail.tsx's same pattern.
+  useEffect(() => {
+    if (!master || !isWeChatBrowser()) return;
+
+    const title = getTranslation(master, 'title');
+    const priceSuffix = selectedItem && selectedItem.pricing.model !== 'QUOTE' && selectedItem.pricing.model !== 'NEGOTIABLE'
+      ? ` | $${selectedItem.pricing.price.amount / 100}`
+      : '';
+
+    configWxShare({
+      title: `${title}${priceSuffix}`,
+      description: getTranslation(master, 'description').substring(0, 100),
+      imageUrl: master.images?.[0] || `${window.location.origin}/logo.png`,
+      url: window.location.href,
+    });
+  }, [master, selectedItem]);
 
   if (!master) return <div className="p-8 text-center text-muted-foreground">{t.notFound}</div>;
 
