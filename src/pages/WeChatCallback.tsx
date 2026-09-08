@@ -41,10 +41,13 @@ const WeChatCallback = () => {
                     throw new Error(data?.error || fnError?.message || 'Unknown error');
                 }
 
+                // token_hash (not token) + type 'email' (not 'magiclink') —
+                // confirmed by direct testing 2026-09-08, see jwd_wechat_login
+                // memory. token/type:'magiclink' looks correct per most docs
+                // but consistently fails with "Token has expired or is invalid".
                 const { error: verifyError } = await supabase.auth.verifyOtp({
-                    email: data.email,
-                    token: data.tokenHash,
-                    type: 'magiclink',
+                    token_hash: data.tokenHash,
+                    type: 'email',
                 });
                 if (verifyError) throw verifyError;
 
