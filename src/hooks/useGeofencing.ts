@@ -235,9 +235,15 @@ export function useServiceAreaMonitor(
     const [isInArea, setIsInArea] = useState(false);
     const [distance, setDistance] = useState<number | null>(null);
 
+    // showNotifications: false — ServiceProviderCard already renders a
+    // persistent "in/out of area · Xkm" badge from isInArea/distance below,
+    // so a toast repeating the same info on every enter/exit was pure noise.
+    // Worse, watchPosition (continuous tracking, not a one-shot check) means
+    // GPS jitter near the radius boundary could flip that state — and fire
+    // the toast — repeatedly, which is what a user reported on 2026-09-08.
     const { addRegion, insideRegions, currentPosition } = useGeofencing({
         enabled: true,
-        showNotifications: true
+        showNotifications: false
     });
 
     useEffect(() => {
