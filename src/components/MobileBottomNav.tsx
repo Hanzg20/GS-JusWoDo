@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useConfigStore } from "@/stores/configStore";
 import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function MobileBottomNav() {
     const navigate = useNavigate();
@@ -12,6 +12,18 @@ export default function MobileBottomNav() {
     const language = useConfigStore(state => state.language);
     const { currentUser } = useAuthStore();
     const { totalUnreadCount, loadConversations, loadUnreadCount } = useMessageStore();
+    // Header used to also carry a profile avatar button going to the same
+    // /profile destination — pure duplication on mobile (same fix as the
+    // header's notification bell), so that's gone and this tab now does
+    // double duty: shows the signed-in user's own avatar instead of a
+    // generic icon, and prompts sign-up when there's nobody signed in.
+    const [avatarFailed, setAvatarFailed] = useState(false);
+    // Reset the failure flag when the avatar URL itself changes (new user
+    // logged in, or they updated their photo) — otherwise one broken image
+    // permanently suppresses every avatar shown here for the rest of the tab's life.
+    useEffect(() => {
+        setAvatarFailed(false);
+    }, [currentUser?.avatar]);
 
     // Load conversations to get unread count on mount
     useEffect(() => {
@@ -52,29 +64,37 @@ export default function MobileBottomNav() {
 
     const navItems = [
         {
+            id: "home",
             icon: Home,
             label: language === 'zh' ? '首页' : 'Home',
             path: "/",
         },
         {
+            id: "community",
             icon: MessageSquareQuote,
             label: language === 'zh' ? '邻里互助' : 'Community',
             path: "/community",
         },
         {
+            id: "post",
             icon: PlusSquare,
             label: language === 'zh' ? '发布' : 'Post',
             path: "/publish", // Changed to central publish page
         },
         {
+            id: "messages",
             icon: MessageSquare,
             label: language === 'zh' ? '消息' : 'Messages',
             path: "/chat", // Confirmed route
         },
         {
+            id: "me",
             icon: User,
-            label: language === 'zh' ? '我' : 'Me',
-            path: "/profile", // Confirmed route
+            label: currentUser
+                ? (language === 'zh' ? '我' : 'Me')
+                : (language === 'zh' ? '注册' : 'Sign up'),
+            path: currentUser ? "/profile" : "/login",
+            showAvatar: !!currentUser && !!currentUser.avatar && !avatarFailed,
         },
     ];
 
@@ -87,17 +107,29 @@ export default function MobileBottomNav() {
 
                     return (
                         <button
-                            key={item.path}
+                            key={item.id}
                             onClick={() => navigate(item.path)}
                             className="relative flex-1 flex flex-col items-center justify-center h-full space-y-0.5 active:bg-gray-50 transition-colors"
                         >
-                            <item.icon
-                                strokeWidth={isActive ? 2.5 : 2}
-                                className={cn(
-                                    "w-6 h-6 transition-colors duration-200",
-                                    isActive ? "text-primary" : "text-gray-400"
-                                )}
-                            />
+                            {item.showAvatar ? (
+                                <img
+                                    src={currentUser!.avatar}
+                                    alt=""
+                                    onError={() => setAvatarFailed(true)}
+                                    className={cn(
+                                        "w-6 h-6 rounded-full object-cover transition-all duration-200",
+                                        isActive ? "ring-2 ring-primary" : "ring-1 ring-gray-200"
+                                    )}
+                                />
+                            ) : (
+                                <item.icon
+                                    strokeWidth={isActive ? 2.5 : 2}
+                                    className={cn(
+                                        "w-6 h-6 transition-colors duration-200",
+                                        isActive ? "text-primary" : "text-gray-400"
+                                    )}
+                                />
+                            )}
                             <span
                                 className={cn(
                                     "text-[10px] font-medium transition-colors duration-200",

@@ -134,10 +134,13 @@ const Header = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Profile Avatar */}
+          {/* User Profile Avatar — same destination as MobileBottomNav's
+              "Me"/"注册" tab, which now also shows the avatar itself, so
+              this was pure duplication on mobile. Desktop has no bottom
+              nav, so it stays there. */}
           <button
             onClick={() => navigate(currentUser ? '/profile' : '/login')}
-            className="relative overflow-hidden w-9 h-9 rounded-full border border-border/20 focus:scale-95 transition-transform"
+            className="relative overflow-hidden w-9 h-9 rounded-full border border-border/20 focus:scale-95 transition-transform hidden md:inline-flex"
           >
             {isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-muted">
