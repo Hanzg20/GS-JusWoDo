@@ -3,17 +3,37 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
 import MobileBottomNav from "./components/MobileBottomNav";
 import SEO from "./components/SEO";
 import { CommunityProvider } from "./context/CommunityContext";
 import { useConfigStore } from "./stores/configStore";
+import { useAuthStore } from "./stores/authStore";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { AnimatedRoutes } from "./components/AnimatedRoutes";
 import { configWxShare, isWeChatBrowser } from "./lib/wechatShare";
+import { startSilentWeChatCheck } from "./lib/wechatAuth";
 
 const queryClient = new QueryClient();
+
+// Separate from App() because it needs useLocation(), which only works
+// inside <BrowserRouter>.
+const SilentWeChatLogin = () => {
+  const location = useLocation();
+  const { currentUser, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!isWeChatBrowser()) return;
+    if (isLoading || currentUser) return;
+    // Never fire from the callback page itself — it's already mid-flight
+    // handling its own redirect back from WeChat.
+    if (location.pathname === '/auth/wechat/callback') return;
+    startSilentWeChatCheck();
+  }, [isLoading, currentUser, location.pathname]);
+
+  return null;
+};
 
 const App = () => {
   const { initializeLanguage, language } = useConfigStore();
@@ -58,6 +78,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <SEO /> {/* Default Global SEO - moved inside Router */}
+            <SilentWeChatLogin />
             <CommunityProvider>
               <AnimatedRoutes />
               <MobileBottomNav />

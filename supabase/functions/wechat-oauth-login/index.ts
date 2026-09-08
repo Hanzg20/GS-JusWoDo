@@ -12,6 +12,9 @@
 //      a synthetic email so auth.users' NOT NULL constraint is satisfied;
 //      handle_new_oauth_user() — the same trigger Google/Apple signups go
 //      through — populates their user_profiles row from user_metadata).
+//      Skipped for mode:'silent' (see startSilentWeChatCheck() in
+//      wechatAuth.ts) — that flow has no nickname/avatar to register a new
+//      account with, so an unmatched openid just reports back {notFound:true}.
 //   3. Mint a magic-link token for that user and hand it back — the
 //      frontend calls supabase.auth.verifyOtp({ email, token, type:
 //      'magiclink' }) with it to actually establish the session client-side.
@@ -51,6 +54,13 @@ serve(async (req) => {
 
         const body = await req.json().catch(() => ({}));
         const code: string | undefined = body.code;
+        // 'silent' = startSilentWeChatCheck()'s invisible snsapi_base
+        // redirect (no consent screen, no nickname/avatar available) — an
+        // unmatched openid there must NOT create an account, just report
+        // back that this WeChat identity isn't registered yet. 'consent'
+        // (the default, from the "微信登录" button's snsapi_userinfo flow)
+        // has real profile data and can register a new user.
+        const mode: 'silent' | 'consent' = body.mode === 'silent' ? 'silent' : 'consent';
         if (!code) {
             return new Response(JSON.stringify({ error: "Missing 'code'" }), {
                 status: 400,
@@ -84,6 +94,10 @@ serve(async (req) => {
         let userId: string;
         if (existingProfile) {
             userId = existingProfile.id;
+        } else if (mode === 'silent') {
+            return new Response(JSON.stringify({ notFound: true }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
         } else {
             const { data: created, error: createError } = await supabase.auth.admin.createUser({
                 email: syntheticEmail,

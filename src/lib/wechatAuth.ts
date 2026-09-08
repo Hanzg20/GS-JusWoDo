@@ -5,6 +5,18 @@
 // user to WeChat and gets them back with a `code`; the Edge Function
 // exchanges that code and hands back a token the frontend redeems for a
 // real Supabase session — see WeChatCallback.tsx.
+//
+// Two flows share this file:
+//  - startWeChatLogin(): the "微信登录" button. scope snsapi_userinfo shows
+//    WeChat's consent screen and returns nickname/avatar too, so a brand
+//    new visitor can be auto-registered from it.
+//  - startSilentWeChatCheck(): fires on its own (see App.tsx) for a
+//    WeChat-browser visitor who isn't signed in yet. scope snsapi_base is
+//    invisible — no consent screen — but only returns an openid, so it can
+//    complete a login for an *already-registered* WeChat user; it can't
+//    register a new one (no name/avatar to give them).
+
+export type WeChatAuthMode = 'silent' | 'consent';
 
 // Public identifier, not a secret — same one baked into the JS-SDK share
 // signature flow (see wechat-relay/config.json for where the paired
@@ -21,21 +33,25 @@ const WECHAT_APP_ID = 'wxf0ae0e709384b1df';
 const WECHAT_REDIRECT_ORIGIN = 'https://justwedo.com';
 
 const STATE_STORAGE_KEY = 'wechat_login_state';
+const SILENT_CHECK_DONE_KEY = 'wechat_silent_check_done';
 
-// The state round-trip crosses hosts (see WECHAT_REDIRECT_ORIGIN above —
-// the visitor may start on www.justwedo.com but always lands back on
-// bare justwedo.com), and sessionStorage/localStorage are strictly
-// per-origin, so they can't carry a value across that hop. A cookie
-// scoped to the parent domain (.justwedo.com) can.
-function setStateCookie(state: string): void {
-    document.cookie = `${STATE_STORAGE_KEY}=${state}; domain=.justwedo.com; path=/; max-age=600; secure; samesite=lax`;
+// The state (and silent-check-done marker) round-trip crosses hosts (see
+// WECHAT_REDIRECT_ORIGIN above — the visitor may start on
+// www.justwedo.com but always lands back on bare justwedo.com), and
+// sessionStorage/localStorage are strictly per-origin, so they can't carry
+// a value across that hop. A cookie scoped to the parent domain
+// (.justwedo.com) can.
+function setCookie(name: string, value: string, maxAgeSeconds: number): void {
+    document.cookie = `${name}=${value}; domain=.justwedo.com; path=/; max-age=${maxAgeSeconds}; secure; samesite=lax`;
 }
 
-function readAndClearStateCookie(): string | null {
-    const match = document.cookie.match(new RegExp(`(?:^|; )${STATE_STORAGE_KEY}=([^;]*)`));
-    const state = match ? decodeURIComponent(match[1]) : null;
-    document.cookie = `${STATE_STORAGE_KEY}=; domain=.justwedo.com; path=/; max-age=0`;
-    return state;
+function readCookie(name: string): string | null {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function clearCookie(name: string): void {
+    document.cookie = `${name}=; domain=.justwedo.com; path=/; max-age=0`;
 }
 
 function randomState(): string {
@@ -44,21 +60,19 @@ function randomState(): string {
         .join('');
 }
 
-/**
- * Redirects to WeChat's OAuth authorize page. Call only from inside
- * WeChat's browser (isWeChatBrowser()) — outside it, this URL just shows
- * WeChat's "open in app" interstitial instead of a working login.
- */
-export function startWeChatLogin(): void {
-    const state = randomState();
-    setStateCookie(state);
+function startWeChatOAuth(scope: 'snsapi_base' | 'snsapi_userinfo', mode: WeChatAuthMode): void {
+    // Mode travels inside the state value itself — WeChatCallback.tsx needs
+    // to know which flow it's handling (silent failures stay invisible;
+    // consent failures show an error) and this avoids a second cookie.
+    const state = `${mode}:${randomState()}`;
+    setCookie(STATE_STORAGE_KEY, state, 600);
 
     const redirectUri = `${WECHAT_REDIRECT_ORIGIN}/auth/wechat/callback`;
     const params = new URLSearchParams({
         appid: WECHAT_APP_ID,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'snsapi_userinfo',
+        scope,
         state,
     });
 
@@ -66,10 +80,41 @@ export function startWeChatLogin(): void {
 }
 
 /**
- * Consumes the state stored before redirecting — call once from the
- * callback page and compare against the `state` query param. Removes it
- * either way so a stale value can't be reused.
+ * Redirects to WeChat's OAuth consent screen. Call only from inside
+ * WeChat's browser (isWeChatBrowser()) — outside it, this URL just shows
+ * WeChat's "open in app" interstitial instead of a working login.
  */
-export function consumeWeChatLoginState(): string | null {
-    return readAndClearStateCookie();
+export function startWeChatLogin(): void {
+    startWeChatOAuth('snsapi_userinfo', 'consent');
+}
+
+/**
+ * Silently checks whether this WeChat identity already has a JWD account,
+ * and if so, logs them in — no consent screen, the visitor never sees
+ * WeChat at all beyond a brief redirect. Runs at most once per ~7 days
+ * (see SILENT_CHECK_DONE_KEY) so an unregistered visitor isn't bounced
+ * through this redirect on every single page load.
+ */
+export function startSilentWeChatCheck(): void {
+    if (readCookie(SILENT_CHECK_DONE_KEY)) return;
+    setCookie(SILENT_CHECK_DONE_KEY, '1', 60 * 60 * 24 * 7);
+    startWeChatOAuth('snsapi_base', 'silent');
+}
+
+/**
+ * Consumes the state stashed before redirecting — call once from the
+ * callback page and compare `state` against the returned value's `raw`
+ * field. Removes the cookie either way so it can't be reused.
+ */
+export function consumeWeChatLoginState(): { raw: string; mode: WeChatAuthMode } | null {
+    const raw = readCookie(STATE_STORAGE_KEY);
+    clearCookie(STATE_STORAGE_KEY);
+    if (!raw) return null;
+
+    const separatorIndex = raw.indexOf(':');
+    if (separatorIndex === -1) return null;
+    const mode = raw.slice(0, separatorIndex);
+    if (mode !== 'silent' && mode !== 'consent') return null;
+
+    return { raw, mode };
 }
