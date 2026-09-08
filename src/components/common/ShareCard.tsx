@@ -92,7 +92,20 @@ export const ShareCard = ({
             </div>
 
             {/* 3. Footer / QR Section */}
-            <div className="p-6 mt-0 bg-white">
+            <div className="p-6 mt-0 bg-white space-y-3">
+                {/* Bottom branding — repeats the logo/name from the top so
+                    the card still reads as "from JustWeDo" if someone only
+                    sees this half (e.g. a cropped screenshot, or scrolling
+                    past the hero image first) — the whole point of this
+                    poster over a plain link is that it's recognizable at a
+                    glance, 小红书-style. */}
+                <div className="flex items-center gap-2">
+                    <img src="/logo.png" className="w-6 h-6 rounded-md object-contain" alt="" />
+                    <div className="flex flex-col leading-none">
+                        <span className="font-extrabold text-sm text-gray-900 tracking-tight">{brandingTitle}</span>
+                        <span className="text-[9px] font-medium text-gray-400 tracking-widest uppercase mt-0.5">{brandingSubtitle}</span>
+                    </div>
+                </div>
                 <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-100">
                     <div className="flex flex-col gap-1">
                         <span className="text-xs font-black text-gray-900 tracking-tight">SCAN TO VIEW</span>
