@@ -2,9 +2,13 @@
 
 微信的 access_token 接口要求请求来自公众号后台"IP白名单"里的固定 IP。Supabase Edge Function
 没有固定出口 IP，所以不能直接调用微信。这个小服务运行在有固定 IP、已经在白名单里的服务器上
-（101.200.62.54），替 Edge Function 完成两件事：
+（101.200.62.54），替 Edge Function 完成三件事：
 - `/signature`：JS-SDK 分享签名（跟微信换 token/ticket/签名）
 - `/oauth-userinfo`：微信登录（用授权 code 换用户 openid/昵称/头像）
+- `/health`：健康检查（GET 请求，不需要密钥，返回进程存活时间和 ticket 缓存状态）
+
+所有请求和错误都会写进同目录下的 `relay.log`（超过 5MB 自动滚动成 `relay.log.old`），不只是
+打印在命令行窗口里——这样以后就算设置成后台常驻（第 6 步）看不到窗口，也能事后翻日志排查。
 
 ## 更新代码后要做的事
 
@@ -89,7 +93,17 @@ node relay-server.js
 
 ### 7. 验证
 
-在任意能上网的电脑上（不需要在服务器上）运行：
+最快的办法——浏览器直接打开（或者 curl）：
+
+```
+http://101.200.62.54:8787/health
+```
+
+能看到类似 `{"ok":true,"uptimeSeconds":123,"ticketCached":true,"ticketExpiresInSeconds":6800}`
+就说明进程活着、端口通了。这一步不需要 sharedSecret，纯粹确认"连不连得上"，不代表微信那边的
+凭证也是对的。
+
+再验证真正跟微信换签名这条链路，在任意能上网的电脑上（不需要在服务器上）运行：
 
 ```
 curl -X POST http://101.200.62.54:8787/signature -H "Content-Type: application/json" -d "{\"url\":\"https://justwedo.com/\",\"secret\":\"你在 config.json 里填的 sharedSecret\"}"
@@ -99,11 +113,18 @@ curl -X POST http://101.200.62.54:8787/signature -H "Content-Type: application/j
 如果报 WeChat token/ticket error，说明 appId/appSecret 填错了，或者这台服务器的出口 IP
 其实不是 101.200.62.54（比如走了别的网卡/NAT），需要重新核实微信后台里配置的白名单 IP。
 
+### 排查"连不上"或"响应特别慢"
+
+1. 先试 `/health`（第 7 步）——通的话说明进程和端口都没问题，问题在跟微信这条链路，往下看
+   `relay.log`（`ERROR` 行会带完整报错和调用栈）。
+2. `/health` 也连不上：先看这台服务器上 `node relay-server.js` 那个窗口还在不在跑。**这个进程
+   跑久了（几小时到几天）有时会自己卡死**（2026-09-08 遇到过，重启进程立刻恢复，防火墙/安全组
+   /公网 IP 全部没变——说明真的是进程本身卡住，不是网络层被封）。先试着重启，比重新排查一遍
+   防火墙/安全组快得多。
+3. 还是不行，才需要重新走一遍第 4 步（防火墙+安全组两层）的检查。
+
 ## 之后 Claude 这边要做的（不需要你操作）
 
 拿到测试成功的确认后，把 `WECHAT_RELAY_URL`（`http://101.200.62.54:8787/signature`）和
 `WECHAT_RELAY_SECRET`（跟 config.json 里的 sharedSecret 一致）设进 Supabase secrets，
 Edge Function 会改成调用这个中转服务，而不是直连微信。
-
-
-New-NetFirewallRule -DisplayName "WeChat Relay 8787" -Direction Inbound -LocalPort 8787 -Protocol TCP -Action Allow
