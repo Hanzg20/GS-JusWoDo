@@ -122,17 +122,12 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
         const signData = await getWxSignature(shareData.url);
         if (!signData) {
             console.warn('WeChat signature not available, falling back to default share');
-            // TEMP debug — see note above configWxShare's wx.config call.
-            alert('[JWD DEBUG] getWxSignature failed for url: ' + shareData.url);
             return false;
         }
 
         // 3. 配置 wx.config
-        // TEMP: debug:true pops a visible alert on the phone with the exact
-        // wx.config result/error — flip back to false once we've diagnosed
-        // why nothing changed for a real user. See jwd_wechat_js_domain_verified memory.
         window.wx?.config({
-            debug: true,
+            debug: false,
             appId: signData.appId,
             timestamp: signData.timestamp,
             nonceStr: signData.nonceStr,
@@ -171,15 +166,11 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
 
         window.wx?.error((res) => {
             console.error('WeChat JS-SDK error:', res);
-            // TEMP debug — see note above configWxShare's wx.config call.
-            alert('[JWD DEBUG] wx.error: ' + JSON.stringify(res));
         });
 
         return true;
     } catch (error) {
         console.error('Failed to configure WeChat share:', error);
-        // TEMP debug — see note above configWxShare's wx.config call.
-        alert('[JWD DEBUG] configWxShare threw: ' + (error as Error)?.message);
         return false;
     }
 }
