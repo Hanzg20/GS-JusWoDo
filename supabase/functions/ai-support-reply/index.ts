@@ -6,9 +6,15 @@
 // notify-offline-message — everything else is re-derived server-side).
 // This function only actually does something when the message's recipient
 // is 渥帮客服 (SUPPORT_USER_ID, see src/config/support.ts) and the sender
-// isn't itself — i.e. a real user messaged support. It then asks Gemini's
-// free-tier API for a reply, grounded in a hand-written knowledge base
-// below (not the app's actual help-center copy, some of which describes
+// isn't itself — i.e. a real user messaged support. It then asks Groq's
+// free-tier API (OpenAI-compatible; open-weight Llama models, not Gemini —
+// see the 2026-09-09 conversation history: Gemini 3.x's free-tier
+// Flash/Flash-Lite models were tested extensively with two separate API
+// keys and consistently ignored systemInstruction, hallucinating an
+// unrelated persona/topic on nearly every call — a known, externally
+// corroborated regression in that model generation, not a prompt-wording
+// problem) for a reply, grounded in a hand-written knowledge base below
+// (not the app's actual help-center copy, some of which describes
 // aspirational features — e.g. an escrow system — that aren't live yet;
 // this prompt is deliberately fact-checked against the real platform
 // state instead), and inserts the reply as a message from the support
@@ -19,17 +25,17 @@
 // checks in later via /admin/messages" model is simpler than tracking
 // staff presence, and can be revisited if that stops being true.
 //
-// Requires the GEMINI_API_KEY secret (free tier, from
-// aistudio.google.com — no credit card needed). Until it's set, this is a
-// silent no-op, same as notify-offline-message's WECHAT_TEMPLATE_ID gate.
+// Requires the GROQ_API_KEY secret (free tier, from console.groq.com — no
+// credit card needed). Until it's set, this is a silent no-op, same as
+// notify-offline-message's WECHAT_TEMPLATE_ID gate.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 const SUPPORT_USER_ID = 'b364c065-6143-4c11-b3ca-74c8494a526a'; // keep in sync with src/config/support.ts
 
 const corsHeaders = {
@@ -70,8 +76,8 @@ serve(async (req) => {
         if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
             return sendJson({ error: "Server misconfigured" }, 500);
         }
-        if (!GEMINI_API_KEY) {
-            return sendJson({ skipped: "GEMINI_API_KEY not configured yet" });
+        if (!GROQ_API_KEY) {
+            return sendJson({ skipped: "GROQ_API_KEY not configured yet" });
         }
 
         const body = await req.json().catch(() => ({}));
@@ -120,29 +126,32 @@ serve(async (req) => {
             .limit(10);
         const orderedHistory = (history || []).reverse();
 
-        const contents = orderedHistory
-            .filter(m => m.content) // skip non-text (image/location/quote) messages Gemini can't read
-            .map(m => ({
-                role: m.sender_id === SUPPORT_USER_ID ? 'model' : 'user',
-                parts: [{ text: m.content }],
-            }));
+        const chatMessages = [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...orderedHistory
+                .filter(m => m.content) // skip non-text (image/location/quote) messages the model can't read
+                .map(m => ({
+                    role: m.sender_id === SUPPORT_USER_ID ? 'assistant' : 'user',
+                    content: m.content,
+                })),
+        ];
 
-        const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-                    contents,
-                }),
-            }
-        );
-        const geminiData = await geminiRes.json();
-        const replyText: string | undefined = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${GROQ_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: chatMessages,
+            }),
+        });
+        const groqData = await groqRes.json();
+        const replyText: string | undefined = groqData?.choices?.[0]?.message?.content;
 
-        if (!geminiRes.ok || !replyText) {
-            console.error("Gemini reply generation failed:", geminiRes.status, JSON.stringify(geminiData));
+        if (!groqRes.ok || !replyText) {
+            console.error("Groq reply generation failed:", groqRes.status, JSON.stringify(groqData));
             return sendJson({ replied: false, error: "AI generation failed" });
         }
 
