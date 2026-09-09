@@ -110,10 +110,24 @@ export async function getWxSignature(url: string): Promise<{
     }
 }
 
+// WeChat's own JS-SDK share card (via "···" → 分享给朋友/分享到朋友圈) has no
+// field for a bottom site-name/logo line — a real, unfixable platform
+// limitation confirmed by direct testing (see jwd_wechat_card_no_native_logo
+// memory: only html2canvas posters can show a real footer logo). This is a
+// cheap, real consolation: prefixing the title itself makes the brand
+// visible right where the eye lands first, without needing that field at
+// all. Skipped if the title already mentions the brand (e.g. the site-wide
+// default title already does) to avoid a redundant double-branded title.
+function brandedTitle(title: string): string {
+    if (/渥帮|justwedo/i.test(title)) return title;
+    return `【渥帮 JustWeDo】${title}`;
+}
+
 /**
  * 配置微信分享
  */
 export async function configWxShare(shareData: ShareData): Promise<boolean> {
+    const title = brandedTitle(shareData.title);
     try {
         // 1. 加载 JS-SDK
         await loadWxJsSdk();
@@ -143,7 +157,7 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
         window.wx?.ready(() => {
             // 分享给朋友
             window.wx?.updateAppMessageShareData({
-                title: shareData.title,
+                title,
                 desc: shareData.description,
                 link: shareData.url,
                 imgUrl: shareData.imageUrl,
@@ -153,7 +167,7 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
 
             // 分享到朋友圈
             window.wx?.updateTimelineShareData({
-                title: shareData.title,
+                title,
                 desc: shareData.description,
                 link: shareData.url,
                 imgUrl: shareData.imageUrl,
