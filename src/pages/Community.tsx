@@ -74,7 +74,7 @@ const Community = () => {
     return (
         <div className="min-h-screen bg-background" ref={pullToRefresh.containerRef}>
             <SEO
-                title={language === 'zh' ? '社区动态' : 'Community Feed'}
+                title={language === 'zh' ? '邻里圈' : 'Neighbors'}
                 description={language === 'zh' ? '看看邻居们都在聊什么 - 渥太华本地社区动态' : 'See what neighbors are talking about - Ottawa local community feed'}
             />
             {/* 下拉刷新指示器 */}
@@ -94,7 +94,7 @@ const Community = () => {
                     <div className="absolute top-0 right-0 w-80 h-80 bg-accent/5 rounded-full blur-[80px]" />
                 </div>
 
-                <div className="container relative max-w-7xl py-6 sm:py-8 px-4">
+                <div className="relative max-w-7xl mx-auto py-4 sm:py-8 px-2.5 sm:px-6">
                     <div className="flex flex-row items-center gap-3 sm:gap-8 overflow-hidden">
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
@@ -104,9 +104,9 @@ const Community = () => {
                         >
                             <div className="flex items-center gap-2 mb-1">
                                 <h1 className="text-2xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                    {language === 'zh' ? '真言' : 'JustTalk'}
+                                    {language === 'zh' ? '邻里圈' : 'Neighbors'}
                                 </h1>
-                                <span className="text-lg sm:text-2xl">💬</span>
+                                <span className="text-lg sm:text-2xl">🏘️</span>
                             </div>
                             <span className="hidden sm:inline-block text-[10px] sm:text-xs font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                                 {language === 'zh' ? '邻里事，随心说' : 'Neighborhood Stories'}
@@ -142,9 +142,9 @@ const Community = () => {
                 </div>
             </div>
 
-            <div className="container max-w-7xl py-8 px-4">
+            <div className="max-w-7xl mx-auto py-4 sm:py-8 px-2.5 sm:px-6">
                 {/* Filters & Radius Toggle */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 sm:mb-8">
                     {/* Intent Filters */}
                     <div className="flex items-center gap-2.5 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
                         <button
@@ -199,7 +199,7 @@ const Community = () => {
                 </div>
 
                 {/* 热门标签 */}
-                <div className="mb-8 bg-white rounded-2xl p-6 shadow-sm border border-border/50 relative">
+                <div className="mb-4 sm:mb-8 bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-border/50 relative">
                     <TrendingTags
                         onTagClick={(tag) => {
                             setSelectedTag(tag);

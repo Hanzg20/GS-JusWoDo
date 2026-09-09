@@ -75,7 +75,7 @@ const Publish = () => {
         neighborLifeHint: language === 'zh'
             ? '以上内容属于"邻里生活"，建议通过社区发帖发布，流程更轻快。'
             : 'These belong under "Neighbor Life" — posting to the community feed is quicker for this kind of content.',
-        goToCommunityPost: language === 'zh' ? '前往真言发帖 →' : 'Post to Community →',
+        goToCommunityPost: language === 'zh' ? '前往邻里圈发帖 →' : 'Post to Neighbors →',
         other: language === 'zh' ? '其他' : 'Other',
         serviceCategoryLabel: language === 'zh' ? '💼 服务' : '💼 Service',
         rentalCategoryLabel: language === 'zh' ? '🏠 租赁' : '🏠 Rental',
