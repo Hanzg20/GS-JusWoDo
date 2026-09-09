@@ -157,7 +157,7 @@ const Chat = () => {
                 )}>
                     <div className="p-4 border-b border-border/50">
                         <div className="flex items-center justify-between mb-4 px-1">
-                            <h2 className="font-bold text-lg tracking-tight">Messages</h2>
+                            <h2 className="font-bold text-lg tracking-tight">Chat</h2>
                             <Badge variant="secondary" className="bg-primary/10 text-primary border-none">
                                 {visibleConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0)} New
                             </Badge>

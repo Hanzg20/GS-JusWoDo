@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, MessageSquare, User, PlusSquare, Store, MessageSquareQuote } from "lucide-react";
+import { Compass, MessageSquare, User, PlusSquare, Store, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useConfigStore } from "@/stores/configStore";
 import { useMessageStore } from "@/stores/messageStore";
@@ -62,17 +62,20 @@ export default function MobileBottomNav() {
         return null;
     }
 
+    // Labels finalized 2026-09-08 — "Neighbors" over the punchier "Block"
+    // since that's North-American-specific slang and this app's bilingual
+    // EN/ZH Ottawa audience needs the unambiguous word.
     const navItems = [
         {
             id: "home",
-            icon: Home,
-            label: language === 'zh' ? '首页' : 'Home',
+            icon: Compass,
+            label: language === 'zh' ? '发现' : 'Discover',
             path: "/",
         },
         {
             id: "community",
-            icon: MessageSquareQuote,
-            label: language === 'zh' ? '邻里互助' : 'Community',
+            icon: Users,
+            label: language === 'zh' ? '邻里圈' : 'Neighbors',
             path: "/community",
         },
         {
@@ -84,7 +87,7 @@ export default function MobileBottomNav() {
         {
             id: "messages",
             icon: MessageSquare,
-            label: language === 'zh' ? '消息' : 'Messages',
+            label: language === 'zh' ? '聊天' : 'Chat',
             path: "/chat", // Confirmed route
         },
         {

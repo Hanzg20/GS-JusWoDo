@@ -17,7 +17,7 @@ const FALLBACK_PILLARS = [
   { codeId: 'PILLAR_TASK', path: '/category/task', zhName: '任务', enName: 'Tasks', extraData: { icon: 'ClipboardList', bgColor: 'bg-amber-50 text-amber-600 border-amber-100', badgeColor: 'bg-amber-500', desc_zh: '发布需求 / 邻居帮忙', desc_en: 'Post a need, get help' } },
   { codeId: 'PILLAR_SECONDHAND', path: '/category/secondhand', zhName: '闲置市场', enName: 'Secondhand', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 物品转让', desc_en: 'Used items, free giveaways' } },
   { codeId: 'PILLAR_RENTAL', path: '/category/rental', zhName: '租赁', enName: 'Rentals', extraData: { icon: 'Camera', bgColor: 'bg-pink-50 text-pink-600 border-pink-100', badgeColor: 'bg-pink-500', desc_zh: '设备 / 场地共享租赁', desc_en: 'Shared gear & space rentals' } },
-  { codeId: 'PILLAR_HELP', path: '/community', zhName: '邻里互助', enName: 'Neighbors', extraData: { icon: 'MessageSquareQuote', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 跑腿短工 / 推荐 / 资讯', desc_en: 'Ask, errands, recommend' } },
+  { codeId: 'PILLAR_HELP', path: '/community', zhName: '邻里圈', enName: 'Neighbors', extraData: { icon: 'Users', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 跑腿短工 / 推荐 / 资讯', desc_en: 'Ask, errands, recommend' } },
 ];
 
 /**

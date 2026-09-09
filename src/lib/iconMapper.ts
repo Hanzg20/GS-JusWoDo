@@ -61,6 +61,8 @@ const iconMap: Record<string, LucideIcon> = {
   "ClipboardList": Icons.ClipboardList,
   "Camera": Icons.Camera,
   "RefreshCw": Icons.RefreshCw,
+  "Users": Icons.Users,
+  "Compass": Icons.Compass,
 };
 
 /**

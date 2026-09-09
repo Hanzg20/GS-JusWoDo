@@ -20,7 +20,7 @@ export const TodayStories = () => {
         title: language === 'zh' ? '邻里故事' : 'Neighbor Stories',
         desc: language === 'zh' ? '不仅是交易，更是邻里互助的温暖传递。' : 'More than just transactions, we record the warmth of neighbors helping neighbors.',
         empty: language === 'zh' ? '暂时没有更多故事。来分享你的第一个邻里互助经历吧！' : 'No stories shared yet. Be the first to share your neighborly experience!',
-        neighborSupport: language === 'zh' ? '邻里互助' : 'Neighborly Support',
+        neighborSupport: language === 'zh' ? '邻里圈' : 'Neighbors',
     };
 
     useEffect(() => {
