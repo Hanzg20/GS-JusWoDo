@@ -219,8 +219,15 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
 
           {/* Bottom Bar: RED Style Author & Likes */}
           <div className="flex items-center justify-between pt-1">
-            {/* Author */}
-            <div className="flex items-center gap-1.5 min-w-0" onClick={(e) => e.stopPropagation()}>
+            {/* Author — links to their profile (stopPropagation so this
+                doesn't also trigger the card's own click-to-detail-page).
+                Previously stopped propagation with no actual navigate,
+                making the author's own profile — and the Follow button
+                that lives there — completely unreachable from the feed. */}
+            <div
+              className="flex items-center gap-1.5 min-w-0"
+              onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}
+            >
               <Avatar className="w-5 h-5">
                 <AvatarImage src={post.author?.avatar} loading="lazy" />
                 <AvatarFallback className="text-[8px] bg-primary/10 text-primary">

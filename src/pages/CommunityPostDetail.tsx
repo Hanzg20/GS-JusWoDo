@@ -22,6 +22,7 @@ import { FactVoteButtons } from "@/components/Community/FactVoteButtons";
 import { UserLevelBadge } from "@/components/Community/UserLevelBadge";
 import { CommentItem } from "@/components/Community/CommentItem";
 import { parseEmbedLink } from "@/lib/embedUtils";
+import { userRepository } from "@/services/repositories/supabase/UserRepository";
 import { updateOpenGraphTags, configWxShare, isWeChatBrowser } from "@/lib/wechatShare";
 import {
     DropdownMenu,
@@ -56,6 +57,8 @@ const CommunityPostDetail = () => {
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+    const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
+    const [isFollowLoading, setIsFollowLoading] = useState(false);
     const commentInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -63,6 +66,42 @@ const CommunityPostDetail = () => {
             fetchPostDetail(id);
         }
     }, [id, fetchPostDetail]);
+
+    // The header's "关注" button previously had no onClick at all — this
+    // loads the real follow state once we know both who's viewing and
+    // whose post it is.
+    useEffect(() => {
+        if (!currentUser?.id || !currentPost?.authorId || currentUser.id === currentPost.authorId) {
+            setIsFollowingAuthor(false);
+            return;
+        }
+        userRepository.isFollowing(currentUser.id, currentPost.authorId)
+            .then(setIsFollowingAuthor)
+            .catch(console.error);
+    }, [currentUser?.id, currentPost?.authorId]);
+
+    const handleFollowAuthor = async () => {
+        if (!currentUser) {
+            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            return;
+        }
+        if (!currentPost || currentUser.id === currentPost.authorId || isFollowLoading) return;
+
+        setIsFollowLoading(true);
+        try {
+            if (isFollowingAuthor) {
+                await userRepository.unfollowUser(currentUser.id, currentPost.authorId);
+                setIsFollowingAuthor(false);
+            } else {
+                await userRepository.followUser(currentUser.id, currentPost.authorId);
+                setIsFollowingAuthor(true);
+            }
+        } catch (error: any) {
+            toast.error(error.message || (language === 'zh' ? '操作失败' : 'Action failed'));
+        } finally {
+            setIsFollowLoading(false);
+        }
+    };
 
     // 配置微信分享和 Open Graph 标签
     useEffect(() => {
@@ -230,23 +269,37 @@ const CommunityPostDetail = () => {
                     </Button>
 
                     <div className="flex items-center gap-2 flex-grow mx-2">
-                        <Avatar className="w-8 h-8 border border-white shadow-sm">
-                            <AvatarImage src={currentPost.author?.avatar} />
-                            <AvatarFallback>{currentPost.author?.name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0">
-                            <span className="font-black text-xs truncate leading-tight">{currentPost.author?.name}</span>
-                            {currentPost.author?.levelIcon && (
-                                <span className="text-[9px] text-primary font-bold">{currentPost.author.levelIcon} Explorer</span>
-                            )}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-auto h-6 rounded-full px-3 text-[10px] font-black border-primary text-primary hover:bg-primary/5"
+                        <div
+                            className="flex items-center gap-2 min-w-0 cursor-pointer"
+                            onClick={() => navigate(`/user/${currentPost.authorId}`)}
                         >
-                            {language === 'zh' ? '关注' : 'Follow'}
-                        </Button>
+                            <Avatar className="w-8 h-8 border border-white shadow-sm">
+                                <AvatarImage src={currentPost.author?.avatar} />
+                                <AvatarFallback>{currentPost.author?.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col min-w-0">
+                                <span className="font-black text-xs truncate leading-tight">{currentPost.author?.name}</span>
+                                {currentPost.author?.levelIcon && (
+                                    <span className="text-[9px] text-primary font-bold">{currentPost.author.levelIcon} Explorer</span>
+                                )}
+                            </div>
+                        </div>
+                        {!isOwner && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleFollowAuthor}
+                                disabled={isFollowLoading}
+                                className={`ml-auto h-6 rounded-full px-3 text-[10px] font-black ${isFollowingAuthor
+                                    ? 'bg-muted text-foreground border-transparent'
+                                    : 'border-primary text-primary hover:bg-primary/5'
+                                    }`}
+                            >
+                                {isFollowingAuthor
+                                    ? (language === 'zh' ? '已关注' : 'Following')
+                                    : (language === 'zh' ? '关注' : 'Follow')}
+                            </Button>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-1">
