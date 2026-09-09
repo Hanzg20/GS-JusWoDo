@@ -14,6 +14,7 @@ import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { AnimatedRoutes } from "./components/AnimatedRoutes";
 import { configWxShare, isWeChatBrowser } from "./lib/wechatShare";
 import { startSilentWeChatCheck } from "./lib/wechatAuth";
+import { PresenceTracker } from "./components/PresenceTracker";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => {
           <BrowserRouter>
             <SEO /> {/* Default Global SEO - moved inside Router */}
             <SilentWeChatLogin />
+            <PresenceTracker />
             <CommunityProvider>
               <AnimatedRoutes />
               <MobileBottomNav />

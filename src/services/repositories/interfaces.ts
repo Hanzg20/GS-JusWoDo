@@ -125,6 +125,14 @@ export interface Message {
     createdAt: string;
 }
 
+// Admin-only view of a conversation — shows both participants by name
+// rather than "the other user" (there's no "self" from an admin's seat).
+export interface AdminConversation extends Conversation {
+    participantAName?: string;
+    participantBName?: string;
+    lastMessagePreview?: string;
+}
+
 export interface IMessageRepository {
     getConversations(userId: string): Promise<Conversation[]>;
     getMessages(conversationId: string): Promise<Message[]>;
@@ -135,6 +143,10 @@ export interface IMessageRepository {
     subscribeToUserEvents(userId: string, callback: (event: { type: 'CONVERSATION_UPDATE' | 'NEW_MESSAGE', data: any }) => void): () => void;
     getUnreadCount(userId: string): Promise<number>;
     getConversationUnreadCounts(userId: string): Promise<Map<string, number>>;
+    /** Admin-only: every conversation platform-wide (relies on the "Admins
+     * can view all conversations" RLS policy — returns an empty list for a
+     * non-admin caller rather than throwing). */
+    getAllConversations(): Promise<AdminConversation[]>;
 }
 
 import {

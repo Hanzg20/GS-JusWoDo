@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "@/components/Header";
-import { Search, MoreVertical, Phone, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck } from "lucide-react";
+import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX } from "lucide-react";
 import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
+import { usePresenceStore } from "@/stores/presenceStore";
 import { useOrderStore } from "@/stores/orderStore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,19 @@ import { EmojiPicker } from "@/components/chat/EmojiPicker";
 import { ImageUpload } from "@/components/chat/ImageUpload";
 import { LocationShare } from "@/components/chat/LocationShare";
 import { userRepository } from "@/services/repositories/supabase/UserRepository";
+import { supabase } from "@/lib/supabase";
+import { ReportDialog } from "@/components/common/ReportDialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Chat = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
+    const { onlineUserIds } = usePresenceStore();
     const {
         conversations,
         messages,
@@ -38,6 +48,7 @@ const Chat = () => {
     const [input, setInput] = useState("");
     const [showStartDialog, setShowStartDialog] = useState(false);
     const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const notificationService = useRef<MessageNotificationService | null>(null);
 
@@ -50,12 +61,36 @@ const Chat = () => {
     }, [currentUser?.id]);
 
     const visibleConversations = useMemo(() => {
-        if (blockedUserIds.length === 0) return conversations;
-        return conversations.filter(conv => {
-            const otherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
-            return !blockedUserIds.includes(otherUserId);
-        });
-    }, [conversations, blockedUserIds, currentUser?.id]);
+        const notBlocked = blockedUserIds.length === 0
+            ? conversations
+            : conversations.filter(conv => {
+                const otherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
+                return !blockedUserIds.includes(otherUserId);
+            });
+
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return notBlocked;
+        return notBlocked.filter(conv => (conv.otherUserName || '').toLowerCase().includes(query));
+    }, [conversations, blockedUserIds, currentUser?.id, searchQuery]);
+
+    const activeOtherUserId = useMemo(() => {
+        const conv = conversations.find(c => c.id === activeConversationId);
+        if (!conv) return null;
+        return conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
+    }, [conversations, activeConversationId, currentUser?.id]);
+
+    const handleBlockUser = async () => {
+        if (!currentUser?.id || !activeOtherUserId) return;
+        try {
+            await userRepository.blockUser(currentUser.id, activeOtherUserId);
+            setBlockedUserIds(prev => [...prev, activeOtherUserId]);
+            setActiveConversation(null);
+            toast.success("User blocked");
+        } catch (err) {
+            console.error('Failed to block user:', err);
+            toast.error("Failed to block user");
+        }
+    };
 
     // Initialize notification service
     useEffect(() => {
@@ -66,10 +101,24 @@ const Chat = () => {
     // Integrate message read status sync
     useMessageReadStatus(activeConversationId, currentUser?.id || '');
 
-    // Load conversations on mount
+    // Load conversations on mount. If a first-time visitor genuinely has
+    // zero conversations after that load, seed one with 渥帮客服 so the
+    // list isn't just empty — chained directly off the load promise (and
+    // reading the store's freshest state via getState(), not the reactive
+    // `conversations` value from this render) rather than a second effect
+    // watching `isLoading`/`conversations.length`, which raced: effects run
+    // in declaration order within the same commit, so a second effect could
+    // see this render's stale `isLoading === false` before the first
+    // effect's loadConversations() call had a chance to flip it.
     useEffect(() => {
         if (currentUser?.id) {
-            loadConversations(currentUser.id);
+            loadConversations(currentUser.id).then(() => {
+                if (useMessageStore.getState().conversations.length === 0) {
+                    return supabase.functions
+                        .invoke('create-welcome-conversation', { body: { userId: currentUser.id } })
+                        .then(() => loadConversations(currentUser.id));
+                }
+            }).catch((err) => console.error('Failed to seed welcome conversation:', err));
             // Check for offline messages
             notificationService.current?.checkOfflineMessages(currentUser.id);
         }
@@ -167,6 +216,8 @@ const Chat = () => {
                             <input
                                 type="text"
                                 placeholder="Search..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-muted/50 border-none outline-none text-xs"
                             />
                         </div>
@@ -323,8 +374,13 @@ const Chat = () => {
                                             </div>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <div className="flex items-center gap-1">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                    <p className="text-[10px] text-muted-foreground font-medium">Online</p>
+                                                    <div className={cn(
+                                                        "w-1.5 h-1.5 rounded-full",
+                                                        activeOtherUserId && onlineUserIds.has(activeOtherUserId) ? "bg-green-500 animate-pulse" : "bg-gray-300"
+                                                    )} />
+                                                    <p className="text-[10px] text-muted-foreground font-medium">
+                                                        {activeOtherUserId && onlineUserIds.has(activeOtherUserId) ? 'Online' : 'Offline'}
+                                                    </p>
                                                 </div>
                                                 {/* Role Text */}
                                                 {activeOrder && (
@@ -350,12 +406,29 @@ const Chat = () => {
 
                                     {/* Right: Actions */}
                                     <div className="flex items-center gap-1">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/5">
-                                            <Phone className="w-4 h-4 text-muted-foreground" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/5">
-                                            <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/5">
+                                                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-2xl min-w-[160px] p-2">
+                                                {activeOtherUserId && (
+                                                    <ReportDialog
+                                                        targetType="USER"
+                                                        targetId={activeOtherUserId}
+                                                        trigger={
+                                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                                <Shield className="w-4 h-4" /> Report
+                                                            </DropdownMenuItem>
+                                                        }
+                                                    />
+                                                )}
+                                                <DropdownMenuItem onClick={handleBlockUser} className="gap-2 text-red-500 focus:text-red-500 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                    <UserX className="w-4 h-4" /> Block
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
                             </div>

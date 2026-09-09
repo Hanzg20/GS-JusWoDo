@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { repositoryFactory } from '@/services/repositories/factory';
+import { supabase } from '@/lib/supabase';
 
 export interface Conversation {
     id: string;
@@ -127,6 +128,12 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                     return { messages: [...state.messages, newMessage] };
                 });
             }
+
+            // Offline WeChat notification — fire-and-forget side effect,
+            // must never block or fail the actual send (recipient may not
+            // have wechat_openid, or WECHAT_TEMPLATE_ID may not be
+            // configured yet; the Edge Function handles both as no-ops).
+            supabase.functions.invoke('notify-offline-message', { body: { messageId: newMessage.id } }).catch(() => {});
         } catch (error: any) {
             console.error('Failed to send message:', error);
             set({ error: error.message });

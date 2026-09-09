@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { IMessageRepository, Conversation, Message } from '../interfaces';
+import { IMessageRepository, Conversation, Message, AdminConversation } from '../interfaces';
 
 export class SupabaseMessageRepository implements IMessageRepository {
     async getConversations(userId: string): Promise<Conversation[]> {
@@ -61,6 +61,51 @@ export class SupabaseMessageRepository implements IMessageRepository {
         );
 
         return enrichedConversations;
+    }
+
+    /** Admin-only: relies on the "Admins can view all conversations" RLS
+     * policy — a non-admin caller just gets an empty/RLS-filtered result,
+     * not an error, since Postgres RLS silently omits rows rather than
+     * rejecting the query. */
+    async getAllConversations(): Promise<AdminConversation[]> {
+        const { data, error } = await supabase
+            .from('conversations')
+            .select(`
+                id,
+                participant_a,
+                participant_b,
+                order_id,
+                last_message_at,
+                created_at,
+                metadata
+            `)
+            .order('last_message_at', { ascending: false });
+
+        if (error) throw error;
+
+        const participantIds = Array.from(new Set((data || []).flatMap(c => [c.participant_a, c.participant_b])));
+        const { data: profiles } = await supabase
+            .from('user_profiles')
+            .select('id, name')
+            .in('id', participantIds.length > 0 ? participantIds : ['00000000-0000-0000-0000-000000000000']);
+        const nameById = new Map((profiles || []).map(p => [p.id, p.name]));
+
+        return await Promise.all((data || []).map(async (conv) => {
+            const { data: latestMessage } = await supabase
+                .from('messages')
+                .select('content, message_type')
+                .eq('conversation_id', conv.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            return {
+                ...this.mapConversation(conv),
+                participantAName: nameById.get(conv.participant_a) || 'User',
+                participantBName: nameById.get(conv.participant_b) || 'User',
+                lastMessagePreview: latestMessage ? this.formatMessagePreview(latestMessage) : undefined,
+            };
+        }));
     }
 
     private formatMessagePreview(message: any): string {

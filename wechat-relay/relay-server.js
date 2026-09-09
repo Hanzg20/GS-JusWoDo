@@ -101,12 +101,25 @@ function httpsGetJson(url) {
 }
 
 let cachedTicket = null; // { value, expiresAt }
+let cachedAccessToken = null; // { value, expiresAt } — separate cache from
+// the ticket's, since /send-template-message needs a plain access_token
+// directly (no ticket involved) and would otherwise force a fresh
+// cgi-bin/token call on every single chat message sent.
 
 async function fetchAccessToken() {
     const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appId}&secret=${appSecret}`;
     const data = await httpsGetJson(url);
     if (!data.access_token) throw new Error(`WeChat token error: ${JSON.stringify(data)}`);
     return data.access_token;
+}
+
+async function getAccessToken() {
+    const now = Date.now();
+    if (cachedAccessToken && cachedAccessToken.expiresAt > now) return cachedAccessToken.value;
+    const accessToken = await fetchAccessToken();
+    // Refresh a few minutes early so we never serve a token WeChat has already expired.
+    cachedAccessToken = { value: accessToken, expiresAt: now + 7000 * 1000 };
+    return accessToken;
 }
 
 async function fetchJsApiTicket(accessToken) {
@@ -120,12 +133,47 @@ async function getJsApiTicket() {
     const now = Date.now();
     if (cachedTicket && cachedTicket.expiresAt > now) return cachedTicket.value;
     log('INFO', 'jsapi_ticket cache miss/expired — fetching fresh access_token + ticket');
-    const accessToken = await fetchAccessToken();
+    const accessToken = await getAccessToken();
     const ticket = await fetchJsApiTicket(accessToken);
     // Refresh a few minutes early so we never serve a ticket WeChat has already expired.
     cachedTicket = { value: ticket, expiresAt: now + 7000 * 1000 };
     log('INFO', 'jsapi_ticket refreshed, valid ~117 more minutes');
     return ticket;
+}
+
+// Offline chat notification: sends a WeChat template message (服务号-only
+// API) to a user who has a wechat_openid on file, so a merchant/customer
+// who's away from the app still finds out they got a message. Templates
+// are configured per-account in 公众号后台 → 模板消息 → 模板库 — the
+// caller (notify-offline-message Edge Function) supplies the templateId and
+// the exact `data` field names/values that template expects.
+async function sendTemplateMessage(openid, templateId, data, url) {
+    const accessToken = await getAccessToken();
+    const apiUrl = `https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=${accessToken}`;
+    const body = JSON.stringify({ touser: openid, template_id: templateId, url, data });
+
+    return new Promise((resolve, reject) => {
+        const req = https.request(apiUrl, {
+            method: 'POST',
+            agent: noKeepAliveAgent,
+            timeout: HTTPS_TIMEOUT_MS,
+            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        }, (res) => {
+            let respBody = '';
+            res.on('data', (chunk) => (respBody += chunk));
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(respBody));
+                } catch (err) {
+                    reject(new Error(`Non-JSON response from template send: ${err.message}`));
+                }
+            });
+        });
+        req.on('timeout', () => req.destroy(new Error(`Request to ${apiUrl} timed out after ${HTTPS_TIMEOUT_MS}ms`)));
+        req.on('error', reject);
+        req.write(body);
+        req.end();
+    });
 }
 
 // WeChat login (公众号网页授权): exchanges the one-time `code` the browser
@@ -273,6 +321,29 @@ const server = http.createServer(async (req, res) => {
             finish(200);
         } catch (err) {
             log('ERROR', `[${requestId}] /oauth-userinfo failed: ${err.stack || err}`);
+            sendJson(res, 500, { error: String(err.message || err) });
+            finish(500);
+        }
+        return;
+    }
+
+    if (req.url === '/send-template-message') {
+        try {
+            const { openid, templateId, data, url } = parsedBody;
+            if (!openid || !templateId || !data) {
+                sendJson(res, 400, { error: "Missing 'openid', 'templateId', or 'data'" });
+                finish(400);
+                return;
+            }
+
+            const result = await sendTemplateMessage(openid, templateId, data, url);
+            if (result.errcode && result.errcode !== 0) {
+                log('WARN', `[${requestId}] /send-template-message WeChat error: ${JSON.stringify(result)}`);
+            }
+            sendJson(res, 200, result);
+            finish(200);
+        } catch (err) {
+            log('ERROR', `[${requestId}] /send-template-message failed: ${err.stack || err}`);
             sendJson(res, 500, { error: String(err.message || err) });
             finish(500);
         }

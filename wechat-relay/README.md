@@ -5,6 +5,7 @@
 （101.200.62.54），替 Edge Function 完成三件事：
 - `/signature`：JS-SDK 分享签名（跟微信换 token/ticket/签名）
 - `/oauth-userinfo`：微信登录（用授权 code 换用户 openid/昵称/头像）
+- `/send-template-message`：离线消息通知（给某个 openid 推一条模板消息，用于聊天有新消息时通知对方）
 - `/health`：健康检查（GET 请求，不需要密钥，返回进程存活时间和 ticket 缓存状态）
 
 所有请求和错误都会写进同目录下的 `relay.log`（超过 5MB 自动滚动成 `relay.log.old`），不只是
