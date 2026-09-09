@@ -166,6 +166,7 @@ export interface ICommunityPostRepository {
         postType?: CommunityPostType;
         query?: string;
         scope?: 'nearby' | 'city';
+        authorIds?: string[];
         limit?: number;
         offset?: number;
     }): Promise<CommunityPost[]>;

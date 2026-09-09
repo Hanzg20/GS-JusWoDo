@@ -89,6 +89,7 @@ export class SupabaseCommunityPostRepository {
         postType?: CommunityPostType;
         query?: string;
         scope?: 'nearby' | 'city';
+        authorIds?: string[];
         limit?: number;
         offset?: number;
     } = {}): Promise<CommunityPost[]> {
@@ -102,12 +103,18 @@ export class SupabaseCommunityPostRepository {
             .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: false });
 
-        // Handle "Nearby" vs "City" scope
-        if (options.scope === 'city') {
-            // "City" = Show EVERYTHING (All nodes + Global)
+        // "关注" (Following) tab — posts from a specific set of author ids,
+        // ignores node/scope entirely (you follow a person, not a
+        // neighborhood). An empty array (not undefined) means "following
+        // nobody yet" — must return zero rows, not the unfiltered feed.
+        if (options.authorIds) {
+            if (options.authorIds.length === 0) return [];
+            query = query.in('author_id', options.authorIds);
+        } else if (options.scope === 'city') {
+            // "City"/探索 = show everything (all nodes + global)
             // No strict node_id filter applied
         } else if (options.nodeId) {
-            // "Nearby" (default) = Strictly same node + Global posts
+            // "Nearby"/附近 = strictly same node + global posts
             query = query.or(`node_id.eq.${options.nodeId},node_id.is.null`);
         }
 

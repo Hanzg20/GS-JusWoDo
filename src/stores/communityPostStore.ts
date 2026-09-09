@@ -26,8 +26,8 @@ interface CommunityPostState {
     isLoadingDetail: boolean;
 
     // Actions
-    fetchFeed: (options?: { nodeId?: string; postType?: CommunityPostType; query?: string; scope?: 'nearby' | 'city'; refresh?: boolean }) => Promise<void>;
-    loadMore: (options?: { nodeId?: string; postType?: CommunityPostType; query?: string; scope?: 'nearby' | 'city' }) => Promise<void>;
+    fetchFeed: (options?: { nodeId?: string; postType?: CommunityPostType; query?: string; scope?: 'nearby' | 'city'; authorIds?: string[]; refresh?: boolean }) => Promise<void>;
+    loadMore: (options?: { nodeId?: string; postType?: CommunityPostType; query?: string; scope?: 'nearby' | 'city'; authorIds?: string[] }) => Promise<void>;
     fetchPostDetail: (id: string) => Promise<void>;
 
     createPost: (authorId: string, input: CreateCommunityPostInput) => Promise<CommunityPost>;
@@ -123,6 +123,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
                 postType: options.postType,
                 query: options.query,
                 scope: options.scope,
+                authorIds: options.authorIds,
                 limit: pageSize,
                 offset: 0
             });
@@ -155,6 +156,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
                 postType: options.postType,
                 query: options.query,
                 scope: options.scope,
+                authorIds: options.authorIds,
                 limit: pageSize,
                 offset
             });

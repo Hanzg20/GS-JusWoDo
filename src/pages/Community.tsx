@@ -1,46 +1,65 @@
 import { useState, useEffect } from "react";
 import SEO from "@/components/SEO";
-import { Plus } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
 import { LitePost } from "@/components/Community/LitePost";
 import { MasonryGrid } from "@/components/Community/MasonryGrid";
 import { PullToRefreshIndicator } from "@/components/Community/PullToRefresh";
-import { TrendingTags } from "@/components/Community/TrendingTags";
 import { useAuthStore } from "@/stores/authStore";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { useConfigStore } from "@/stores/configStore";
 import { CommunityPostType } from "@/types/community";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { userRepository } from "@/services/repositories/supabase/UserRepository";
+import { cn } from "@/lib/utils";
+
+// Level-1 feed source, modeled on 小红书's 关注/发现/城市 top tabs
+// (reference: rednote.png) — 探索/附近 map onto our existing
+// city-wide/node-scoped scopes, 关注 is genuinely new: real posts from
+// people the current user follows (see followingIds below), not a
+// cosmetic label — user_followers/getFollowing() already existed and
+// worked, just had zero UI reachable from Community before this.
+type FeedMode = 'following' | 'explore' | 'nearby';
 
 const Community = () => {
-    const { posts, fetchFeed, loadMore, isLoading, hasMore } = useCommunityPostStore();
+    const { posts, trendingTags, fetchFeed, fetchTrendingTags, loadMore, isLoading, hasMore } = useCommunityPostStore();
     const { currentUser } = useAuthStore();
     const { language } = useConfigStore();
     const [activeFilter, setActiveFilter] = useState<'all' | CommunityPostType>('all');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
-    const [scope, setScope] = useState<'nearby' | 'city'>('city');
-
-    // DEBUG: Check user node
-    useEffect(() => {
-        console.log('Community: User State', {
-            id: currentUser?.id,
-            nodeId: currentUser?.nodeId,
-            scope
-        });
-    }, [currentUser, scope]);
+    const [feedMode, setFeedMode] = useState<FeedMode>('explore');
+    const [followingIds, setFollowingIds] = useState<string[] | null>(null);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
 
     useEffect(() => {
+        fetchTrendingTags(6);
+    }, [fetchTrendingTags]);
+
+    // Only fetch the following list when that tab is actually selected —
+    // most visits never touch it, no reason to look it up eagerly.
+    useEffect(() => {
+        if (feedMode !== 'following' || !currentUser?.id) return;
+        userRepository.getFollowing(currentUser.id, 200).then(({ users }) => {
+            setFollowingIds(users.map(u => u.id));
+        }).catch(() => setFollowingIds([]));
+    }, [feedMode, currentUser?.id]);
+
+    useEffect(() => {
+        if (feedMode === 'following' && !currentUser) return; // nothing to fetch, empty state handles it
+        if (feedMode === 'following' && followingIds === null) return; // still loading the list
+
         const typeFilter = activeFilter === 'all' ? undefined : activeFilter;
         fetchFeed({
             postType: typeFilter,
             query: selectedTag || undefined,
-            scope: scope,
-            nodeId: currentUser?.nodeId
+            scope: feedMode === 'nearby' ? 'nearby' : 'city',
+            nodeId: currentUser?.nodeId,
+            authorIds: feedMode === 'following' ? (followingIds || []) : undefined,
         });
-    }, [activeFilter, selectedTag, scope, fetchFeed]);
+    }, [activeFilter, selectedTag, feedMode, followingIds, fetchFeed]);
 
     // 下拉刷新
     const handleRefresh = async () => {
@@ -68,7 +87,16 @@ const Community = () => {
         enabled: true,
     });
 
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setSelectedTag(searchInput.trim() || null);
+    };
 
+    const closeSearch = () => {
+        setIsSearchOpen(false);
+        setSearchInput('');
+        setSelectedTag(null);
+    };
 
     return (
         <div className="min-h-screen bg-background" ref={pullToRefresh.containerRef}>
@@ -86,49 +114,78 @@ const Community = () => {
 
             <Header />
 
-            {/* Tab header, closely modeled on 小红书's 关注/发现/城市 + sub-tab
-                pattern (reference: rednote.png) — deliberately no page title
-                anywhere here. Row 1 (附近/全城) is RedNote's "which source"
-                tier (their 关注/发现/城市), row 2 (全部/邻里/活动/求助/公告) is
-                RedNote's per-tab sub-filter tier (their 推荐/RED/热点/...) —
-                both are plain text, bold + underline for the active one, no
-                background pill/shadow. Sticky so it stays reachable while
-                scrolling the feed, same as RedNote's. */}
+            {/* Tab header, modeled directly on 小红书's 关注/发现/城市/搜索 top
+                bar + per-tab sub-filter row (reference: rednote.png). No
+                page title anywhere — plain text tabs only, bold + underline
+                for the active one, no background pill/shadow. Sticky, same
+                as RedNote's. */}
             <div className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between">
-                    <div className="flex items-center gap-5 sm:gap-8 h-11 sm:h-13">
-                        {([
-                            { id: 'nearby', labelZh: '附近', labelEn: 'Nearby' },
-                            { id: 'city', labelZh: '全城', labelEn: 'City' },
-                        ] as const).map((tab) => (
+                {isSearchOpen ? (
+                    <form onSubmit={handleSearchSubmit} className="max-w-7xl mx-auto px-3 sm:px-6 h-11 sm:h-12 flex items-center gap-2">
+                        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <input
+                            autoFocus
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            placeholder={language === 'zh' ? '搜索邻里圈内容...' : 'Search Neighbors...'}
+                            className="flex-1 bg-transparent outline-none text-sm sm:text-base"
+                        />
+                        <button type="button" onClick={closeSearch} className="text-muted-foreground shrink-0">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </form>
+                ) : (
+                    <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between">
+                        <div className="flex items-center gap-5 sm:gap-8 h-11 sm:h-12">
+                            {([
+                                { id: 'following', labelZh: '关注', labelEn: 'Following' },
+                                { id: 'explore', labelZh: '探索', labelEn: 'Explore' },
+                                { id: 'nearby', labelZh: '附近', labelEn: 'Nearby' },
+                            ] as const).map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setFeedMode(tab.id)}
+                                    className={`relative h-full text-[15px] sm:text-lg font-bold transition-colors ${feedMode === tab.id ? 'text-foreground' : 'text-muted-foreground/70'
+                                        }`}
+                                >
+                                    {language === 'zh' ? tab.labelZh : tab.labelEn}
+                                    {feedMode === tab.id && (
+                                        <span className="absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-primary" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-1">
                             <button
-                                key={tab.id}
-                                onClick={() => setScope(tab.id)}
-                                className={`relative h-full text-[15px] sm:text-lg font-bold transition-colors ${scope === tab.id ? 'text-foreground' : 'text-muted-foreground/70'
-                                    }`}
+                                onClick={() => setIsSearchOpen(true)}
+                                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors text-foreground"
                             >
-                                {language === 'zh' ? tab.labelZh : tab.labelEn}
-                                {scope === tab.id && (
-                                    <span className="absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-primary" />
-                                )}
+                                <Search className="w-4 h-4" />
                             </button>
-                        ))}
+                            {/* Compose entry — the mobile FAB (below) covers
+                                phones; this covers desktop/tablet, which has
+                                no other visible "new post" entry point here
+                                since MobileBottomNav's Post tab is md:hidden
+                                too. */}
+                            <LitePost
+                                onSuccess={() => fetchFeed({})}
+                                trigger={
+                                    <button className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors text-foreground">
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                }
+                            />
+                        </div>
                     </div>
+                )}
 
-                    {/* Compose entry — the mobile FAB (below) covers phones;
-                        this covers desktop/tablet, which has no other
-                        visible "new post" entry point on this page since
-                        MobileBottomNav's Post tab is md:hidden too. */}
-                    <LitePost
-                        onSuccess={() => fetchFeed({})}
-                        trigger={
-                            <button className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors text-foreground">
-                                <Plus className="w-5 h-5" />
-                            </button>
-                        }
-                    />
-                </div>
-
+                {/* Level-2 sub-filters — post-type tabs plus, per your
+                    "fold trending tags into the sub-menu instead of a
+                    standalone section" call, the top few trending tags
+                    appended as extra tabs (same treatment RedNote gives
+                    topic tabs like 热点/美食 alongside its content-type
+                    ones). */}
                 <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center gap-4 sm:gap-6 h-9 sm:h-10 overflow-x-auto scrollbar-hide">
                     {([
                         { id: 'all', labelZh: '全部', labelEn: 'All' },
@@ -139,12 +196,33 @@ const Community = () => {
                     ] as const).map((filter) => (
                         <button
                             key={filter.id}
-                            onClick={() => setActiveFilter(filter.id as 'all' | CommunityPostType)}
-                            className={`relative h-full shrink-0 text-[13px] sm:text-sm transition-colors ${activeFilter === filter.id ? 'font-bold text-foreground' : 'font-medium text-muted-foreground/70'
-                                }`}
+                            onClick={() => { setActiveFilter(filter.id as 'all' | CommunityPostType); setSelectedTag(null); }}
+                            className={cn(
+                                "relative h-full shrink-0 text-[13px] sm:text-sm transition-colors",
+                                activeFilter === filter.id && !selectedTag ? 'font-bold text-foreground' : 'font-medium text-muted-foreground/70'
+                            )}
                         >
                             {language === 'zh' ? filter.labelZh : filter.labelEn}
-                            {activeFilter === filter.id && (
+                            {activeFilter === filter.id && !selectedTag && (
+                                <span className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full bg-primary" />
+                            )}
+                        </button>
+                    ))}
+
+                    {trendingTags.length > 0 && (
+                        <span className="text-border shrink-0">|</span>
+                    )}
+                    {trendingTags.slice(0, 6).map((t) => (
+                        <button
+                            key={t.tag}
+                            onClick={() => setSelectedTag(selectedTag === t.tag ? null : t.tag)}
+                            className={cn(
+                                "relative h-full shrink-0 text-[13px] sm:text-sm transition-colors",
+                                selectedTag === t.tag ? 'font-bold text-foreground' : 'font-medium text-muted-foreground/70'
+                            )}
+                        >
+                            #{t.tag}
+                            {selectedTag === t.tag && (
                                 <span className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full bg-primary" />
                             )}
                         </button>
@@ -153,42 +231,37 @@ const Community = () => {
             </div>
 
             <div className="max-w-7xl mx-auto py-3 sm:py-6 px-2.5 sm:px-6">
-                {/* 热门标签 — condensed inline strip, not a boxed card (RedNote
-                    doesn't give trending tags their own card either) */}
-                <div className="mb-3 sm:mb-6 relative">
-                    <TrendingTags
-                        onTagClick={(tag) => {
-                            setSelectedTag(tag);
-                        }}
-                        maxTags={12}
-                    />
-                    {selectedTag && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute top-0 right-0 text-xs h-6 text-muted-foreground hover:text-primary"
-                            onClick={() => setSelectedTag(null)}
-                        >
-                            {language === 'zh' ? '清除筛选' : 'Clear Filter'}
-                        </Button>
-                    )}
-                </div>
+                {feedMode === 'following' && !currentUser ? (
+                    <div className="text-center py-16">
+                        <p className="text-sm text-muted-foreground">
+                            {language === 'zh' ? '登录后查看你关注的邻居动态' : 'Log in to see posts from people you follow'}
+                        </p>
+                    </div>
+                ) : feedMode === 'following' && followingIds?.length === 0 ? (
+                    <div className="text-center py-16">
+                        <p className="text-sm text-muted-foreground">
+                            {language === 'zh' ? '你还没有关注任何邻居，去发现页看看吧' : "You're not following anyone yet — check out Explore"}
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Posts Feed - Masonry Grid */}
+                        <MasonryGrid posts={posts} isLoading={isLoading} />
 
-                {/* Posts Feed - Masonry Grid */}
-                <MasonryGrid posts={posts} isLoading={isLoading} />
-
-                {/* 无限滚动触发器 */}
-                <div ref={infiniteScroll.observerTarget} className="w-full h-20 flex items-center justify-center">
-                    {isLoading && hasMore && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                            <span className="text-sm font-medium">{language === 'zh' ? '加载更多...' : 'Loading more...'}</span>
+                        {/* 无限滚动触发器 */}
+                        <div ref={infiniteScroll.observerTarget} className="w-full h-20 flex items-center justify-center">
+                            {isLoading && hasMore && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-sm font-medium">{language === 'zh' ? '加载更多...' : 'Loading more...'}</span>
+                                </div>
+                            )}
+                            {!hasMore && posts.length > 0 && (
+                                <p className="text-sm text-muted-foreground">{language === 'zh' ? '没有更多内容了' : 'No more content'}</p>
+                            )}
                         </div>
-                    )}
-                    {!hasMore && posts.length > 0 && (
-                        <p className="text-sm text-muted-foreground">{language === 'zh' ? '没有更多内容了' : 'No more content'}</p>
-                    )}
-                </div>
+                    </>
+                )}
             </div>
 
             <Footer />
@@ -199,7 +272,7 @@ const Community = () => {
                     onSuccess={() => fetchFeed({})}
                 />
             </div>
-        </div >
+        </div>
     );
 };
 
