@@ -13,12 +13,12 @@
 // keys and consistently ignored systemInstruction, hallucinating an
 // unrelated persona/topic on nearly every call — a known, externally
 // corroborated regression in that model generation, not a prompt-wording
-// problem) for a reply, grounded in a hand-written knowledge base below
-// (not the app's actual help-center copy, some of which describes
-// aspirational features — e.g. an escrow system — that aren't live yet;
-// this prompt is deliberately fact-checked against the real platform
-// state instead), and inserts the reply as a message from the support
-// account.
+// problem) for a reply, grounded in the ai_knowledge_base table (see
+// buildSystemPrompt() below — not the app's actual help-center copy,
+// some of which describes aspirational features, e.g. an escrow system,
+// that aren't live yet; the seeded knowledge base rows are deliberately
+// fact-checked against the real platform state instead), and inserts the
+// reply as a message from the support account.
 //
 // No online/offline detection — this replies to every message sent to
 // support, full stop. For a small/solo operation an "AI-first, human
@@ -44,21 +44,37 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Deliberately fact-checked against the real platform state (2026-09-08),
-// not copied from HelpCenter.tsx's FAQ copy, which describes some
-// not-yet-live features (e.g. "金豆托管机制" escrow) as if already active.
-// Update this if real platform behavior changes (e.g. PAYMENTS_ENABLED
-// flips true and a real escrow/payment flow ships).
-const SYSTEM_PROMPT = `你是渥帮 JustWeDo（渥太华本地生活服务平台）的智能客服"渥帮客服"。请用简洁、友好的语气回答用户问题，并使用用户提问所用的语言（中文或英文）回复，不要中英混杂。
+// How to behave — stays hardcoded (rarely changes, and changing tone/
+// safety rules should go through a code review, not a casual DB edit).
+// What to know — lives in the ai_knowledge_base table instead (see
+// supabase/migrations/20260909_ai_knowledge_base.sql) so the operator can
+// add/edit platform facts via /admin/knowledge-base without a deploy.
+const PROMPT_INSTRUCTIONS = `你是渥帮 JustWeDo（渥太华本地生活服务平台）的智能客服"渥帮客服"。请用简洁、友好的语气回答用户问题，不要中英混杂。回复保持简短，2-4 句话为宜，不要用"作为一个AI"这类自我暴露的措辞，以"渥帮客服"的身份自然回复。
 
-关于渥帮 JustWeDo 的真实平台信息（回答时必须严格基于以下事实，不要编造未提及的政策、功能或时限）：
-- 渥帮是 GoldSky Technologies 旗下面向渥太华地区的本地生活服务平台。
-- 平台核心板块：商户服务（本地专业服务/商户，如清洁、维修、宠物美容等）、邻里互助（社区求助、跑腿、推荐、资讯）、二手闲置（个人闲置物品买卖/赠送），首页还有产品、任务、租赁等分类。
-- 目前平台【没有】站内支付托管或担保交易机制——交易的付款方式、时间、地点由买卖双方自行在聊天中协商确定，平台不参与资金环节，也不提供退款保证。如果用户问"钱有没有保障"，如实说明目前是这个状态，不要暗示有担保。
-- 用户可以在具体服务/商品详情页点击"Chat"或"联系"按钮直接和商家/邻居发起聊天。
-- 如果用户反映和某个商家/邻居之间有纠纷、投诉，或者需要人工客服介入，回复"已经记录，人工客服会尽快跟进处理"，不要承诺具体的处理时限、赔偿方案或调查结果。
-- 遇到你不确定、平台信息里没有提到的问题（具体价格、优惠活动、认证审核细节等），如实说"这个我暂时不确定，会请人工客服跟进确认"，绝对不要猜测或编造答案。
-- 回复保持简短，2-4 句话为宜，不要用"作为一个AI"这类自我暴露的措辞，以"渥帮客服"的身份自然回复。`;
+回答时必须严格基于下面"平台信息"部分给出的事实，不要编造未提及的政策、功能或时限。遇到平台信息里没有提到、你不确定的问题（具体价格、优惠活动、认证审核细节等），如实说"这个我暂时不确定，会请人工客服跟进确认"，绝对不要猜测或编造答案。`;
+
+// `language` ('zh'/'en') is the asker's own current UI language setting,
+// passed by the client (see messageStore.ts) — more reliable than
+// inferring from the message text (ambiguous for short messages, and a
+// user can type in a different language than their UI is set to). Falls
+// back to text-inference phrasing if the client didn't send one (e.g. an
+// old cached bundle mid-deploy).
+function languageInstruction(language?: string): string {
+    if (language === 'zh') return '请用中文回复。';
+    if (language === 'en') return 'Reply in English.';
+    return '请使用用户提问所用的语言（中文或英文）回复。';
+}
+
+async function buildSystemPrompt(supabase: ReturnType<typeof createClient>, language?: string): Promise<string> {
+    const { data: facts } = await supabase
+        .from('ai_knowledge_base')
+        .select('content')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+    const factList = (facts || []).map(f => `- ${f.content}`).join('\n');
+    return `${PROMPT_INSTRUCTIONS}\n\n${languageInstruction(language)}\n\n平台信息：\n${factList}`;
+}
 
 function sendJson(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
@@ -82,6 +98,7 @@ serve(async (req) => {
 
         const body = await req.json().catch(() => ({}));
         const messageId: string | undefined = body.messageId;
+        const language: string | undefined = body.language;
         if (!messageId) return sendJson({ error: "Missing 'messageId'" }, 400);
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -125,9 +142,10 @@ serve(async (req) => {
             .order('created_at', { ascending: false })
             .limit(10);
         const orderedHistory = (history || []).reverse();
+        const systemPrompt = await buildSystemPrompt(supabase, language);
 
         const chatMessages = [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: systemPrompt },
             ...orderedHistory
                 .filter(m => m.content) // skip non-text (image/location/quote) messages the model can't read
                 .map(m => ({

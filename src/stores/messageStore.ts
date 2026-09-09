@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { repositoryFactory } from '@/services/repositories/factory';
 import { supabase } from '@/lib/supabase';
+import { useConfigStore } from '@/stores/configStore';
 
 export interface Conversation {
     id: string;
@@ -141,7 +142,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             // anything (every message send calls this, not just ones to
             // support — cheaper to let the function decide than to know
             // the recipient's identity here).
-            supabase.functions.invoke('ai-support-reply', { body: { messageId: newMessage.id } }).catch(() => {});
+            // Pass the sender's actual current UI language along — more
+            // reliable than having the AI infer it from the message text,
+            // and reflects this specific asker's own setting (not a
+            // stale user_profiles.settings.language snapshot from account
+            // creation, which is never kept in sync with the client-side
+            // language state — see project memory).
+            supabase.functions.invoke('ai-support-reply', {
+                body: { messageId: newMessage.id, language: useConfigStore.getState().language },
+            }).catch(() => {});
         } catch (error: any) {
             console.error('Failed to send message:', error);
             set({ error: error.message });

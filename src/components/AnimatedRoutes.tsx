@@ -20,6 +20,7 @@ const ForgotPassword = lazy(() => import("../pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const Chat = lazy(() => import("../pages/Chat"));
 const AdminMessages = lazy(() => import("../pages/admin/AdminMessages"));
+const AdminKnowledgeBase = lazy(() => import("../pages/admin/AdminKnowledgeBase"));
 const Orders = lazy(() => import("../pages/Orders"));
 const OrderDetail = lazy(() => import("../pages/OrderDetail"));
 const Cart = lazy(() => import("../pages/Cart"));
@@ -72,6 +73,7 @@ export const AnimatedRoutes = () => {
                     <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
                     <Route path="/chat" element={<PageTransition><Chat /></PageTransition>} />
                     <Route path="/admin/messages" element={<PageTransition><AdminMessages /></PageTransition>} />
+                    <Route path="/admin/knowledge-base" element={<PageTransition><AdminKnowledgeBase /></PageTransition>} />
                     <Route path="/messages" element={<PageTransition><Chat /></PageTransition>} />
                     <Route path="/orders" element={<PageTransition><Orders /></PageTransition>} />
                     <Route path="/orders/:id" element={<PageTransition><OrderDetail /></PageTransition>} />
