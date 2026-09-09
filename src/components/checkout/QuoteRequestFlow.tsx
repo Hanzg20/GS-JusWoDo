@@ -17,11 +17,18 @@ interface QuoteRequestFlowProps {
     onClose: () => void;
     master: ListingMaster;
     item: ListingItem;
+    // The provider's real auth user id (provider.userId, NOT
+    // master.providerId — that's provider_profiles.id, a different value
+    // that fails the FK constraint on conversations.participant_a/b, both
+    // of which reference auth.users(id)). Optional since some callers may
+    // not have the provider loaded yet — the conversation step is skipped
+    // gracefully rather than attempting a doomed insert.
+    providerUserId?: string;
 }
 
 type Step = 'REQUEST' | 'PROCESSING' | 'SUCCESS';
 
-export const QuoteRequestFlow = ({ isOpen, onClose, master, item }: QuoteRequestFlowProps) => {
+export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId }: QuoteRequestFlowProps) => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
     const { createOrder } = useOrderStore();
@@ -88,10 +95,11 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item }: QuoteRequest
         if (result) {
             // Also create a conversation and send a message (JinBean Pattern: Link Order to Chat)
             try {
+                if (!providerUserId) throw new Error('No providerUserId available');
                 const messageStore = useMessageStore.getState();
                 const conversation = await messageStore.createConversation(
                     currentUser.id,
-                    master.providerId,
+                    providerUserId,
                     result.id
                 );
 

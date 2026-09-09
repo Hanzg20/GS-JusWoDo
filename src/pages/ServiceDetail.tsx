@@ -5,6 +5,9 @@ import SEO from "@/components/SEO";
 import { useListingStore, getTranslation } from "@/stores/listingStore";
 import { useProviderStore } from "@/stores/providerStore";
 import { useConfigStore } from "@/stores/configStore";
+import { useAuthStore } from "@/stores/authStore";
+import { useMessageStore } from "@/stores/messageStore";
+import { toast } from "sonner";
 import { ListingMaster, ListingItem } from "@/types/domain";
 import { repositoryFactory } from "@/services/repositories/factory";
 import { useServiceAreaMonitor } from "@/hooks/useGeofencing";
@@ -33,6 +36,7 @@ const ServiceDetail = () => {
   const { listings } = useListingStore();
   const { getProviderById } = useProviderStore();
   const { refCodes, language } = useConfigStore();
+  const { currentUser } = useAuthStore();
 
   const [master, setMaster] = useState<ListingMaster | null>(null);
   const [items, setItems] = useState<ListingItem[]>([]);
@@ -119,6 +123,35 @@ const ServiceDetail = () => {
 
   if (!master) return <div className="p-8 text-center text-muted-foreground">{t.notFound}</div>;
 
+  // Every "Chat" button on this page used to just navigate('/chat') with no
+  // conversation ever created — the provider then never showed up in the
+  // visitor's chat list, since nothing had linked them. This creates (or
+  // reuses, createConversation already dedupes) a real conversation with
+  // the provider's actual auth user id — provider.userId, NOT
+  // master.providerId, which is provider_profiles.id and fails the FK
+  // constraint on conversations.participant_a/b (both reference
+  // auth.users(id)) if used directly. Same fix applied to
+  // QuoteRequestFlow.tsx, which had this exact bug already (silently
+  // swallowed by its own try/catch, so quote-flow conversations were
+  // failing to create too).
+  const handleChat = async () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    if (!provider?.userId) {
+      toast.error(language === 'zh' ? '暂时无法联系该商家' : 'Unable to contact this provider right now');
+      return;
+    }
+    try {
+      await useMessageStore.getState().createConversation(currentUser.id, provider.userId);
+      navigate('/chat');
+    } catch (err) {
+      console.error('Failed to start conversation:', err);
+      toast.error(language === 'zh' ? '发起聊天失败，请重试' : 'Failed to start chat, please try again');
+    }
+  };
+
   // Quote/Book/Buy all funnel through the same QuoteRequestFlow modal while
   // payments are disabled (see src/config/launchFlags.ts) — it creates the
   // order+conversation pair that both "review after contact, no payment
@@ -164,7 +197,7 @@ const ServiceDetail = () => {
             items={items}
             provider={provider}
             onBuy={() => PAYMENTS_ENABLED ? navigate(`/checkout?item_id=${selectedItem.id}`) : setIsQuoteOpen(true)}
-            onChat={() => navigate('/chat')}
+            onChat={handleChat}
             onSelect={setSelectedItem}
           />
         </>
@@ -180,7 +213,7 @@ const ServiceDetail = () => {
             item={selectedItem}
             author={provider}
             onQuote={() => setIsQuoteOpen(true)}
-            onChat={() => navigate('/chat')}
+            onChat={handleChat}
           />
         </>
       ) : master.type === 'EVENT' && selectedItem ? (
@@ -194,7 +227,7 @@ const ServiceDetail = () => {
             master={master}
             item={selectedItem}
             provider={provider}
-            onChat={() => navigate('/chat')}
+            onChat={handleChat}
           />
         </>
       ) : (
@@ -229,7 +262,7 @@ const ServiceDetail = () => {
                 master={master}
                 distance={distance}
                 isInArea={isInArea}
-                onChat={() => navigate('/chat')}
+                onChat={handleChat}
               />
             </motion.div>
 
@@ -269,7 +302,7 @@ const ServiceDetail = () => {
           <ServiceActions
             master={master}
             selectedItem={selectedItem}
-            onChat={() => navigate('/chat')}
+            onChat={handleChat}
             onAction={() => {
               if (master.attributes?.pricingMode === 'QUOTE') {
                 setIsQuoteOpen(true);
@@ -313,6 +346,7 @@ const ServiceDetail = () => {
           onClose={() => setIsQuoteOpen(false)}
           master={master}
           item={selectedItem}
+          providerUserId={provider?.userId}
         />
       )}
     </>
