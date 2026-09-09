@@ -47,27 +47,51 @@ function relayUrl(path: string): string {
     return WECHAT_RELAY_URL!.replace(/\/signature$/, path);
 }
 
-async function sendViaWeChat(openid: string, senderName: string, preview: string): Promise<boolean> {
+async function sendViaWeChat(openid: string, senderName: string, senderPhone: string | null): Promise<boolean> {
     if (!WECHAT_TEMPLATE_ID || !WECHAT_RELAY_URL || !WECHAT_RELAY_SECRET) return false;
-    const relayRes = await fetch(relayUrl('/send-template-message'), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            secret: WECHAT_RELAY_SECRET,
-            openid,
-            templateId: WECHAT_TEMPLATE_ID,
-            url: `${SITE_URL}/chat`,
-            data: {
-                first: { value: "你收到一条新消息 / You have a new message" },
-                keyword1: { value: senderName },
-                keyword2: { value: preview || '...' },
-                keyword3: { value: new Date().toLocaleString('zh-CN', { timeZone: 'America/Toronto' }) },
-                remark: { value: "点击查看详情 / Tap to view" },
-            },
-        }),
-    });
-    const result = await relayRes.json();
-    return result?.errcode === 0;
+    // Must never throw out of this function — a relay hiccup or stale
+    // deploy (e.g. /send-template-message not live yet on the relay) has
+    // to fall through to the SMS leg below, not abort the whole handler.
+    try {
+        const now = new Date().toLocaleString('zh-CN', { timeZone: 'America/Toronto' });
+        const relayRes = await fetch(relayUrl('/send-template-message'), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                secret: WECHAT_RELAY_SECRET,
+                openid,
+                templateId: WECHAT_TEMPLATE_ID,
+                url: `${SITE_URL}/chat`,
+                // Field names/shape are specific to template
+                // d7STxqfwoZWwIYl46k4SXfXh1rzUSXJrNWYzDewi7CY ("收到客户投诉提醒",
+                // 信息查询 category) — repurposed for "you got a new chat
+                // message" (its own scene description literally says "满足
+                // 客户留言的场景"). const5 is an enum field, not free text —
+                // as of 2026-09-08 BOTH candidate values ("管理"/"迟到") are
+                // still pending WeChat's own review ("审核中"), so this send
+                // will keep failing with errcode 47003 until one clears —
+                // that's expected, not a bug here (see project memory
+                // jwd_chat_v2_admin_presence_wechat_notify). Update this
+                // value once one is approved; doesn't matter which for now.
+                data: {
+                    time2: { value: now },
+                    thing3: { value: senderName.slice(0, 20) },
+                    const5: { value: "管理" },
+                    phone_number9: { value: senderPhone || '无' },
+                    time7: { value: now },
+                },
+            }),
+        });
+        const text = await relayRes.text();
+        const result = text ? JSON.parse(text) : null;
+        if (!result || result.errcode !== 0) {
+            console.warn("WeChat template send did not succeed:", relayRes.status, text);
+        }
+        return result?.errcode === 0;
+    } catch (err) {
+        console.error("sendViaWeChat failed:", err);
+        return false;
+    }
 }
 
 async function sendViaSms(phone: string, senderName: string, preview: string): Promise<boolean> {
@@ -132,7 +156,7 @@ serve(async (req) => {
 
         const { data: sender } = await supabase
             .from('user_profiles')
-            .select('name')
+            .select('name, phone')
             .eq('id', message.sender_id)
             .maybeSingle();
         const senderName = sender?.name || 'Someone';
@@ -142,7 +166,7 @@ serve(async (req) => {
         let channel: 'wechat' | 'sms' | null = null;
 
         if (recipient.wechat_openid) {
-            sent = await sendViaWeChat(recipient.wechat_openid, senderName, preview);
+            sent = await sendViaWeChat(recipient.wechat_openid, senderName, sender?.phone || null);
             if (sent) channel = 'wechat';
         }
         if (!sent && recipient.phone) {
