@@ -136,9 +136,9 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
             navigate(`/community/${post.id}`);
           }
         }}
-        className={`block cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-border/40 ${post.isFact
-          ? 'bg-gradient-to-b from-amber-50/30 to-white'
-          : 'bg-white'
+        className={`block cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 ${post.isFact
+          ? 'border-2 border-amber-300 bg-gradient-to-b from-amber-50/30 to-white'
+          : 'border border-border/40 bg-white'
           }`}
       >
         {/* 图片区域 - Compact 4:5 or 1:1 Aspect Ratio Focus */}
