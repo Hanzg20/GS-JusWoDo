@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import SEO from "@/components/SEO";
-import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -87,119 +86,76 @@ const Community = () => {
 
             <Header />
 
-            {/* Enhanced Hero Header with Mesh Gradient */}
-            <div className="relative overflow-hidden bg-background border-b border-border shadow-sm">
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[100px] animate-pulse" />
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-accent/5 rounded-full blur-[80px]" />
-                </div>
-
-                <div className="relative max-w-7xl mx-auto py-4 sm:py-8 px-2.5 sm:px-6">
-                    <div className="flex flex-row items-center gap-3 sm:gap-8 overflow-hidden">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="shrink-0"
-                        >
-                            <div className="flex items-center gap-2 mb-1">
-                                <h1 className="text-2xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                    {language === 'zh' ? '邻里圈' : 'Neighbors'}
-                                </h1>
-                                <span className="text-lg sm:text-2xl">🏘️</span>
-                            </div>
-                            <span className="hidden sm:inline-block text-[10px] sm:text-xs font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                                {language === 'zh' ? '邻里事，随心说' : 'Neighborhood Stories'}
-                            </span>
-                        </motion.div>
-
-                        {/* Quick Post Box - Force Side-by-Side */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="flex-1 max-w-xl"
-                        >
-                            <div className="card-warm p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3 bg-white/40 backdrop-blur-md border border-white/20 shadow-sm rounded-2xl group hover:bg-white/60 transition-all duration-300">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm shrink-0">
-                                    {currentUser?.avatar ? (
-                                        <img src={currentUser.avatar} className="w-full h-full object-cover" alt="Avatar" />
-                                    ) : (
-                                        <span className="text-primary font-bold text-xs">{currentUser?.name?.charAt(0) || '👋'}</span>
-                                    )}
-                                </div>
-                                <LitePost
-                                    onSuccess={() => fetchFeed({})}
-                                    trigger={
-                                        <div className="flex-1 bg-white/50 group-hover:bg-white/80 transition-all rounded-xl py-2 px-3 sm:px-5 text-muted-foreground font-medium cursor-pointer text-[11px] sm:text-sm truncate">
-                                            {language === 'zh' ? '来聊聊今天发生了什么...' : 'What\'s happening...'}
-                                        </div>
-                                    }
-                                />
-                            </div>
-                        </motion.div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="max-w-7xl mx-auto py-4 sm:py-8 px-2.5 sm:px-6">
-                {/* Filters & Radius Toggle */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 sm:mb-8">
-                    {/* Intent Filters */}
-                    <div className="flex items-center gap-2.5 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-                        <button
-                            onClick={() => setActiveFilter('all')}
-                            className={`px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap transition-all duration-300 border ${activeFilter === 'all'
-                                ? 'bg-primary text-primary-foreground border-primary shadow-md scale-105'
-                                : 'bg-white/50 backdrop-blur-sm text-muted-foreground border-border/50 hover:bg-white hover:border-primary/30'
-                                }`}
-                        >
-                            {language === 'zh' ? '⭐ 全部' : '⭐ All'}
-                        </button>
-                        {[
-                            { id: 'MOMENT', labelZh: '🏘️ 邻里', labelEn: '🏘️ Neighbors' },
-                            { id: 'ACTION', labelZh: '🤝 参加', labelEn: '🤝 Events' },
-                            { id: 'HELP', labelZh: '🆘 求助', labelEn: '🆘 Help' },
-                            { id: 'NOTICE', labelZh: '📢 公告', labelEn: '📢 Notices' }
-                        ].map((filter) => (
+            {/* Tab header, closely modeled on 小红书's 关注/发现/城市 + sub-tab
+                pattern (reference: rednote.png) — deliberately no page title
+                anywhere here. Row 1 (附近/全城) is RedNote's "which source"
+                tier (their 关注/发现/城市), row 2 (全部/邻里/活动/求助/公告) is
+                RedNote's per-tab sub-filter tier (their 推荐/RED/热点/...) —
+                both are plain text, bold + underline for the active one, no
+                background pill/shadow. Sticky so it stays reachable while
+                scrolling the feed, same as RedNote's. */}
+            <div className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between">
+                    <div className="flex items-center gap-5 sm:gap-8 h-11 sm:h-13">
+                        {([
+                            { id: 'nearby', labelZh: '附近', labelEn: 'Nearby' },
+                            { id: 'city', labelZh: '全城', labelEn: 'City' },
+                        ] as const).map((tab) => (
                             <button
-                                key={filter.id}
-                                onClick={() => setActiveFilter(filter.id as CommunityPostType)}
-                                className={`px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap transition-all duration-300 border ${activeFilter === filter.id
-                                    ? 'bg-primary text-primary-foreground border-primary shadow-md scale-105'
-                                    : 'bg-white/50 backdrop-blur-sm text-muted-foreground border-border/50 hover:bg-white hover:border-primary/30'
+                                key={tab.id}
+                                onClick={() => setScope(tab.id)}
+                                className={`relative h-full text-[15px] sm:text-lg font-bold transition-colors ${scope === tab.id ? 'text-foreground' : 'text-muted-foreground/70'
                                     }`}
                             >
-                                {language === 'zh' ? filter.labelZh : filter.labelEn}
+                                {language === 'zh' ? tab.labelZh : tab.labelEn}
+                                {scope === tab.id && (
+                                    <span className="absolute left-0 right-0 -bottom-px h-[3px] rounded-full bg-primary" />
+                                )}
                             </button>
                         ))}
                     </div>
 
-                    {/* Radius Toggle - Proximity Intent */}
-                    <div className="flex p-1 bg-muted/30 rounded-xl border border-border/50">
-                        <button
-                            onClick={() => setScope('nearby')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${scope === 'nearby'
-                                ? 'bg-white text-primary shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                        >
-                            {language === 'zh' ? '📍 附近' : '📍 Nearby'}
-                        </button>
-                        <button
-                            onClick={() => setScope('city')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${scope === 'city'
-                                ? 'bg-white text-primary shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                        >
-                            {language === 'zh' ? '🏙️ 全城' : '🏙️ City'}
-                        </button>
-                    </div>
+                    {/* Compose entry — the mobile FAB (below) covers phones;
+                        this covers desktop/tablet, which has no other
+                        visible "new post" entry point on this page since
+                        MobileBottomNav's Post tab is md:hidden too. */}
+                    <LitePost
+                        onSuccess={() => fetchFeed({})}
+                        trigger={
+                            <button className="hidden md:flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted transition-colors text-foreground">
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        }
+                    />
                 </div>
 
-                {/* 热门标签 */}
-                <div className="mb-4 sm:mb-8 bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-border/50 relative">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center gap-4 sm:gap-6 h-9 sm:h-10 overflow-x-auto scrollbar-hide">
+                    {([
+                        { id: 'all', labelZh: '全部', labelEn: 'All' },
+                        { id: 'MOMENT', labelZh: '邻里', labelEn: 'Neighbors' },
+                        { id: 'ACTION', labelZh: '活动', labelEn: 'Events' },
+                        { id: 'HELP', labelZh: '求助', labelEn: 'Help' },
+                        { id: 'NOTICE', labelZh: '公告', labelEn: 'Notices' },
+                    ] as const).map((filter) => (
+                        <button
+                            key={filter.id}
+                            onClick={() => setActiveFilter(filter.id as 'all' | CommunityPostType)}
+                            className={`relative h-full shrink-0 text-[13px] sm:text-sm transition-colors ${activeFilter === filter.id ? 'font-bold text-foreground' : 'font-medium text-muted-foreground/70'
+                                }`}
+                        >
+                            {language === 'zh' ? filter.labelZh : filter.labelEn}
+                            {activeFilter === filter.id && (
+                                <span className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full bg-primary" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto py-3 sm:py-6 px-2.5 sm:px-6">
+                {/* 热门标签 — condensed inline strip, not a boxed card (RedNote
+                    doesn't give trending tags their own card either) */}
+                <div className="mb-3 sm:mb-6 relative">
                     <TrendingTags
                         onTagClick={(tag) => {
                             setSelectedTag(tag);
@@ -210,7 +166,7 @@ const Community = () => {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="absolute top-2 right-2 text-xs h-7 text-muted-foreground hover:text-primary"
+                            className="absolute top-0 right-0 text-xs h-6 text-muted-foreground hover:text-primary"
                             onClick={() => setSelectedTag(null)}
                         >
                             {language === 'zh' ? '清除筛选' : 'Clear Filter'}
