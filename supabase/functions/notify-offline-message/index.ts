@@ -47,7 +47,16 @@ function relayUrl(path: string): string {
     return WECHAT_RELAY_URL!.replace(/\/signature$/, path);
 }
 
-async function sendViaWeChat(openid: string, senderName: string, senderPhone: string | null): Promise<boolean> {
+// WeChat's phone_number-type template field validates the shape (digits
+// only, plausible length), not that it's a real/callable number — a
+// stored phone like "(343) 777-9666" needs its formatting stripped, and
+// a sender with no phone on file still needs *something* shaped like one.
+function sanitizePhone(phone: string | null): string {
+    const digitsOnly = (phone || '').replace(/\D/g, '');
+    return digitsOnly.length >= 7 ? digitsOnly : '0000000000';
+}
+
+async function sendViaWeChat(openid: string, senderName: string, senderPhone: string | null, preview: string): Promise<boolean> {
     if (!WECHAT_TEMPLATE_ID || !WECHAT_RELAY_URL || !WECHAT_RELAY_SECRET) return false;
     // Must never throw out of this function — a relay hiccup or stale
     // deploy (e.g. /send-template-message not live yet on the relay) has
@@ -63,22 +72,28 @@ async function sendViaWeChat(openid: string, senderName: string, senderPhone: st
                 templateId: WECHAT_TEMPLATE_ID,
                 url: `${SITE_URL}/chat`,
                 // Field names/shape are specific to template
-                // d7STxqfwoZWwIYl46k4SXfXh1rzUSXJrNWYzDewi7CY ("收到客户投诉提醒",
-                // 信息查询 category) — repurposed for "you got a new chat
-                // message" (its own scene description literally says "满足
-                // 客户留言的场景"). const5 is an enum field, not free text —
-                // as of 2026-09-08 BOTH candidate values ("管理"/"迟到") are
-                // still pending WeChat's own review ("审核中"), so this send
-                // will keep failing with errcode 47003 until one clears —
-                // that's expected, not a bug here (see project memory
-                // jwd_chat_v2_admin_presence_wechat_notify). Update this
-                // value once one is approved; doesn't matter which for now.
+                // 74v4Dpkw7LxhMwmeI7kc_GgugUTbiJ1bUbnTds1Scv4 ("工单处理通知",
+                // 信息查询 category, added by the operator 2025-05-21 — no
+                // enum-constrained fields this time, unlike the previous
+                // template tried (const5, permanently blocked pending
+                // WeChat's own review — see project memory
+                // jwd_chat_v2_admin_presence_wechat_notify). Repurposed for
+                // "you got a new chat message": 姓名→sender name, 地址→
+                // message preview, 联系电话→sender phone, 上门时间→send time.
+                // 工单编号 (character_string type) rejects Chinese/non-
+                // alphanumeric content (confirmed via live test 2026-09-09
+                // — errcode 47003 on Chinese text) so it just gets a fixed
+                // ASCII label, not the preview. phone_number type also
+                // rejects non-phone-shaped text (confirmed the same way),
+                // so a real phone gets digit-stripped and a syntactically
+                // phone-shaped placeholder is used when there isn't one —
+                // WeChat validates the *shape*, not that it's real/callable.
                 data: {
-                    time2: { value: now },
-                    thing3: { value: senderName.slice(0, 20) },
-                    const5: { value: "管理" },
-                    phone_number9: { value: senderPhone || '无' },
-                    time7: { value: now },
+                    character_string1: { value: 'MSG' },
+                    thing5: { value: senderName.slice(0, 20) },
+                    thing16: { value: preview.slice(0, 20) || '新消息' },
+                    phone_number32: { value: sanitizePhone(senderPhone) },
+                    time46: { value: now },
                 },
             }),
         });
@@ -166,7 +181,7 @@ serve(async (req) => {
         let channel: 'wechat' | 'sms' | null = null;
 
         if (recipient.wechat_openid) {
-            sent = await sendViaWeChat(recipient.wechat_openid, senderName, sender?.phone || null);
+            sent = await sendViaWeChat(recipient.wechat_openid, senderName, sender?.phone || null, preview);
             if (sent) channel = 'wechat';
         }
         if (!sent && recipient.phone) {
