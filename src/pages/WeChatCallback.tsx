@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { consumeWeChatLoginState, WeChatAuthMode } from "@/lib/wechatAuth";
+import { consumeWeChatLoginState, consumeReturnTo, WeChatAuthMode } from "@/lib/wechatAuth";
 import { useConfigStore } from "@/stores/configStore";
 import { Loader2, AlertCircle } from "lucide-react";
 
@@ -15,8 +15,11 @@ import { Loader2, AlertCircle } from "lucide-react";
 //
 // Silent-mode failures (state mismatch, not a registered user, etc.) never
 // surface an error screen — the visitor never asked for this, so it just
-// bounces home quietly. Consent-mode failures (the visitor did click
-// "微信登录") show the usual error + retry UI.
+// returns them to whatever page they were on quietly (see consumeReturnTo()
+// — previously this always went home, silently dropping visitors who'd
+// opened e.g. a specific community post from a WeChat Moments share).
+// Consent-mode failures (the visitor did click "微信登录") show the usual
+// error + retry UI instead.
 const WeChatCallback = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -37,10 +40,16 @@ const WeChatCallback = () => {
             const expected = consumeWeChatLoginState();
             const currentMode = expected?.mode || 'consent';
             setMode(currentMode);
+            // Read once, up front — this is the page the visitor was
+            // actually on before startWeChatOAuth() redirected them here
+            // (e.g. a specific community post opened from a WeChat Moments
+            // share), not always home. Every navigate() below should land
+            // them back there, success or failure alike.
+            const returnTo = consumeReturnTo();
 
             const fail = (message: string) => {
                 if (currentMode === 'silent') {
-                    navigate('/', { replace: true });
+                    navigate(returnTo, { replace: true });
                 } else {
                     setError(message);
                 }
@@ -63,7 +72,7 @@ const WeChatCallback = () => {
                 // into, and snsapi_base has no name/avatar to register one
                 // with. Just leave the visitor browsing anonymously.
                 if (data.notFound) {
-                    navigate('/', { replace: true });
+                    navigate(returnTo, { replace: true });
                     return;
                 }
 
@@ -77,7 +86,7 @@ const WeChatCallback = () => {
                 });
                 if (verifyError) throw verifyError;
 
-                navigate('/', { replace: true });
+                navigate(returnTo, { replace: true });
             } catch (err: any) {
                 console.error('WeChat login failed:', err);
                 fail(err.message || String(err));

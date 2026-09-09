@@ -34,6 +34,7 @@ const WECHAT_REDIRECT_ORIGIN = 'https://justwedo.com';
 
 const STATE_STORAGE_KEY = 'wechat_login_state';
 const SILENT_CHECK_DONE_KEY = 'wechat_silent_check_done';
+const RETURN_TO_KEY = 'wechat_login_return_to';
 
 // The state (and silent-check-done marker) round-trip crosses hosts (see
 // WECHAT_REDIRECT_ORIGIN above — the visitor may start on
@@ -66,6 +67,16 @@ function startWeChatOAuth(scope: 'snsapi_base' | 'snsapi_userinfo', mode: WeChat
     // consent failures show an error) and this avoids a second cookie.
     const state = `${mode}:${randomState()}`;
     setCookie(STATE_STORAGE_KEY, state, 600);
+
+    // Where to send the visitor back to once the OAuth round-trip is done —
+    // without this, WeChatCallback.tsx had nowhere to return to and always
+    // sent everyone home, silently dropping whatever page (e.g. a specific
+    // community post opened from a WeChat Moments share) they'd actually
+    // been trying to view. Same-origin path+query only, never a full URL —
+    // this value only ever comes from our own window.location, but kept
+    // path-shaped anyway as a matter of course.
+    const returnTo = `${window.location.pathname}${window.location.search}`;
+    setCookie(RETURN_TO_KEY, encodeURIComponent(returnTo), 600);
 
     const redirectUri = `${WECHAT_REDIRECT_ORIGIN}/auth/wechat/callback`;
     const params = new URLSearchParams({
@@ -117,4 +128,27 @@ export function consumeWeChatLoginState(): { raw: string; mode: WeChatAuthMode }
     if (mode !== 'silent' && mode !== 'consent') return null;
 
     return { raw, mode };
+}
+
+/**
+ * Consumes the page path stashed before redirecting to WeChat — call once
+ * from the callback page and navigate here instead of always going home.
+ * Falls back to '/' if there's nothing stashed (e.g. the callback page was
+ * opened directly, not via startWeChatOAuth) or the stored value doesn't
+ * look like a same-origin path.
+ */
+export function consumeReturnTo(): string {
+    const raw = readCookie(RETURN_TO_KEY);
+    clearCookie(RETURN_TO_KEY);
+    if (!raw) return '/';
+
+    try {
+        const decoded = decodeURIComponent(raw);
+        // Must be a relative, same-origin path — reject anything that could
+        // be interpreted as a protocol-relative or absolute external URL.
+        if (decoded.startsWith('/') && !decoded.startsWith('//')) return decoded;
+    } catch {
+        // fall through to default
+    }
+    return '/';
 }
