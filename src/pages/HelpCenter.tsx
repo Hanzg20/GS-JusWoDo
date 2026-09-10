@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     ChevronLeft, Search, HelpCircle, Book,
-    Shield, CreditCard, MessageCircle,
+    Shield, MessageCircle,
     Mail, ExternalLink, ChevronRight,
     LifeBuoy
 } from "lucide-react";
@@ -45,28 +45,13 @@ const HelpCenter = () => {
             ]
         },
         {
-            id: 'wallet',
-            title: language === 'zh' ? '钱包与金豆' : 'Wallet & JinBeans',
-            icon: CreditCard,
-            questions: [
-                {
-                    q: language === 'zh' ? '什么是金豆？' : 'What are JinBeans?',
-                    a: language === 'zh' ? '金豆是平台通用积分，可用于支付服务费用、兑换礼品或抵扣手续费。' : 'JinBeans are platform points used for paying services, redeeming gifts, or covering fees.'
-                },
-                {
-                    q: language === 'zh' ? '金豆可以退款吗？' : 'Are JinBeans refundable?',
-                    a: language === 'zh' ? '充值的金豆通常不支持原路退回，但您可以用于后续交易。' : 'Purchased JinBeans are generally non-refundable but can be used for any future transactions.'
-                }
-            ]
-        },
-        {
             id: 'safety',
             title: language === 'zh' ? '安全与认证' : 'Safety & Trust',
             icon: Shield,
             questions: [
                 {
                     q: language === 'zh' ? '平台如何保证交易安全？' : 'How is transaction safety guaranteed?',
-                    a: language === 'zh' ? '我们实行金豆托管机制、实名认证体系和邻友评价制度，全方位保障您的权益。' : 'We use JinBean escrow, real-name verification, and neighbor reviews to protect your interests.'
+                    a: language === 'zh' ? '我们通过实名认证体系和邻友评价制度，帮助您判断对方是否可信；具体费用与付款方式由双方线下自行协商确认。' : 'We use real-name verification and neighbor reviews to help you judge trustworthiness; the price and payment itself are arranged directly between both sides, off-platform.'
                 }
             ]
         }
