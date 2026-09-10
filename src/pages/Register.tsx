@@ -4,22 +4,27 @@ import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useConfigStore, writeNodeId } from "@/stores/configStore";
+import { useConfigStore, NODE_ALL } from "@/stores/configStore";
 import { NodePicker } from "@/components/NodePicker";
 
 const Register = () => {
     const navigate = useNavigate();
-    const { language, activeNodeId } = useConfigStore();
+    const { language } = useConfigStore();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    // Default to whatever this browser session already detected/picked
-    // (see configStore.ts) rather than hardcoding one neighborhood for
-    // every new signup.
-    const [nodeId, setNodeId] = useState(writeNodeId(activeNodeId));
+    // Starts as the generic "Ottawa (All)" placeholder rather than silently
+    // pre-picking a specific neighborhood (previously defaulted to whatever
+    // activeNodeId happened to be, which could look like a decision nobody
+    // actually made). NODE_ALL can never be persisted as a profile's real
+    // node — handleRegister blocks submission until the user picks one of
+    // the 37 real neighborhoods, same explicit-or-nothing treatment as the
+    // consent checkbox below.
+    const [nodeId, setNodeId] = useState(NODE_ALL);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [error, setError] = useState<string | null>(null);
     // Email confirmation used to be link-only (open the email, tap the
     // link, then separately log in) — a real friction point, especially
@@ -37,6 +42,8 @@ const Register = () => {
         pwMismatch: language === 'zh' ? '两次输入的密码不一致' : 'Passwords do not match',
         pwTooShort: language === 'zh' ? '密码长度至少为 8 位' : 'Password must be at least 8 characters',
         pwNeedsLetterNumber: language === 'zh' ? '密码必须包含字母和数字' : 'Password must contain both letters and numbers',
+        errNoLocation: language === 'zh' ? '请选择您所在的社区' : 'Please select your neighborhood',
+        errNoConsent: language === 'zh' ? '请先同意服务条款与隐私政策' : 'Please agree to the Terms of Service and Privacy Policy',
         alreadyRegisteredLoginNow: language === 'zh' ? '该邮箱已注册，请直接登录' : 'This email is already registered — please log in',
         registerSuccessToast: language === 'zh' ? '验证码已发送到您的邮箱' : 'Verification code sent to your email',
         rateLimited: language === 'zh' ? '操作太频繁，请稍后再试' : 'Too many attempts — please try again later',
@@ -71,8 +78,21 @@ const Register = () => {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError(null);
+
+        if (nodeId === NODE_ALL) {
+            setError(t.errNoLocation);
+            toast.error(t.errNoLocation);
+            return;
+        }
+
+        if (!agreedToTerms) {
+            setError(t.errNoConsent);
+            toast.error(t.errNoConsent);
+            return;
+        }
+
+        setLoading(true);
 
         if (password !== confirmPassword) {
             setError(t.pwMismatch);
@@ -327,6 +347,19 @@ const Register = () => {
                         />
                     </div>
 
+                    <div className="flex items-start gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            id="tos-consent"
+                            checked={agreedToTerms}
+                            onChange={(e) => { setAgreedToTerms(e.target.checked); setError(null); }}
+                            className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <label htmlFor="tos-consent" className="text-xs text-muted-foreground leading-tight opacity-80 select-none cursor-pointer">
+                            {t.consentPrefix}<Link to="/legal/terms" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.termsOfService}</Link>{t.consentMiddle}<Link to="/legal/privacy" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.privacyPolicy}</Link>{t.consentSuffix}
+                        </label>
+                    </div>
+
                     {error && (
                         <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100 italic">
                             ⚠️ {error}
@@ -345,18 +378,6 @@ const Register = () => {
                         {t.alreadyHaveAccount}
                         <Link to="/login" className="text-primary font-bold hover:underline ml-1">{t.loginDirectly}</Link>
                     </p>
-
-                    <div className="flex items-start gap-2 pt-2">
-                        <input
-                            type="checkbox"
-                            required
-                            id="tos-consent"
-                            className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="tos-consent" className="text-xs text-muted-foreground leading-tight opacity-80 select-none cursor-pointer">
-                            {t.consentPrefix}<Link to="/legal/terms" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.termsOfService}</Link>{t.consentMiddle}<Link to="/legal/privacy" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.privacyPolicy}</Link>{t.consentSuffix}
-                        </label>
-                    </div>
                 </form>
             </div>
         </div>
