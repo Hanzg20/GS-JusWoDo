@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { User as UserIcon, Mail, ArrowRight, Building2, CheckCircle2, Lock, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User as UserIcon, Mail, ArrowRight, Building2, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -20,20 +20,37 @@ const Register = () => {
     // every new signup.
     const [nodeId, setNodeId] = useState(writeNodeId(activeNodeId));
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
+    // Email confirmation used to be link-only (open the email, tap the
+    // link, then separately log in) — a real friction point, especially
+    // anywhere clicking out of the current context is awkward (e.g. the
+    // WeChat Mini Program's web-view). Supabase's own "Confirm signup"
+    // email can carry a 6-digit code (the same {{ .Token }} the Login
+    // page's OTP flow already uses) alongside the link — verifying it
+    // here logs the user straight in, no separate login step needed.
+    const [step, setStep] = useState<'FORM' | 'VERIFY'>('FORM');
+    const [otpCode, setOtpCode] = useState("");
+    const [verifyLoading, setVerifyLoading] = useState(false);
+    const [resendTimer, setResendTimer] = useState(0);
 
     const t = {
         pwMismatch: language === 'zh' ? '两次输入的密码不一致' : 'Passwords do not match',
         pwTooShort: language === 'zh' ? '密码长度至少为 8 位' : 'Password must be at least 8 characters',
         pwNeedsLetterNumber: language === 'zh' ? '密码必须包含字母和数字' : 'Password must contain both letters and numbers',
         alreadyRegisteredLoginNow: language === 'zh' ? '该邮箱已注册，请直接登录' : 'This email is already registered — please log in',
-        registerSuccessToast: language === 'zh' ? '注册成功！请检查邮箱进行验证' : 'Registration successful! Please check your email to verify',
+        registerSuccessToast: language === 'zh' ? '验证码已发送到您的邮箱' : 'Verification code sent to your email',
         rateLimited: language === 'zh' ? '操作太频繁，请稍后再试' : 'Too many attempts — please try again later',
         registerFailedRetry: language === 'zh' ? '注册失败，请检查网络后重试' : 'Registration failed — please check your connection and try again',
-        registerSuccessTitle: language === 'zh' ? '注册成功！' : 'Registration Successful!',
-        confirmationSentPrefix: language === 'zh' ? '我们已向 ' : "We've sent a confirmation email to ",
-        confirmationSentSuffix: language === 'zh' ? ' 发送了确认邮件。请点击邮件中的链接完成验证后即可登录。' : '. Click the link in the email to verify, then log in.',
-        goToLoginNow: language === 'zh' ? '立刻去登录' : 'Go to Login',
+        codeSentTitle: language === 'zh' ? '查收验证码' : 'Check your email',
+        codeSentPrefix: language === 'zh' ? '我们已向 ' : "We've sent a 6-digit code to ",
+        codeSentSuffix: language === 'zh' ? ' 发送了 6 位验证码，输入后即可完成注册。' : '. Enter it below to finish creating your account.',
+        codeLabel: language === 'zh' ? '6 位验证码' : '6-Digit Code',
+        confirmRegister: language === 'zh' ? '确认注册' : 'Confirm',
+        verifying: language === 'zh' ? '验证中...' : 'Verifying...',
+        codeInvalid: language === 'zh' ? '验证码无效或已过期' : 'Invalid or expired code',
+        noCode: language === 'zh' ? '没收到验证码？' : "Didn't get a code?",
+        resend: language === 'zh' ? '重新发送' : 'Resend',
+        resendIn: (s: number) => language === 'zh' ? `${s}秒后可重发` : `Resend in ${s}s`,
+        changeEmail: language === 'zh' ? '换个邮箱' : 'Use a different email',
         joinTitle: language === 'zh' ? '加入 JUSTWEDO' : 'Join JUSTWEDO',
         joinSubtitle: language === 'zh' ? '邻里互助，从这里开始' : 'Neighbor help starts here',
         emailPlaceholder: language === 'zh' ? '电子邮箱' : 'Email address',
@@ -104,7 +121,8 @@ const Register = () => {
                 return;
             }
 
-            setSuccess(true);
+            setStep('VERIFY');
+            setResendTimer(60);
             toast.success(t.registerSuccessToast);
         } catch (err: any) {
             const msg = err.message.includes('rate_limit') ? t.rateLimited :
@@ -118,25 +136,109 @@ const Register = () => {
         }
     };
 
-    if (success) {
+    // Resend countdown
+    useEffect(() => {
+        if (resendTimer > 0) {
+            const countdown = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+            return () => clearTimeout(countdown);
+        }
+    }, [resendTimer]);
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setVerifyLoading(true);
+        try {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+                email: email.trim(),
+                token: otpCode,
+                type: 'signup',
+            });
+            if (verifyError) throw verifyError;
+            // A confirmed session comes back directly — no separate login step.
+            navigate('/');
+        } catch (err: any) {
+            setError(t.codeInvalid);
+            toast.error(t.codeInvalid);
+        } finally {
+            setVerifyLoading(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        setError(null);
+        try {
+            const { error: resendError } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+            if (resendError) throw resendError;
+            toast.success(t.registerSuccessToast);
+            setResendTimer(60);
+        } catch (err: any) {
+            toast.error(err.message || t.registerFailedRetry);
+        }
+    };
+
+    if (step === 'VERIFY') {
         return (
             <div className="min-h-screen bg-secondary/30 flex items-center justify-center p-4">
                 <div className="bg-card w-full max-w-md rounded-3xl shadow-xl p-8 text-center space-y-6">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto animate-bounce">
-                        <CheckCircle2 className="w-10 h-10 text-green-600" />
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                        <Mail className="w-10 h-10 text-green-600" />
                     </div>
                     <div className="space-y-2">
-                        <h2 className="text-2xl font-bold">{t.registerSuccessTitle}</h2>
+                        <h2 className="text-2xl font-bold">{t.codeSentTitle}</h2>
                         <p className="text-muted-foreground">
-                            {t.confirmationSentPrefix}<span className="font-semibold text-foreground">{email}</span>{t.confirmationSentSuffix}
+                            {t.codeSentPrefix}<span className="font-semibold text-foreground">{email}</span>{t.codeSentSuffix}
                         </p>
                     </div>
-                    <Button
-                        className="w-full py-6 font-bold text-lg rounded-xl btn-action"
-                        onClick={() => navigate('/login')}
-                    >
-                        {t.goToLoginNow} <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
+
+                    <form onSubmit={handleVerifyOtp} className="space-y-4 text-left">
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-slate-700 ml-1">{t.codeLabel}</label>
+                            <input
+                                type="text"
+                                required
+                                maxLength={6}
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                placeholder="0 0 0 0 0 0"
+                                className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none font-black text-center text-2xl tracking-[0.5em] placeholder:tracking-normal placeholder:font-medium placeholder:text-sm"
+                                autoFocus
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100 italic">
+                                ⚠️ {error}
+                            </div>
+                        )}
+
+                        <Button
+                            type="submit"
+                            disabled={verifyLoading || otpCode.length !== 6}
+                            className="w-full py-6 font-bold text-lg rounded-xl btn-action"
+                        >
+                            {verifyLoading ? t.verifying : (<>{t.confirmRegister} <ArrowRight className="ml-2 w-5 h-5" /></>)}
+                        </Button>
+
+                        <p className="text-center text-sm text-muted-foreground">
+                            {t.noCode}{" "}
+                            {resendTimer > 0 ? (
+                                <span className="text-slate-400 font-bold">{t.resendIn(resendTimer)}</span>
+                            ) : (
+                                <button type="button" onClick={handleResendCode} className="text-primary font-bold hover:underline">
+                                    {t.resend}
+                                </button>
+                            )}
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => { setStep('FORM'); setOtpCode(""); setError(null); }}
+                            className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            {t.changeEmail}
+                        </button>
+                    </form>
                 </div>
             </div>
         );
