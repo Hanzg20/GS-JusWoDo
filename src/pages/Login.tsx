@@ -18,7 +18,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { supabase } from "@/lib/supabase";
-import { isWeChatBrowser } from "@/lib/wechatShare";
+import { isWeChatBrowser, isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 import { startWeChatLogin } from "@/lib/wechatAuth";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +31,11 @@ const Login = () => {
     // 公众号网页授权 only works inside WeChat's own in-app browser — outside
     // it, WeChat's OAuth URL just shows an "open in WeChat" interstitial
     // instead of logging anyone in, so the button only makes sense here.
-    const showWeChatLogin = isWeChatBrowser();
+    // Inside the Mini Program's web-view specifically, it's still a WeChat
+    // browser but the OAuth redirect targets justwedo.com, which isn't on
+    // the web-view's 业务域名 whitelist (only fdrl.jhtsoft.cn is) — tapping
+    // it there breaks with WeChat's native "无法打开该页面" error, so hide it.
+    const showWeChatLogin = isWeChatBrowser() && !isWeChatMiniProgramWebview();
 
     const t = {
         heroTitle: language === 'zh' ? <>让邻里互助<br />变得更简单</> : <>Neighbor help,<br />made simple</>,

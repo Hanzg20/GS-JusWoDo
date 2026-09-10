@@ -12,7 +12,7 @@ import { useConfigStore } from "./stores/configStore";
 import { useAuthStore } from "./stores/authStore";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { AnimatedRoutes } from "./components/AnimatedRoutes";
-import { configWxShare, isWeChatBrowser } from "./lib/wechatShare";
+import { configWxShare, isWeChatBrowser, isWeChatMiniProgramWebview } from "./lib/wechatShare";
 import { startSilentWeChatCheck } from "./lib/wechatAuth";
 import { PresenceTracker } from "./components/PresenceTracker";
 
@@ -30,6 +30,12 @@ const SilentWeChatLogin = () => {
     // Never fire from the callback page itself — it's already mid-flight
     // handling its own redirect back from WeChat.
     if (location.pathname === '/auth/wechat/callback') return;
+    // Inside the Mini Program's web-view this redirect targets justwedo.com,
+    // which isn't on the web-view's 业务域名 whitelist (only fdrl.jhtsoft.cn
+    // is) — it would break the page with WeChat's native "无法打开该页面"
+    // error instead of silently logging anyone in. Skip it there; the site
+    // is still fully browsable, just without silent auto-login for now.
+    if (isWeChatMiniProgramWebview()) return;
     startSilentWeChatCheck();
   }, [isLoading, currentUser, location.pathname]);
 

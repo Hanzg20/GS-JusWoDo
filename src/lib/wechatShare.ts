@@ -238,6 +238,18 @@ export function isWeChatBrowser(): boolean {
     return ua.includes('micromessenger');
 }
 
+// A <web-view> inside a WeChat Mini Program is *also* a WeChat browser
+// (isWeChatBrowser() above is true there too), but it can only navigate to
+// domains on the mini program's 业务域名 whitelist — currently just
+// fdrl.jhtsoft.cn, not justwedo.com. Any redirect-based OAuth flow (WeChat's
+// own 网页授权, and this would equally hit Google/Apple) that bounces to
+// justwedo.com breaks with WeChat's native "无法打开该页面" error instead of
+// working. window.__wxjs_environment is set by the WeChat client itself
+// (not something we configure) specifically to distinguish this case.
+export function isWeChatMiniProgramWebview(): boolean {
+    return (window as any).__wxjs_environment === 'miniprogram';
+}
+
 /**
  * 检测是否在移动端
  */
