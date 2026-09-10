@@ -33,7 +33,7 @@ const fs = require('fs');
 const path = require('path');
 
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
-const { appId, appSecret, sharedSecret, port } = config;
+const { appId, appSecret, miniprogramAppId, miniprogramAppSecret, sharedSecret, port } = config;
 
 const startedAt = Date.now();
 
@@ -191,10 +191,15 @@ async function fetchOAuthUserInfo(code) {
         throw new Error(`WeChat OAuth token error: ${JSON.stringify(tokenData)}`);
     }
 
+    // unionid is present here whenever the 公众号 is bound to a 微信开放平台
+    // account (confirmed true for this project) — same identity space as
+    // the Mini Program's jscode2session unionid, see fetchMiniProgramSession.
+    const unionid = tokenData.unionid || null;
+
     // snsapi_base scope (silent, no consent screen) only returns openid —
     // skip the userinfo call in that case rather than erroring.
     if (tokenData.scope === 'snsapi_base') {
-        return { openid: tokenData.openid, nickname: null, headimgurl: null };
+        return { openid: tokenData.openid, unionid, nickname: null, headimgurl: null };
     }
 
     const userUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${tokenData.access_token}&openid=${tokenData.openid}&lang=zh_CN`;
@@ -202,10 +207,32 @@ async function fetchOAuthUserInfo(code) {
     if (userData.errcode) {
         // Consent-screen scope but userinfo still failed — fall back to
         // just the openid rather than failing the whole login.
-        return { openid: tokenData.openid, nickname: null, headimgurl: null };
+        return { openid: tokenData.openid, unionid, nickname: null, headimgurl: null };
     }
 
-    return { openid: userData.openid, nickname: userData.nickname || null, headimgurl: userData.headimgurl || null };
+    return { openid: userData.openid, unionid: userData.unionid || unionid, nickname: userData.nickname || null, headimgurl: userData.headimgurl || null };
+}
+
+// Mini Program native login (wx.login()): exchanges the mini-program's own
+// one-time `code` — obtained via a pure API call in the mini-program shell,
+// no redirect involved, so it never hits the web-view domain-whitelist
+// problem the 公众号 OAuth flow does — for openid/unionid. This is a
+// *different* AppID/AppSecret pair from the 公众号's (a mini program has its
+// own credentials even when bound under the same 微信开放平台 account), so
+// it needs its own config fields and its own WeChat endpoint
+// (sns/jscode2session, not sns/oauth2/access_token). Routed through this
+// relay for the same defensive reason as fetchOAuthUserInfo above.
+async function fetchMiniProgramSession(code) {
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${miniprogramAppId}&secret=${miniprogramAppSecret}&js_code=${code}&grant_type=authorization_code`;
+    const data = await httpsGetJson(url);
+    if (!data.openid) {
+        throw new Error(`WeChat jscode2session error: ${JSON.stringify(data)}`);
+    }
+    // unionid is only present when the mini program is bound to the same
+    // 微信开放平台 account as a 公众号 (confirmed true for this project) —
+    // it's what lets a mini-program login recognize an existing 公众号 user
+    // as the same person instead of creating a second account.
+    return { openid: data.openid, unionid: data.unionid || null };
 }
 
 function randomNonceStr(len = 16) {
@@ -321,6 +348,26 @@ const server = http.createServer(async (req, res) => {
             finish(200);
         } catch (err) {
             log('ERROR', `[${requestId}] /oauth-userinfo failed: ${err.stack || err}`);
+            sendJson(res, 500, { error: String(err.message || err) });
+            finish(500);
+        }
+        return;
+    }
+
+    if (req.url === '/miniprogram-session') {
+        try {
+            const { code } = parsedBody;
+            if (!code) {
+                sendJson(res, 400, { error: "Missing 'code'" });
+                finish(400);
+                return;
+            }
+
+            const session = await fetchMiniProgramSession(code);
+            sendJson(res, 200, session);
+            finish(200);
+        } catch (err) {
+            log('ERROR', `[${requestId}] /miniprogram-session failed: ${err.stack || err}`);
             sendJson(res, 500, { error: String(err.message || err) });
             finish(500);
         }

@@ -1,6 +1,8 @@
 {
     "appId": "your_wechat_appid",
     "appSecret": "your_wechat_appsecret",
+    "miniprogramAppId": "your_miniprogram_appid",
+    "miniprogramAppSecret": "your_miniprogram_appsecret",
     "sharedSecret": "replace-with-a-long-random-string",
     "port": 8787
 }

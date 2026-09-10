@@ -78,22 +78,28 @@ serve(async (req) => {
         if (!relayRes.ok || userInfo.error) {
             throw new Error(userInfo.error || `Relay returned HTTP ${relayRes.status}`);
         }
-        const { openid, nickname, headimgurl } = userInfo;
+        const { openid, unionid, nickname, headimgurl } = userInfo;
         if (!openid) throw new Error("WeChat did not return an openid");
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const syntheticEmail = `wx_${openid}@wechat.justwedo.com`;
 
-        // 2. Find or create the auth user for this openid.
+        // 2. Find or create the auth user for this openid. unionid (when
+        // present) is checked first — it's the identity shared with the
+        // Mini Program (see wechat-miniprogram-login), so someone who
+        // registered there first should land on that same account here too.
         const { data: existingProfile } = await supabase
             .from('user_profiles')
-            .select('id')
-            .eq('wechat_openid', openid)
+            .select('id, wechat_unionid')
+            .or(unionid ? `wechat_openid.eq.${openid},wechat_unionid.eq.${unionid}` : `wechat_openid.eq.${openid}`)
             .maybeSingle();
 
         let userId: string;
         if (existingProfile) {
             userId = existingProfile.id;
+            if (unionid && !existingProfile.wechat_unionid) {
+                await supabase.from('user_profiles').update({ wechat_unionid: unionid }).eq('id', userId);
+            }
         } else if (mode === 'silent') {
             return new Response(JSON.stringify({ notFound: true }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -113,10 +119,11 @@ serve(async (req) => {
             userId = created.user.id;
 
             // handle_new_oauth_user() already inserted the user_profiles row —
-            // just attach the openid so next login finds it by the branch above.
+            // just attach the openid (+ unionid, when present) so next login
+            // finds it by the branch above.
             const { error: linkError } = await supabase
                 .from('user_profiles')
-                .update({ wechat_openid: openid })
+                .update({ wechat_openid: openid, ...(unionid ? { wechat_unionid: unionid } : {}) })
                 .eq('id', userId);
             if (linkError) throw new Error(`Failed to link wechat_openid: ${linkError.message}`);
         }

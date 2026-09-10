@@ -1,0 +1,11 @@
+-- Record-only: applied directly via `supabase db query --linked` (db push
+-- is broken for this project — see jwd_db_query_bypasses_broken_push memory).
+--
+-- wechat_unionid links a WeChat identity across multiple "apps" under the
+-- same 微信开放平台 account — the 公众号 and this project's Mini Program
+-- (AppID wx203210a70805f259) are bound under the same open-platform account,
+-- so a user's unionid is the same whether they log in via 公众号网页授权
+-- (wechat-oauth-login) or the Mini Program's native wx.login()
+-- (wechat-miniprogram-login). wechat_openid alone can't do this: each "app"
+-- gets its own, different openid for the same person.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS wechat_unionid text UNIQUE;

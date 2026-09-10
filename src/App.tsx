@@ -16,6 +16,7 @@ import { configWxShare, isWeChatBrowser, isWeChatMiniProgramWebview } from "./li
 import { startSilentWeChatCheck } from "./lib/wechatAuth";
 import { PresenceTracker } from "./components/PresenceTracker";
 import { findNearestNode } from "./utils/navigation";
+import { supabase } from "./lib/supabase";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,34 @@ const SilentWeChatLogin = () => {
   return null;
 };
 
+// Consumes ?mp_token= — set by the Mini Program wrapper's app.js when its
+// silent wx.login() check (wechat-miniprogram-login, createIfMissing:false)
+// recognized a returning WeChat identity. Mirrors WeChatCallback.tsx's
+// verifyOtp redemption; the session then picks up automatically through
+// authStore.ts's existing onAuthStateChange subscription. No-op for a
+// regular browser visitor, since nothing on the web side ever sets this param.
+const MiniProgramTokenConsumer = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tokenHash = params.get('mp_token');
+    if (!tokenHash) return;
+
+    params.delete('mp_token');
+    const newSearch = params.toString();
+    navigate({ pathname: location.pathname, search: newSearch ? `?${newSearch}` : '' }, { replace: true });
+
+    supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' }).catch((err) => {
+      console.error('Mini Program silent login failed', err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  return null;
+};
+
 const App = () => {
   const { initializeLanguage, language } = useConfigStore();
 
@@ -122,6 +151,7 @@ const App = () => {
           <BrowserRouter>
             <SEO /> {/* Default Global SEO - moved inside Router */}
             <SilentWeChatLogin />
+            <MiniProgramTokenConsumer />
             <GeoNodeAutoSelect />
             <PresenceTracker />
             <CommunityProvider>
