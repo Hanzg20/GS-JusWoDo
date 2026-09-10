@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, useLocation } from "react-router-dom";
+import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
 import MobileBottomNav from "./components/MobileBottomNav";
 import SEO from "./components/SEO";
@@ -15,8 +15,44 @@ import { AnimatedRoutes } from "./components/AnimatedRoutes";
 import { configWxShare, isWeChatBrowser, isWeChatMiniProgramWebview } from "./lib/wechatShare";
 import { startSilentWeChatCheck } from "./lib/wechatAuth";
 import { PresenceTracker } from "./components/PresenceTracker";
+import { findNearestNode } from "./utils/navigation";
 
 const queryClient = new QueryClient();
+
+// The Mini Program's web-view can't call wx.getLocation() itself (that's a
+// native API only the outer mini-program shell has) — its wrapper page
+// calls it and passes the result in here via ?geo_lat=&geo_lng=. A regular
+// browser has no reason to ever set these, so this is effectively a
+// mini-program-only bridge, not a general auto-geolocation feature.
+const GeoNodeAutoSelect = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { refCodes, setActiveNode } = useConfigStore();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const lat = parseFloat(params.get('geo_lat') || '');
+    const lng = parseFloat(params.get('geo_lng') || '');
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+    // Every NODE ref_code carries real lat/lng — wait for them to load
+    // rather than silently doing nothing on a cold start.
+    if (refCodes.length === 0) return;
+
+    const nearest = findNearestNode(lat, lng, refCodes);
+    if (nearest) {
+      setActiveNode(nearest.codeId);
+    }
+
+    // Strip geo_lat/geo_lng once consumed so they don't linger in the URL
+    // (shared links, back/forward history) past this one auto-select.
+    params.delete('geo_lat');
+    params.delete('geo_lng');
+    const newSearch = params.toString();
+    navigate({ pathname: location.pathname, search: newSearch ? `?${newSearch}` : '' }, { replace: true });
+  }, [location.search, refCodes, navigate, setActiveNode]);
+
+  return null;
+};
 
 // Separate from App() because it needs useLocation(), which only works
 // inside <BrowserRouter>.
@@ -86,6 +122,7 @@ const App = () => {
           <BrowserRouter>
             <SEO /> {/* Default Global SEO - moved inside Router */}
             <SilentWeChatLogin />
+            <GeoNodeAutoSelect />
             <PresenceTracker />
             <CommunityProvider>
               <AnimatedRoutes />

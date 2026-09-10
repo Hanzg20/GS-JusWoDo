@@ -167,6 +167,36 @@ export function calculateDistance(
 }
 
 /**
+ * Finds the closest NODE-type ref_code to a given coordinate. Every NODE row
+ * already carries real lat/lng in extraData (populated when the 37-node
+ * district system shipped) — no separate geocoding needed. Returns null if
+ * refCodes has no NODE entries (e.g. not loaded yet).
+ */
+export function findNearestNode<T extends { type: string; codeId: string; extraData?: Record<string, any> }>(
+    lat: number,
+    lng: number,
+    refCodes: T[]
+): T | null {
+    let closest: T | null = null;
+    let closestDistance = Infinity;
+
+    for (const code of refCodes) {
+        if (code.type !== 'NODE') continue;
+        const nodeLat = code.extraData?.lat;
+        const nodeLng = code.extraData?.lng;
+        if (typeof nodeLat !== 'number' || typeof nodeLng !== 'number') continue;
+
+        const distance = calculateDistance(lat, lng, nodeLat, nodeLng);
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closest = code;
+        }
+    }
+
+    return closest;
+}
+
+/**
  * 格式化距离显示
  */
 export function formatDistance(meters: number, language: 'zh' | 'en' = 'zh'): string {
