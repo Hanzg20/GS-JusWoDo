@@ -34,7 +34,8 @@ export const parseEmbedLink = (content: string): EmbedInfo | null => {
             type: 'youtube',
             id: ytMatch[1],
             embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}`,
-            thumbnailUrl: `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
+            thumbnailUrl: `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`,
+            originalUrl: `https://www.youtube.com/watch?v=${ytMatch[1]}`
         };
     }
 
