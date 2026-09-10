@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { User as UserIcon, Mail, ArrowRight, Building2, Lock, Eye, EyeOff } from "lucide-react";
+import { User as UserIcon, Mail, ArrowRight, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useConfigStore, writeNodeId } from "@/stores/configStore";
+import { NodePicker } from "@/components/NodePicker";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -311,21 +312,19 @@ const Register = () => {
                             />
                         </div>
 
-                        <div className="relative">
-                            <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <select
-                                value={nodeId}
-                                onChange={(e) => setNodeId(e.target.value)}
-                                className="w-full pl-12 pr-10 py-4 rounded-xl border bg-muted/30 focus:border-primary focus:bg-background transition-all outline-none appearance-none"
-                            >
-                                <option value="NODE_LEES">🏘️ Ottawa - Lees Ave</option>
-                                <option value="NODE_KANATA">🌲 Ottawa - Kanata Lakes</option>
-                                <option value="NODE_DOWNTOWN">🏛️ Ottawa - Downtown</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <ArrowRight className="w-4 h-4 text-muted-foreground rotate-90" />
-                            </div>
-                        </div>
+                        {/* Was a hardcoded 3-option <select> (NODE_LEES/NODE_KANATA/
+                            NODE_DOWNTOWN) from before the 37-neighborhood district-
+                            grouped node system shipped (see NodePicker.tsx) — anyone
+                            whose activeNodeId was one of the other 34 real
+                            neighborhoods got a <select> whose value matched no
+                            <option>, which is exactly the kind of thing that can
+                            silently break submission. Reuses the same real picker
+                            BecomeProvider.tsx already uses in controlled mode. */}
+                        <NodePicker
+                            value={nodeId}
+                            onChange={setNodeId}
+                            className="w-full !h-[58px] !justify-between !px-4 !rounded-xl !border !border-input !bg-muted/30 hover:!bg-background !text-sm !font-medium !text-foreground focus:!border-primary transition-all"
+                        />
                     </div>
 
                     {error && (
