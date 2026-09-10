@@ -22,8 +22,8 @@ export const TaskDetailView = ({ master, item, author, onQuote, onChat }: TaskDe
         postedBy: language === 'zh' ? '发布者' : 'Posted by',
         deadline: language === 'zh' ? '截止日期' : 'Deadline',
         location: language === 'zh' ? '地点' : 'Location',
-        chat: language === 'zh' ? '私信' : 'Chat',
-        submitQuote: language === 'zh' ? '提交报价' : 'Submit Quote',
+        chat: language === 'zh' ? '聊一聊' : "Let's Chat",
+        submitQuote: language === 'zh' ? '我来报价' : "I'll Quote This",
         taskDetails: language === 'zh' ? '任务详情' : 'Task Details',
     };
 

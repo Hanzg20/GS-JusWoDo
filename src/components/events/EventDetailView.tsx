@@ -99,7 +99,7 @@ export function EventDetailView({ master, item, provider, onChat }: EventDetailV
     };
 
     const t = {
-        join: language === 'zh' ? '立即报名' : 'Join Event',
+        join: language === 'zh' ? '先占个位' : 'Save My Spot',
         joined: language === 'zh' ? '已报名' : 'RSVPed',
         full: language === 'zh' ? '报名已满' : 'Event Full',
         commitment: language === 'zh' ? `承诺金: ${beanCommitment} 豆` : `Commitment: ${beanCommitment} Beans`,
@@ -255,7 +255,7 @@ export function EventDetailView({ master, item, provider, onChat }: EventDetailV
                             onClick={onChat}
                         >
                             <Phone className="w-4 h-4 mr-2" />
-                            {language === 'zh' ? '私聊' : 'Chat'}
+                            {language === 'zh' ? '聊一聊' : "Let's Chat"}
                         </Button>
                     </div>
                 </div>

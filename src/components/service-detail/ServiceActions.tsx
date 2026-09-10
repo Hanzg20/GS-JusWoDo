@@ -14,17 +14,17 @@ interface ServiceActionsProps {
 export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAction }: ServiceActionsProps) {
     const { language } = useConfigStore();
     const t = {
-        chat: language === 'zh' ? '私信' : 'Chat',
-        contactPrice: language === 'zh' ? '联系议价' : 'Contact for Price',
-        requestQuote: language === 'zh' ? '发起询价' : 'Request Quote',
-        bookNow: language === 'zh' ? '立即预订' : 'Book Now',
-        rentNow: language === 'zh' ? '立即租赁' : 'Rent Now',
-        bookTime: language === 'zh' ? '预约时间' : 'Book Time',
+        chat: language === 'zh' ? '聊一聊' : "Let's Chat",
+        contactPrice: language === 'zh' ? '要个报价' : 'Get a Quote',
+        requestQuote: language === 'zh' ? '要个报价' : 'Get a Quote',
+        bookNow: language === 'zh' ? '发个预定' : 'Reserve It',
+        rentNow: language === 'zh' ? '发个预定' : 'Reserve It',
+        bookTime: language === 'zh' ? '发个预定' : 'Reserve It',
         deposit: language === 'zh' ? '押金 (可退)' : 'Ref. Deposit',
         free: language === 'zh' ? '免费' : 'Free',
         negotiable: language === 'zh' ? '面议' : 'Contact for Price',
         haveThis: language === 'zh' ? '我有这个' : 'I Have This',
-        claimIt: language === 'zh' ? '免费领取' : 'Claim It',
+        claimIt: language === 'zh' ? '免费拿走' : 'Grab It Free',
     };
 
     const getActionButtonText = () => {
