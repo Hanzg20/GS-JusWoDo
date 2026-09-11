@@ -133,8 +133,6 @@ function brandedTitle(title: string): string {
  * 配置微信分享
  */
 export async function configWxShare(shareData: ShareData): Promise<boolean> {
-    const title = brandedTitle(shareData.title);
-
     // Inside the Mini Program's web-view, sharing is governed entirely by
     // the mini-program shell's own onShareAppMessage (see webview.js) — the
     // wx.config()/updateAppMessageShareData flow below doesn't apply there
@@ -146,12 +144,18 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
     // delivery is guaranteed to arrive before a share action fires, which
     // is the only timing guarantee this API makes, but it's exactly the
     // one that matters here.
+    //
+    // Deliberately uses the *unbranded* shareData.title, not brandedTitle()
+    // below — the mini-program's own share card already shows the app's
+    // real icon+name natively (the whole reason this bridge exists in the
+    // first place), so prefixing "【渥帮 JustWeDo】" here would just eat
+    // space repeating a brand mark already shown right above the title.
     if (isWeChatMiniProgramWebview()) {
         try {
             await loadWxJsSdk();
             window.wx?.miniProgram?.postMessage({
                 data: {
-                    title,
+                    title: shareData.title,
                     desc: shareData.description,
                     imgUrl: shareData.imageUrl,
                     path: window.location.pathname + window.location.search,
@@ -163,6 +167,7 @@ export async function configWxShare(shareData: ShareData): Promise<boolean> {
         return true;
     }
 
+    const title = brandedTitle(shareData.title);
     try {
         // 1. 加载 JS-SDK
         await loadWxJsSdk();
