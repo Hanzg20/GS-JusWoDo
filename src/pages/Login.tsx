@@ -276,12 +276,29 @@ const Login = () => {
         }
         try {
             await loadWxJsSdk();
+            // wx.miniProgram.* is injected by the WeChat client itself for
+            // any page running inside a Mini Program's web-view — it should
+            // already be there without loadWxJsSdk() needing to fetch
+            // anything. Checked explicitly (not just chained with `?.`)
+            // because `?.` on a missing method silently does nothing at
+            // all — no error, no callback — which looks exactly like a
+            // dead button with no feedback.
+            if (!window.wx || !window.wx.miniProgram || typeof window.wx.miniProgram.navigateTo !== 'function') {
+                console.error('wx.miniProgram.navigateTo unavailable', window.wx);
+                toast.error(t.errSocialFailed('WeChat'));
+                return;
+            }
             const returnPath = window.location.pathname + window.location.search;
-            window.wx?.miniProgram?.navigateTo({
+            window.wx.miniProgram.navigateTo({
                 url: `/pages/wechat-login/wechat-login?returnPath=${encodeURIComponent(returnPath)}`,
-                fail: () => toast.error(t.errSocialFailed('WeChat')),
+                success: () => console.log('navigateTo wechat-login succeeded'),
+                fail: (err) => {
+                    console.error('navigateTo wechat-login failed', err);
+                    toast.error(t.errSocialFailed('WeChat'));
+                },
             });
-        } catch {
+        } catch (err) {
+            console.error('handleWeChatLoginClick failed', err);
             toast.error(t.errSocialFailed('WeChat'));
         }
     };
