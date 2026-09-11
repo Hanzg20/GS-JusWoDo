@@ -23,6 +23,7 @@ declare global {
             // configWxShare()'s isWeChatMiniProgramWebview() branch.
             miniProgram?: {
                 postMessage: (config: { data: Record<string, any> }) => void;
+                navigateTo: (config: { url: string; success?: () => void; fail?: (err: any) => void }) => void;
             };
         };
     }

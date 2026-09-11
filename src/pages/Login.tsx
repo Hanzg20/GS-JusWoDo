@@ -18,7 +18,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { supabase } from "@/lib/supabase";
-import { isWeChatBrowser, isWeChatMiniProgramWebview } from "@/lib/wechatShare";
+import { isWeChatBrowser, isWeChatMiniProgramWebview, loadWxJsSdk } from "@/lib/wechatShare";
 import { startWeChatLogin } from "@/lib/wechatAuth";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,12 +31,16 @@ const Login = () => {
     // 公众号网页授权 only works inside WeChat's own in-app browser — outside
     // it, WeChat's OAuth URL just shows an "open in WeChat" interstitial
     // instead of logging anyone in, so the button only makes sense here.
-    // Inside the Mini Program's web-view specifically, it's still a WeChat
-    // browser but the OAuth redirect targets justwedo.com, which isn't on
-    // the web-view's 业务域名 whitelist (only fdrl.jhtsoft.cn is) — tapping
-    // it there breaks with WeChat's native "无法打开该页面" error, so hide it.
+    // Inside the Mini Program's web-view specifically, the OAuth *redirect*
+    // targets justwedo.com, which isn't on the web-view's 业务域名 whitelist
+    // (only fdrl.jhtsoft.cn is) — tapping the regular button there would
+    // break with WeChat's native "无法打开该页面" error. The button still
+    // shows there, but handleWeChatLoginClick below routes it to a
+    // different, native flow instead (wx.miniProgram.navigateTo a real
+    // mini-program page that calls wx.login() — see
+    // JustWeDo-MiniProgram/pages/wechat-login/).
     const inMiniProgram = isWeChatMiniProgramWebview();
-    const showWeChatLogin = isWeChatBrowser() && !inMiniProgram;
+    const showWeChatLogin = isWeChatBrowser();
     // Google/Apple sign-in redirect to accounts.google.com / appleid.apple.com
     // — neither can ever be on the web-view's 业务域名 whitelist, so tapping
     // either inside the Mini Program hits the exact same "无法打开该页面"
@@ -258,6 +262,30 @@ const Login = () => {
         }
     };
 
+    // Two completely different mechanisms share this one button. Outside
+    // the Mini Program: the usual 公众号网页授权 redirect (startWeChatLogin).
+    // Inside it: wx.miniProgram.navigateTo to a real native mini-program
+    // page that calls wx.login() itself — a plain OAuth redirect can't work
+    // there at all (see inMiniProgram comment above), but web-view JS has
+    // no wx.login() of its own, so the tap has to hand off to that native
+    // page instead of logging in directly from here.
+    const handleWeChatLoginClick = async () => {
+        if (!inMiniProgram) {
+            startWeChatLogin();
+            return;
+        }
+        try {
+            await loadWxJsSdk();
+            const returnPath = window.location.pathname + window.location.search;
+            window.wx?.miniProgram?.navigateTo({
+                url: `/pages/wechat-login/wechat-login?returnPath=${encodeURIComponent(returnPath)}`,
+                fail: () => toast.error(t.errSocialFailed('WeChat')),
+            });
+        } catch {
+            toast.error(t.errSocialFailed('WeChat'));
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 overflow-hidden relative">
             <SEO title={language === 'zh' ? '登录' : 'Login'} />
@@ -325,7 +353,7 @@ const Login = () => {
                                     <div className="flex justify-center gap-3">
                                         {showWeChatLogin && (
                                             <button
-                                                onClick={startWeChatLogin}
+                                                onClick={handleWeChatLoginClick}
                                                 disabled={loading}
                                                 aria-label="WeChat"
                                                 title="WeChat"
