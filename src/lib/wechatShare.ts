@@ -18,6 +18,12 @@ declare global {
             updateAppMessageShareData: (config: WxShareConfig) => void;
             updateTimelineShareData: (config: WxShareConfig) => void;
             hideMenuItems: (config: { menuList: string[] }) => void;
+            // Only meaningful inside a Mini Program's <web-view> — relays
+            // data across the web-view/mini-program-shell boundary, see
+            // configWxShare()'s isWeChatMiniProgramWebview() branch.
+            miniProgram?: {
+                postMessage: (config: { data: Record<string, any> }) => void;
+            };
         };
     }
 }
@@ -128,6 +134,35 @@ function brandedTitle(title: string): string {
  */
 export async function configWxShare(shareData: ShareData): Promise<boolean> {
     const title = brandedTitle(shareData.title);
+
+    // Inside the Mini Program's web-view, sharing is governed entirely by
+    // the mini-program shell's own onShareAppMessage (see webview.js) — the
+    // wx.config()/updateAppMessageShareData flow below doesn't apply there
+    // at all (that's for WeChat's own in-app browser "···" menu, a
+    // different surface). The shell has no way to know this page's real
+    // title/desc/image/path on its own, which is why every specific
+    // service/post always showed the same generic wrapper title.
+    // wx.miniProgram.postMessage relays it across the web-view boundary —
+    // delivery is guaranteed to arrive before a share action fires, which
+    // is the only timing guarantee this API makes, but it's exactly the
+    // one that matters here.
+    if (isWeChatMiniProgramWebview()) {
+        try {
+            await loadWxJsSdk();
+            window.wx?.miniProgram?.postMessage({
+                data: {
+                    title,
+                    desc: shareData.description,
+                    imgUrl: shareData.imageUrl,
+                    path: window.location.pathname + window.location.search,
+                },
+            });
+        } catch (error) {
+            console.error('Failed to post share data to Mini Program shell:', error);
+        }
+        return true;
+    }
+
     try {
         // 1. 加载 JS-SDK
         await loadWxJsSdk();
