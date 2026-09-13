@@ -1,22 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Star, ThumbsUp, Heart, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Star, ThumbsUp, Heart, MessageSquare, ShieldCheck, Flag, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ReportDialog } from '@/components/common/ReportDialog';
 import { Review, ReviewReaction } from '@/types/domain';
 import { repositoryFactory } from '@/services/repositories/factory';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
+import { toast } from 'sonner';
 
 interface EnhancedReviewListProps {
     listingId: string;
+    // The listing provider's real auth user id (ProviderProfile.userId), NOT
+    // listing_masters.provider_id / review.providerId (that's provider_profiles.id).
+    // Needed to tell whether the logged-in visitor IS this provider, so they can reply.
+    providerUserId?: string;
 }
 
-export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingId }) => {
+export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingId, providerUserId }) => {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
+    const [submittingReply, setSubmittingReply] = useState(false);
     const { currentUser } = useAuthStore();
     const reviewRepo = repositoryFactory.getReviewRepository();
+    const isOwner = !!currentUser && !!providerUserId && currentUser.id === providerUserId;
 
     const loadReviews = async () => {
         try {
@@ -52,6 +70,22 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
         }
     };
 
+    const handleSubmitReply = async (review: Review) => {
+        if (!currentUser || !replyText.trim()) return;
+        setSubmittingReply(true);
+        try {
+            await reviewRepo.submitReply(review.id, review.providerId, replyText.trim());
+            setReplyText('');
+            setReplyingTo(null);
+            await loadReviews();
+        } catch (error) {
+            console.error('Failed to submit reply:', error);
+            toast.error('Failed to post reply. Please try again.');
+        } finally {
+            setSubmittingReply(false);
+        }
+    };
+
     if (loading) return <div className="p-4 text-center text-muted-foreground animate-pulse font-black uppercase tracking-widest text-[10px]">Loading neighbor reviews...</div>;
 
     if (reviews.length === 0) return (
@@ -62,6 +96,8 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
         </div>
     );
 
+    const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between mb-8">
@@ -70,6 +106,11 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                     Neighbor Stories
                     <Badge variant="outline" className="ml-2 bg-primary/5 text-primary border-none text-[10px] font-black h-5 px-1.5">{reviews.length}</Badge>
                 </h3>
+                <div className="flex items-center gap-1.5">
+                    <Star className="w-4 h-4 fill-secondary text-secondary" />
+                    <span className="text-sm font-black text-foreground">{avgRating.toFixed(1)}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">/ 5</span>
+                </div>
             </div>
 
             <div className="grid gap-6">
@@ -154,6 +195,27 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     <span>Warm {review.reactions?.filter(r => r.type === 'WARMTH').length || ''}</span>
                                 </button>
                             </div>
+
+                            {currentUser && currentUser.id !== review.buyerId && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="p-2 rounded-full text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground transition-all">
+                                            <MoreHorizontal className="w-4 h-4" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <ReportDialog
+                                            targetType="REVIEW"
+                                            targetId={review.id}
+                                            trigger={
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                    <Flag className="w-3.5 h-3.5 mr-2" /> Report
+                                                </DropdownMenuItem>
+                                            }
+                                        />
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
                         </div>
 
                         {review.replies && review.replies.length > 0 && (
@@ -162,7 +224,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     <ShieldCheck className="w-16 h-16 text-primary" />
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <Badge className="bg-primary/20 text-primary text-[9px] font-black uppercase tracking-widest border-none px-2 h-4">Neighbor's Reply</Badge>
+                                    <Badge className="bg-primary/20 text-primary text-[9px] font-black uppercase tracking-widest border-none px-2 h-4">Provider's Reply</Badge>
                                 </div>
                                 {review.replies.map((reply) => (
                                     <p key={reply.id} className="text-xs font-bold text-foreground/80 leading-relaxed italic">
@@ -170,6 +232,46 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     </p>
                                 ))}
                             </div>
+                        )}
+
+                        {isOwner && (!review.replies || review.replies.length === 0) && (
+                            replyingTo === review.id ? (
+                                <div className="mt-6 p-5 rounded-[32px] bg-muted/20 border border-muted/30 space-y-3">
+                                    <Textarea
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        placeholder="Reply to this review as the provider..."
+                                        className="min-h-[80px] resize-none rounded-2xl text-sm"
+                                        autoFocus
+                                    />
+                                    <div className="flex gap-2 justify-end">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="rounded-xl text-xs font-bold"
+                                            onClick={() => { setReplyingTo(null); setReplyText(''); }}
+                                            disabled={submittingReply}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className="rounded-xl text-xs font-bold"
+                                            onClick={() => handleSubmitReply(review)}
+                                            disabled={!replyText.trim() || submittingReply}
+                                        >
+                                            {submittingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Post Reply'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setReplyingTo(review.id)}
+                                    className="mt-4 text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                                >
+                                    Reply as provider
+                                </button>
+                            )
                         )}
                     </Card>
                 ))}

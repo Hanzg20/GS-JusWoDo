@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     TrendingUp, Package, Star, DollarSign, Clock,
-    ExternalLink, ArrowDownToLine, ArrowUpToLine, Edit, Trash2, Plus, MoreVertical, MessageSquare, Tag, Layout, Rocket, Eye
+    ExternalLink, ArrowDownToLine, ArrowUpToLine, Edit, Trash2, Plus, MoreVertical, MessageSquare, Tag, Layout, Rocket, Eye, QrCode
 } from "lucide-react";
+import { ReviewQrDialog } from "@/components/reviews/ReviewQrDialog";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
@@ -29,6 +30,7 @@ const MyListings = () => {
     // PROVIDER role (BecomeProvider.tsx lets a handyman pick either
     // identity), so isProvider alone can't stand in for this.
     const [myIdentity, setMyIdentity] = useState<'NEIGHBOR' | 'MERCHANT' | null>(null);
+    const [reviewQrListing, setReviewQrListing] = useState<{ id: string; title: string } | null>(null);
 
     useEffect(() => {
         fetchListings();
@@ -290,6 +292,15 @@ const MyListings = () => {
                                                         variant="outline"
                                                         size="icon"
                                                         className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
+                                                        onClick={() => setReviewQrListing({ id: listing.id, title: listing.titleEn || listing.titleZh })}
+                                                        title="获取评价二维码"
+                                                    >
+                                                        <QrCode className="w-4 h-4 text-muted-foreground" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                                                         onClick={() => navigate(`/publish?id=${listing.id}`)}
                                                         title="修改内容"
                                                     >
@@ -352,6 +363,15 @@ const MyListings = () => {
             </div>
 
             <Footer />
+
+            {reviewQrListing && (
+                <ReviewQrDialog
+                    listingId={reviewQrListing.id}
+                    listingTitle={reviewQrListing.title}
+                    open={!!reviewQrListing}
+                    onOpenChange={(open) => { if (!open) setReviewQrListing(null); }}
+                />
+            )}
         </div>
     );
 };

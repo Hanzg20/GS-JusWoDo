@@ -31,6 +31,7 @@ const MyListings = lazy(() => import("../pages/MyListings"));
 const ProviderDashboard = lazy(() => import("../pages/ProviderDashboard"));
 const PublishService = lazy(() => import("../pages/provider/PublishService"));
 const ReviewSubmission = lazy(() => import("../pages/ReviewSubmission"));
+const LeaveReview = lazy(() => import("../pages/LeaveReview"));
 const ProviderProfile = lazy(() => import("../pages/ProviderProfile"));
 const BecomeProvider = lazy(() => import("../pages/BecomeProvider"));
 const About = lazy(() => import("../pages/About"));
@@ -86,6 +87,7 @@ export const AnimatedRoutes = () => {
                     <Route path="/provider/dashboard" element={<PageTransition><ProviderDashboard /></PageTransition>} />
                     <Route path="/provider/orders" element={<PageTransition><Orders /></PageTransition>} />
                     <Route path="/review/:id" element={<PageTransition><ReviewSubmission /></PageTransition>} />
+                    <Route path="/leave-review/:listingId" element={<PageTransition><LeaveReview /></PageTransition>} />
                     <Route path="/provider/:providerId" element={<PageTransition><ProviderProfile /></PageTransition>} />
                     <Route path="/become-provider" element={<PageTransition><BecomeProvider /></PageTransition>} />
                     <Route path="/about" element={<PageTransition><About /></PageTransition>} />

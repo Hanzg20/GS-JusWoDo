@@ -295,7 +295,7 @@ const ServiceDetail = () => {
 
             <motion.div variants={itemVariants} className="mt-8">
               {/* Enhanced Review List is internally loaded */}
-              <EnhancedReviewList listingId={master.id} />
+              <EnhancedReviewList listingId={master.id} providerUserId={provider?.userId} />
             </motion.div>
           </motion.div>
 

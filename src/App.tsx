@@ -16,6 +16,7 @@ import { configWxShare, isWeChatBrowser, isWeChatMiniProgramWebview } from "./li
 import { startSilentWeChatCheck } from "./lib/wechatAuth";
 import { PresenceTracker } from "./components/PresenceTracker";
 import { findNearestNode } from "./utils/navigation";
+import { consumePostLoginRedirect } from "./utils/postLoginRedirect";
 import { supabase } from "./lib/supabase";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,24 @@ const MiniProgramTokenConsumer = () => {
   return null;
 };
 
+// Login.tsx (and every other login-gated page) always navigates to '/' on
+// success. This watches for currentUser going from null -> set and, only if
+// some page stashed a return path first (via setPostLoginRedirect), sends
+// the visitor there instead — runs after Login.tsx's own navigate('/'),
+// so its navigate() call is the one that wins.
+const PostLoginRedirect = () => {
+  const navigate = useNavigate();
+  const { currentUser } = useAuthStore();
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const target = consumePostLoginRedirect();
+    if (target) navigate(target, { replace: true });
+  }, [currentUser, navigate]);
+
+  return null;
+};
+
 const App = () => {
   const { initializeLanguage, language } = useConfigStore();
 
@@ -153,6 +172,7 @@ const App = () => {
             <SilentWeChatLogin />
             <MiniProgramTokenConsumer />
             <GeoNodeAutoSelect />
+            <PostLoginRedirect />
             <PresenceTracker />
             <CommunityProvider>
               <AnimatedRoutes />
