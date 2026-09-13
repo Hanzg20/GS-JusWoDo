@@ -368,6 +368,7 @@ const MyListings = () => {
                 <ReviewQrDialog
                     listingId={reviewQrListing.id}
                     listingTitle={reviewQrListing.title}
+                    businessName={currentUser.name}
                     open={!!reviewQrListing}
                     onOpenChange={(open) => { if (!open) setReviewQrListing(null); }}
                 />
