@@ -59,12 +59,18 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
         const currencySymbol = language === 'zh' ? '¥' : '$';
         if (!cheapestPricing) return { isPrice: false, text: language === 'zh' ? '面议' : 'Get Quote' };
         const { model, price, unit } = cheapestPricing;
+        // QUOTE/NEGOTIABLE items store amount:0 as a placeholder (no price
+        // has been set), which used to fall through to the amount===0 check
+        // below and read as "免费"/Free — genuinely misleading for a paid
+        // professional service that just hasn't been quoted yet. Model must
+        // be checked first; only a non-quote listing with a real $0 price
+        // (FREE_GIVEAWAY etc.) actually means free.
+        if (model === 'QUOTE' || model === 'NEGOTIABLE') {
+            return { isPrice: false, text: language === 'zh' ? '面议' : 'Negotiable' };
+        }
         if (price.amount === 0) return { isPrice: false, text: language === 'zh' ? '免费' : 'Free' };
         const amount = (price.amount / 100).toFixed(0);
         switch (model) {
-            case 'QUOTE':
-            case 'NEGOTIABLE':
-                return { isPrice: false, text: language === 'zh' ? '面议' : 'Negotiable' };
             case 'VISIT_FEE':
                 return { isPrice: true, currencySymbol, amount, prefix: language === 'zh' ? '上门费 ' : 'Visit fee ' };
             case 'HOURLY':
