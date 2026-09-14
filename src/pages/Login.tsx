@@ -8,7 +8,6 @@ import {
     AlertCircle,
     Phone,
     ChevronDown,
-    Sparkles,
     ArrowRight,
     UserPlus,
     Lock
@@ -319,7 +318,7 @@ const Login = () => {
                 <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white relative">
                     <div className="relative z-10">
                         <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8">
-                            <Sparkles className="w-6 h-6 text-white" />
+                            <img src="/logo.png" alt="JWD" className="w-8 h-8 object-contain" />
                         </div>
                         <h2 className="text-4xl font-black mb-4 leading-tight">
                             {t.heroTitle}
@@ -349,8 +348,8 @@ const Login = () => {
                     <div className="max-w-md mx-auto h-full flex flex-col justify-center">
                         {/* Mobile Header / Brand */}
                         <div className="lg:hidden text-center mb-10">
-                            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-                                <Sparkles className="w-8 h-8 text-white" />
+                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl border border-muted">
+                                <img src="/logo.png" alt="JWD" className="w-11 h-11 object-contain" />
                             </div>
                             <h1 className="text-3xl font-black text-slate-900">{t.welcomeBackMobile}</h1>
                         </div>
