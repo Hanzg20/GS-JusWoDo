@@ -68,14 +68,33 @@ const Index = () => {
     loadNodeListings();
   }, [activeNodeId, setListings]);
 
+  // 综合排序 ("comprehensive" ranking, the standard Chinese e-commerce
+  // default sort — Taobao/JD/Pinduoduo all default here rather than pure
+  // "newest" or "top-rated") — blends recency + rating + review count into
+  // one score instead of the previous plain insertion-order slice, which
+  // wasn't really "trending" at all. Weighted toward recency for now since
+  // real reviews are still rare platform-wide (see the review-system audit
+  // and the 2026-09-13 submission-bug fix) — unrated listings get a neutral
+  // baseline so a brand-new listing isn't buried under 0-review ones.
+  const trendingScore = (l: typeof listings[number]) => {
+    const ageDays = (Date.now() - new Date(l.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+    const recencyScore = Math.max(0, 30 - ageDays) / 30; // full marks under 1 day old, 0 past 30 days
+    const qualityScore = l.reviewCount > 0 ? l.rating / 5 : 0.6;
+    const reviewBoost = Math.min(l.reviewCount, 10) / 10;
+    return recencyScore * 0.5 + qualityScore * 0.35 + reviewBoost * 0.15;
+  };
+
   // Same enrichment CategoryListing.tsx uses: fetches the pricing these
   // cards need (never loaded on this page before) and attaches an
   // approximate distance from the neighbor's community node. No more
   // per-pillar tab filtering here — CategoryIconGrid above already routes
   // to each pillar's own page, which now has real 二级分类 (industry-tier)
   // browsing of its own (see 2026-09-14 pillar consolidation); this section
-  // is just a flat "what's trending right now" preview.
-  const visibleFeedListings = useMemo(() => listings.slice(0, 12), [listings]);
+  // is a blended "what's trending right now" preview across every pillar.
+  const visibleFeedListings = useMemo(
+    () => [...listings].sort((a, b) => trendingScore(b) - trendingScore(a)).slice(0, 12),
+    [listings]
+  );
   const enrichedFeedListings = useEnrichedListings(visibleFeedListings);
 
   // Hero carousel: top-rated real listings, not paid ad slots — the
