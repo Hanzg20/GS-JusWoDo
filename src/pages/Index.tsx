@@ -5,10 +5,8 @@ import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
 import { useCommunity } from "@/context/CommunityContext";
 import { useConfigStore, browseNodeId } from "@/stores/configStore";
-import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
-import { MasonryGrid } from "@/components/Community/MasonryGrid";
-import { ArrowRight, Sparkles, Flame, Wrench, RefreshCw, MessageSquareQuote } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ListingCard } from "@/components/ListingCard";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
@@ -17,29 +15,18 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BentoHero } from "@/components/home/BentoHero";
 import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 
-// Matches CategoryIconGrid's 3 pillars exactly. 'service' folds in Products
-// listings, 'secondhand' folds in Rentals — see the 2026-09-14 pillar
-// consolidation (jwd_three_pillars memory); each retired type's own
-// /category/:type page is still reachable via that page's own sibling tabs.
-type TabType = 'all' | 'service' | 'secondhand' | 'community';
-
 const Index = () => {
   const navigate = useNavigate();
   const { listings, setListings } = useListingStore();
   const { activeNodeId } = useCommunity();
   const { refCodes, setRefCodes, language } = useConfigStore();
-  const { posts: communityPosts, isLoading: isCommunityLoading, fetchFeed } = useCommunityPostStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('all');
 
   const isZh = language === 'zh';
 
   // Localization Dictionary
   const t = {
     all: isZh ? '🔥 热门推荐' : '🔥 Trending',
-    service: isZh ? '🧹 本地服务' : '🧹 Services',
-    secondhand: isZh ? '🔄 闲置 & 租赁' : '🔄 Secondhand & Rentals',
-    community: isZh ? '💬 邻里动态' : '💬 Neighbors',
     viewMore: isZh ? '查看更多' : 'View More',
     emptyTitle: isZh ? 'Ottawa & Kanata 社区建设中' : 'Community Under Construction',
     emptyDesc: isZh ? '欢迎发布第一条本地服务或需求帖' : 'Be the first to post a local service or need',
@@ -81,32 +68,14 @@ const Index = () => {
     loadNodeListings();
   }, [activeNodeId, setListings]);
 
-  // Load community feed (real 邻里互助 content, separate from listings)
-  useEffect(() => {
-    fetchFeed({ nodeId: browseNodeId(activeNodeId), scope: 'nearby' });
-  }, [activeNodeId, fetchFeed]);
-
-  // Filter listings by active tab. 'service' folds in Products (both are
-  // merchant/professional offerings), 'secondhand' folds in Rentals (both
-  // are "share what you already own") — see the 2026-09-14 pillar
-  // consolidation. Products vs Secondhand-proper is still split by
-  // attributes.goodsTier under the hood, same as CategoryListing.tsx.
-  const currentFilteredListings = useMemo(() => {
-    switch (activeTab) {
-      case 'service':
-        return listings.filter(l => l.type === 'SERVICE' || (l.type === 'GOODS' && (l as any).attributes?.goodsTier === 'PRODUCT'));
-      case 'secondhand':
-        return listings.filter(l => (l.type === 'GOODS' && (l as any).attributes?.goodsTier !== 'PRODUCT') || l.type === 'RENTAL');
-      case 'all':
-      default:
-        return listings;
-    }
-  }, [listings, activeTab]);
-
   // Same enrichment CategoryListing.tsx uses: fetches the pricing these
   // cards need (never loaded on this page before) and attaches an
-  // approximate distance from the neighbor's community node.
-  const visibleFeedListings = useMemo(() => currentFilteredListings.slice(0, 12), [currentFilteredListings]);
+  // approximate distance from the neighbor's community node. No more
+  // per-pillar tab filtering here — CategoryIconGrid above already routes
+  // to each pillar's own page, which now has real 二级分类 (industry-tier)
+  // browsing of its own (see 2026-09-14 pillar consolidation); this section
+  // is just a flat "what's trending right now" preview.
+  const visibleFeedListings = useMemo(() => listings.slice(0, 12), [listings]);
   const enrichedFeedListings = useEnrichedListings(visibleFeedListings);
 
   // Hero carousel: top-rated real listings, not paid ad slots — the
@@ -133,13 +102,6 @@ const Index = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };
 
-  const tabs: { id: TabType; label: string; icon: any }[] = [
-    { id: 'all', label: t.all, icon: Flame },
-    { id: 'service', label: t.service, icon: Wrench },
-    { id: 'secondhand', label: t.secondhand, icon: RefreshCw },
-    { id: 'community', label: t.community, icon: MessageSquareQuote },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5 pb-20">
       <SEO />
@@ -156,7 +118,11 @@ const Index = () => {
           <CategoryIconGrid />
         </section>
 
-        {/* Unified Tabbed Feed Section */}
+        {/* Trending feed — a flat preview, no tab switcher. It used to
+            duplicate CategoryIconGrid's own 3 pillars one section down;
+            that pillar is already reachable up there, and each pillar's
+            own page now has real 二级分类 browsing (see the 2026-09-14
+            pillar consolidation), so this is just "what's trending now". */}
         <motion.section
           initial="hidden"
           whileInView="visible"
@@ -164,29 +130,14 @@ const Index = () => {
           variants={sectionVariants}
           className="space-y-4"
         >
-          {/* Feed Header with Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+          {/* Feed Header */}
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
+            <h2 className="text-sm sm:text-base font-bold">{t.all}</h2>
 
             {/* View More Link */}
             <Link
-              to={activeTab === 'all' ? '/discover' : activeTab === 'community' ? '/community' : `/category/${activeTab}`}
-              className="flex items-center gap-1 text-xs sm:text-sm font-bold text-primary hover:text-primary/80 transition-colors self-end sm:self-auto"
+              to="/discover"
+              className="flex items-center gap-1 text-xs sm:text-sm font-bold text-primary hover:text-primary/80 transition-colors"
             >
               <span>{t.viewMore}</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -195,11 +146,7 @@ const Index = () => {
 
           {/* Feed Content */}
           <AnimatePresence mode="wait">
-            {activeTab === 'community' ? (
-              <motion.div key="community" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <MasonryGrid posts={communityPosts.slice(0, 9)} isLoading={isCommunityLoading} />
-              </motion.div>
-            ) : isLoading ? (
+            {isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 {[...Array(8)].map((_, i) => (
                   <SkeletonCard key={i} />
@@ -207,7 +154,7 @@ const Index = () => {
               </div>
             ) : enrichedFeedListings.length > 0 ? (
               <motion.div
-                key={activeTab}
+                key="trending"
                 variants={cardContainerVariants}
                 initial="hidden"
                 animate="visible"

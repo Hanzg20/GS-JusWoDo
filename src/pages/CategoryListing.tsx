@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useEnrichedListings } from "@/hooks/useEnrichedListings";
+import { cn } from "@/lib/utils";
 
 type SortBy = 'newest' | 'rating' | 'reviews' | 'distance';
 
@@ -50,6 +51,7 @@ const CategoryListing = () => {
     const { refCodes, language, activeNodeId } = useConfigStore();
     const [isSmartSearch, setIsSmartSearch] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
+    const [selectedIndustryId, setSelectedIndustryId] = useState<string | undefined>(undefined);
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
     const [sortBy, setSortBy] = useState<SortBy>('newest');
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -98,18 +100,66 @@ const CategoryListing = () => {
         return [...enrichedListings].sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity));
     }, [enrichedListings, sortBy]);
 
-    // Which pillar this listing type belongs to (via ref_codes PILLAR extra_data.path),
-    // then the 细分类目 (CATEGORY-level) chips under it — see
-    // supabase/migrations/20260903_add_category_pillars.sql
-    const pillarCategories = useMemo(() => {
-        const pillar = refCodes.find(r => r.type === 'PILLAR' && r.extraData?.path === `/category/${type}`);
-        if (!pillar) return [];
-        const industryIds = refCodes.filter(r => r.type === 'INDUSTRY' && r.parentId === pillar.codeId).map(i => i.codeId);
-        return refCodes.filter(r => r.type === 'CATEGORY' && industryIds.includes(r.parentId || ''));
+    // Which pillar this listing type belongs to. Matching by extra_data.path
+    // (the old approach) broke once Products/Rentals lost their own active
+    // pillar row in the 2026-09-14 3-pillar consolidation — their pillar is
+    // now reached via a sibling type's path, not their own. Map explicitly
+    // instead.
+    const TYPE_TO_PILLAR: Record<string, string> = {
+        service: 'PILLAR_SERVICE', products: 'PILLAR_SERVICE',
+        secondhand: 'PILLAR_GOODS', rental: 'PILLAR_GOODS',
+        task: 'PILLAR_HELP',
+    };
+
+    // 二级分类 (INDUSTRY tier) — always-visible tabs, styled like
+    // Community.tsx's level-2 filter row. Empty for pillars/types with no
+    // INDUSTRY rows yet (e.g. Tasks has none — lives on Community.tsx
+    // instead).
+    const pillarIndustries = useMemo(() => {
+        // Products shares Services' pillar (for the sibling tabs / page
+        // title) but not its industry taxonomy — 居家清洁/电工/宠物寄养 etc.
+        // are service-specific and don't describe any real Products
+        // listing, so showing them there would just be filters that always
+        // return empty.
+        if (type?.toLowerCase() === 'products') return [];
+        const pillarId = TYPE_TO_PILLAR[type?.toLowerCase() || ''];
+        if (!pillarId) return [];
+        return refCodes
+            .filter(r => r.type === 'INDUSTRY' && r.parentId === pillarId)
+            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     }, [refCodes, type]);
+
+    // 三级分类 (CATEGORY tier) under the selected industry — the finer
+    // "筛选" chips. Scoped to the selected industry once one is picked;
+    // otherwise every category under the pillar (unchanged behavior for
+    // pillars with no industry tier of their own).
+    const pillarCategories = useMemo(() => {
+        if (type?.toLowerCase() === 'products') return [];
+        const pillarId = TYPE_TO_PILLAR[type?.toLowerCase() || ''];
+        if (!pillarId) return [];
+        const industryIds = selectedIndustryId
+            ? [selectedIndustryId]
+            : refCodes.filter(r => r.type === 'INDUSTRY' && r.parentId === pillarId).map(i => i.codeId);
+        return refCodes.filter(r => r.type === 'CATEGORY' && industryIds.includes(r.parentId || ''));
+    }, [refCodes, type, selectedIndustryId]);
+
+    // Picking an industry tab should visibly narrow results right away,
+    // not just narrow which finer "筛选" chips are offered — otherwise
+    // tapping an industry looks like it did nothing until the visitor also
+    // opens the filter panel and picks a specific category. Server-side
+    // search only takes one categoryId, so once a specific category is
+    // picked (below) that's already precise via the server; an
+    // industry-only selection filters client-side across all of that
+    // industry's categories instead.
+    const visibleListings = useMemo(() => {
+        if (!selectedIndustryId || selectedCategoryId) return sortedListings;
+        const categoryIds = new Set(pillarCategories.map(c => c.codeId));
+        return sortedListings.filter(item => categoryIds.has(item.categoryId));
+    }, [sortedListings, selectedIndustryId, selectedCategoryId, pillarCategories]);
 
     useEffect(() => {
         setSelectedCategoryId(undefined);
+        setSelectedIndustryId(undefined);
     }, [type]);
 
     // "products" and "secondhand" are both really GOODS underneath — split
@@ -176,11 +226,50 @@ const CategoryListing = () => {
                         })}
                     </div>
                 )}
+
+                {/* 二级分类 (INDUSTRY tier) — always-visible tabs, same
+                    treatment as Community.tsx's level-2 filter row (small
+                    text, bold + underline for the active one, horizontal
+                    scroll). Data-driven per pillar via ref_codes, so this
+                    row is different on every pillar and empty where no
+                    INDUSTRY rows exist yet (e.g. Tasks). */}
+                {pillarIndustries.length > 0 && (
+                    <div className="container flex items-center gap-4 sm:gap-6 h-9 sm:h-10 overflow-x-auto scrollbar-hide mb-1">
+                        <button
+                            onClick={() => setSelectedIndustryId(undefined)}
+                            className={cn(
+                                "relative h-full shrink-0 text-[13px] sm:text-sm transition-colors",
+                                !selectedIndustryId ? 'font-bold text-foreground' : 'font-medium text-muted-foreground/70'
+                            )}
+                        >
+                            {language === 'zh' ? '全部' : 'All'}
+                            {!selectedIndustryId && (
+                                <span className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full bg-primary" />
+                            )}
+                        </button>
+                        {pillarIndustries.map((industry) => (
+                            <button
+                                key={industry.codeId}
+                                onClick={() => { setSelectedIndustryId(industry.codeId); setSelectedCategoryId(undefined); }}
+                                className={cn(
+                                    "relative h-full shrink-0 text-[13px] sm:text-sm transition-colors",
+                                    selectedIndustryId === industry.codeId ? 'font-bold text-foreground' : 'font-medium text-muted-foreground/70'
+                                )}
+                            >
+                                {language === 'zh' ? industry.zhName : (industry.enName || industry.zhName)}
+                                {selectedIndustryId === industry.codeId && (
+                                    <span className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full bg-primary" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <div className="container flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h1 className="text-xl font-bold flex items-center gap-2">
                         {getPageTitle(type)}
                         <span className="text-xs font-normal text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                            {listings.length} {language === 'zh' ? '个结果' : 'Results'}
+                            {visibleListings.length} {language === 'zh' ? '个结果' : 'Results'}
                         </span>
                     </h1>
 
@@ -282,9 +371,9 @@ const CategoryListing = () => {
                         </div>
                         <Button className="btn-action rounded-full px-10">Verify Now</Button>
                     </div>
-                ) : sortedListings.length > 0 ? (
+                ) : visibleListings.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {sortedListings.map(item => (
+                        {visibleListings.map(item => (
                             <ListingCard key={item.id} item={item} />
                         ))}
                     </div>
