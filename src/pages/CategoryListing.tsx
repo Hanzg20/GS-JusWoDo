@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import SEO from "@/components/SEO";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useListingStore } from "@/stores/listingStore";
@@ -16,8 +16,33 @@ import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 
 type SortBy = 'newest' | 'rating' | 'reviews' | 'distance';
 
+// Products and Rentals lost their own homepage pillar tile in the
+// 2026-09-14 3-pillar consolidation (folded into Services and Secondhand
+// respectively — see jwd_three_pillars memory) but their /category/:type
+// pages still work exactly as before; these sibling tabs are the only way
+// left to reach them.
+const SIBLING_GROUPS: Record<string, { path: string; labelZh: string; labelEn: string }[]> = {
+    service: [
+        { path: '/category/service', labelZh: '本地服务', labelEn: 'Services' },
+        { path: '/category/products', labelZh: '产品', labelEn: 'Products' },
+    ],
+    products: [
+        { path: '/category/service', labelZh: '本地服务', labelEn: 'Services' },
+        { path: '/category/products', labelZh: '产品', labelEn: 'Products' },
+    ],
+    secondhand: [
+        { path: '/category/secondhand', labelZh: '闲置市场', labelEn: 'Secondhand' },
+        { path: '/category/rental', labelZh: '租赁', labelEn: 'Rentals' },
+    ],
+    rental: [
+        { path: '/category/secondhand', labelZh: '闲置市场', labelEn: 'Secondhand' },
+        { path: '/category/rental', labelZh: '租赁', labelEn: 'Rentals' },
+    ],
+};
+
 const CategoryListing = () => {
     const { type } = useParams<{ type: string }>();
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q');
     const { listings, isLoading, searchListings } = useListingStore();
@@ -93,6 +118,8 @@ const CategoryListing = () => {
     const resolvedType = type === 'products' || type === 'secondhand' ? 'GOODS' : (type?.toUpperCase() as any) || undefined;
     const goodsTier = type === 'products' ? 'PRODUCT' : type === 'secondhand' ? 'SECONDHAND' : undefined;
 
+    const siblingTabs = SIBLING_GROUPS[type?.toLowerCase() || ''];
+
     useEffect(() => {
         searchListings({
             query: query || undefined,
@@ -129,6 +156,26 @@ const CategoryListing = () => {
 
             {/* Search Header */}
             <div className="bg-card border-b border-border py-4 sticky top-16 z-40">
+                {siblingTabs && (
+                    <div className="container flex items-center gap-2 mb-3">
+                        {siblingTabs.map((tab) => {
+                            const isActive = tab.path === `/category/${type?.toLowerCase()}`;
+                            return (
+                                <button
+                                    key={tab.path}
+                                    onClick={() => navigate(tab.path)}
+                                    className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                                        isActive
+                                            ? 'bg-primary text-primary-foreground shadow-sm'
+                                            : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    {language === 'zh' ? tab.labelZh : tab.labelEn}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
                 <div className="container flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h1 className="text-xl font-bold flex items-center gap-2">
                         {getPageTitle(type)}

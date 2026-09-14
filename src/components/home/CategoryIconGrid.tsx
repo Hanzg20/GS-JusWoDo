@@ -6,18 +6,21 @@ import { motion } from "framer-motion";
 
 // Fallback used only if ref_codes hasn't been migrated yet (no PILLAR rows) —
 // keeps the homepage from breaking before the DB migration lands.
-// 6 pillars (was 3) as of 2026-09-06: GOODS split into Products (provider's
-// professional-goods form) vs Secondhand Market (the homepage's simple
-// form — who posted it doesn't matter, only which form created the
-// listing, see that day's conversation), plus Tasks and Rentals promoted
-// from "supported but not a pillar yet" to full tiles.
+// Back to 3 pillars as of 2026-09-14 — see jwd_three_pillars memory. The
+// 2026-09-06 expansion to 6 (splitting GOODS into Products/Secondhand and
+// promoting Tasks/Rentals to full tiles) drifted from the founding "reject
+// bloat" positioning and left 2 of the 6 tiles pointing at categories with
+// zero real listings. Products now lives inside Services (both are
+// merchant/professional offerings), Tasks inside Neighbors (matches the
+// original "跑腿短工 folds under 邻里互助" decision), Rentals inside
+// Secondhand (both are "share what you already own"). Each retired pillar's
+// own route (/category/products, /category/task, /category/rental) still
+// works — only the top-level homepage tile is gone; CategoryListing.tsx and
+// Community.tsx expose sibling tabs so they stay reachable.
 const FALLBACK_PILLARS = [
-  { codeId: 'PILLAR_SERVICE', path: '/category/service', zhName: '本地服务', enName: 'Services', extraData: { icon: 'Wrench', bgColor: 'bg-orange-50 text-orange-600 border-orange-100', badgeColor: 'bg-orange-500', desc_zh: '保洁 / 维修 / 铲雪 / 接送', desc_en: 'Cleaning, repairs, snow, rides' } },
-  { codeId: 'PILLAR_PRODUCTS', path: '/category/products', zhName: '产品', enName: 'Products', extraData: { icon: 'ShoppingBag', bgColor: 'bg-blue-50 text-blue-600 border-blue-100', badgeColor: 'bg-blue-500', desc_zh: '商户上架 / 批量供货', desc_en: 'Merchant-listed products' } },
-  { codeId: 'PILLAR_TASK', path: '/category/task', zhName: '任务', enName: 'Tasks', extraData: { icon: 'ClipboardList', bgColor: 'bg-amber-50 text-amber-600 border-amber-100', badgeColor: 'bg-amber-500', desc_zh: '发布需求 / 邻居帮忙', desc_en: 'Post a need, get help' } },
-  { codeId: 'PILLAR_SECONDHAND', path: '/category/secondhand', zhName: '闲置市场', enName: 'Secondhand', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 物品转让', desc_en: 'Used items, free giveaways' } },
-  { codeId: 'PILLAR_RENTAL', path: '/category/rental', zhName: '租赁', enName: 'Rentals', extraData: { icon: 'Camera', bgColor: 'bg-pink-50 text-pink-600 border-pink-100', badgeColor: 'bg-pink-500', desc_zh: '设备 / 场地共享租赁', desc_en: 'Shared gear & space rentals' } },
-  { codeId: 'PILLAR_HELP', path: '/community', zhName: '邻里圈', enName: 'Neighbors', extraData: { icon: 'Users', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 跑腿短工 / 推荐 / 资讯', desc_en: 'Ask, errands, recommend' } },
+  { codeId: 'PILLAR_SERVICE', path: '/category/service', zhName: '本地服务', enName: 'Services', extraData: { icon: 'Wrench', bgColor: 'bg-orange-50 text-orange-600 border-orange-100', badgeColor: 'bg-orange-500', desc_zh: '保洁 / 维修 / 铲雪 / 接送 / 商户产品', desc_en: 'Cleaning, repairs, snow, rides & merchant products' } },
+  { codeId: 'PILLAR_HELP', path: '/community', zhName: '邻里圈', enName: 'Neighbors', extraData: { icon: 'Users', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 任务委托 / 推荐 / 资讯', desc_en: 'Ask, post a task, recommend, local news' } },
+  { codeId: 'PILLAR_GOODS', path: '/category/secondhand', zhName: '闲置 & 租赁', enName: 'Secondhand & Rentals', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 设备场地租赁', desc_en: 'Used items, giveaways & gear/space rentals' } },
 ];
 
 /**
@@ -37,7 +40,7 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
 
   return (
     <div className="py-2 px-1">
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {pillars.map((pillar, idx) => {
           const extra = pillar.extraData || {};
           const Icon = getIcon(extra.icon);

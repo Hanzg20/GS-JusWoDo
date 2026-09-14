@@ -8,11 +8,16 @@ import { MasonryGrid } from "@/components/Community/MasonryGrid";
 import { PullToRefreshIndicator } from "@/components/Community/PullToRefresh";
 import { useAuthStore } from "@/stores/authStore";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore, browseNodeId } from "@/stores/configStore";
 import { CommunityPostType } from "@/types/community";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { userRepository } from "@/services/repositories/supabase/UserRepository";
+import { repositoryFactory } from "@/services/repositories/factory";
+import { ListingMaster } from "@/types/domain";
+import { ListingCard } from "@/components/ListingCard";
+import { useEnrichedListings } from "@/hooks/useEnrichedListings";
+import { SkeletonCard } from "@/components/ui/SkeletonCard";
 import { cn } from "@/lib/utils";
 
 // Level-1 feed source, modeled on 小红书's 关注/发现/城市 top tabs
@@ -21,7 +26,11 @@ import { cn } from "@/lib/utils";
 // people the current user follows (see followingIds below), not a
 // cosmetic label — user_followers/getFollowing() already existed and
 // worked, just had zero UI reachable from Community before this.
-type FeedMode = 'following' | 'explore' | 'nearby';
+// 'tasks' added 2026-09-14 as part of the 3-pillar homepage consolidation
+// — Tasks lost its own homepage tile and now lives under 邻里圈/Neighbors
+// (matches the original "跑腿短工 folds under 邻里互助" decision), rendering
+// a listing grid instead of the post feed when selected.
+type FeedMode = 'following' | 'explore' | 'nearby' | 'tasks';
 
 const Community = () => {
     const { posts, trendingTags, fetchFeed, fetchTrendingTags, loadMore, isLoading, hasMore } = useCommunityPostStore();
@@ -33,10 +42,27 @@ const Community = () => {
     const [followingIds, setFollowingIds] = useState<string[] | null>(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchInput, setSearchInput] = useState('');
+    const [taskListings, setTaskListings] = useState<ListingMaster[]>([]);
+    const [isTasksLoading, setIsTasksLoading] = useState(false);
+    const enrichedTaskListings = useEnrichedListings(taskListings);
 
     useEffect(() => {
         fetchTrendingTags(6);
     }, [fetchTrendingTags]);
+
+    // Tasks mode renders a listing grid instead of the post feed — fetched
+    // independently of the post-feed effect below so it doesn't disturb
+    // useCommunityPostStore's state (that store is shared with the rest of
+    // the post feed UI).
+    useEffect(() => {
+        if (feedMode !== 'tasks') return;
+        setIsTasksLoading(true);
+        repositoryFactory.getListingRepository()
+            .search({ type: 'TASK', nodeId: browseNodeId(currentUser?.nodeId) })
+            .then(setTaskListings)
+            .catch((error) => console.error('Failed to load tasks:', error))
+            .finally(() => setIsTasksLoading(false));
+    }, [feedMode, currentUser?.nodeId]);
 
     // Only fetch the following list when that tab is actually selected —
     // most visits never touch it, no reason to look it up eagerly.
@@ -48,6 +74,7 @@ const Community = () => {
     }, [feedMode, currentUser?.id]);
 
     useEffect(() => {
+        if (feedMode === 'tasks') return; // handled by the tasks effect above
         if (feedMode === 'following' && !currentUser) return; // nothing to fetch, empty state handles it
         if (feedMode === 'following' && followingIds === null) return; // still loading the list
 
@@ -63,6 +90,11 @@ const Community = () => {
 
     // 下拉刷新
     const handleRefresh = async () => {
+        if (feedMode === 'tasks') {
+            const listings = await repositoryFactory.getListingRepository().search({ type: 'TASK', nodeId: browseNodeId(currentUser?.nodeId) });
+            setTaskListings(listings);
+            return;
+        }
         const typeFilter = activeFilter === 'all' ? undefined : activeFilter;
         await fetchFeed({ postType: typeFilter });
     };
@@ -73,16 +105,18 @@ const Community = () => {
         enabled: true,
     });
 
-    // 无限滚动
+    // 无限滚动 — tasks mode fetches its whole (currently small) list upfront,
+    // no pagination yet.
     const handleLoadMore = async () => {
+        if (feedMode === 'tasks') return;
         const typeFilter = activeFilter === 'all' ? undefined : activeFilter;
         await loadMore({ postType: typeFilter });
     };
 
     const infiniteScroll = useInfiniteScroll({
         onLoadMore: handleLoadMore,
-        hasMore,
-        isLoading,
+        hasMore: feedMode === 'tasks' ? false : hasMore,
+        isLoading: feedMode === 'tasks' ? isTasksLoading : isLoading,
         threshold: 400,
         enabled: true,
     });
@@ -141,6 +175,7 @@ const Community = () => {
                                 { id: 'following', labelZh: '关注', labelEn: 'Following' },
                                 { id: 'explore', labelZh: '探索', labelEn: 'Explore' },
                                 { id: 'nearby', labelZh: '附近', labelEn: 'Nearby' },
+                                { id: 'tasks', labelZh: '任务', labelEn: 'Tasks' },
                             ] as const).map((tab) => (
                                 <button
                                     key={tab.id}
@@ -185,7 +220,9 @@ const Community = () => {
                     standalone section" call, the top few trending tags
                     appended as extra tabs (same treatment RedNote gives
                     topic tabs like 热点/美食 alongside its content-type
-                    ones). */}
+                    ones). Doesn't apply to Tasks mode — that's a listing
+                    grid, not post-type content. */}
+                {feedMode !== 'tasks' && (
                 <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center gap-4 sm:gap-6 h-9 sm:h-10 overflow-x-auto scrollbar-hide">
                     {([
                         { id: 'all', labelZh: '全部', labelEn: 'All' },
@@ -228,10 +265,29 @@ const Community = () => {
                         </button>
                     ))}
                 </div>
+                )}
             </div>
 
             <div className="max-w-7xl mx-auto py-3 sm:py-6 px-2.5 sm:px-6">
-                {feedMode === 'following' && !currentUser ? (
+                {feedMode === 'tasks' ? (
+                    isTasksLoading ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                            {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+                        </div>
+                    ) : enrichedTaskListings.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                            {enrichedTaskListings.map((item) => (
+                                <ListingCard key={item.id} item={item} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16">
+                            <p className="text-sm text-muted-foreground">
+                                {language === 'zh' ? '暂时没有任务，来发布第一个吧' : 'No tasks yet — post the first one'}
+                            </p>
+                        </div>
+                    )
+                ) : feedMode === 'following' && !currentUser ? (
                     <div className="text-center py-16">
                         <p className="text-sm text-muted-foreground">
                             {language === 'zh' ? '登录后查看你关注的邻居动态' : 'Log in to see posts from people you follow'}

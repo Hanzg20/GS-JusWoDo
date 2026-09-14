@@ -8,7 +8,7 @@ import { useConfigStore, browseNodeId } from "@/stores/configStore";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { CategoryIconGrid } from "@/components/home/CategoryIconGrid";
 import { MasonryGrid } from "@/components/Community/MasonryGrid";
-import { ArrowRight, Sparkles, Flame, Wrench, ShoppingBag, ClipboardList, RefreshCw, Camera, MessageSquareQuote } from "lucide-react";
+import { ArrowRight, Sparkles, Flame, Wrench, RefreshCw, MessageSquareQuote } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ListingCard } from "@/components/ListingCard";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
@@ -17,11 +17,11 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { BentoHero } from "@/components/home/BentoHero";
 import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 
-// Matches CategoryIconGrid's 6 pillars exactly (same /category/:type slugs)
-// — this tab bar used to have its own separate, out-of-sync taxonomy (one
-// generic "Goods" tab, no Task tab at all, plural "rentals" that didn't
-// even match the working /category/rental route). See 2026-09-06.
-type TabType = 'all' | 'service' | 'products' | 'task' | 'secondhand' | 'rental' | 'community';
+// Matches CategoryIconGrid's 3 pillars exactly. 'service' folds in Products
+// listings, 'secondhand' folds in Rentals — see the 2026-09-14 pillar
+// consolidation (jwd_three_pillars memory); each retired type's own
+// /category/:type page is still reachable via that page's own sibling tabs.
+type TabType = 'all' | 'service' | 'secondhand' | 'community';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -38,10 +38,7 @@ const Index = () => {
   const t = {
     all: isZh ? '🔥 热门推荐' : '🔥 Trending',
     service: isZh ? '🧹 本地服务' : '🧹 Services',
-    products: isZh ? '🛍️ 产品' : '🛍️ Products',
-    task: isZh ? '📋 任务' : '📋 Tasks',
-    secondhand: isZh ? '🔄 闲置市场' : '🔄 Secondhand',
-    rental: isZh ? '📸 租赁' : '📸 Rentals',
+    secondhand: isZh ? '🔄 闲置 & 租赁' : '🔄 Secondhand & Rentals',
     community: isZh ? '💬 邻里动态' : '💬 Neighbors',
     viewMore: isZh ? '查看更多' : 'View More',
     emptyTitle: isZh ? 'Ottawa & Kanata 社区建设中' : 'Community Under Construction',
@@ -89,22 +86,17 @@ const Index = () => {
     fetchFeed({ nodeId: browseNodeId(activeNodeId), scope: 'nearby' });
   }, [activeNodeId, fetchFeed]);
 
-  // Filter listings by active tab
+  // Filter listings by active tab. 'service' folds in Products (both are
+  // merchant/professional offerings), 'secondhand' folds in Rentals (both
+  // are "share what you already own") — see the 2026-09-14 pillar
+  // consolidation. Products vs Secondhand-proper is still split by
+  // attributes.goodsTier under the hood, same as CategoryListing.tsx.
   const currentFilteredListings = useMemo(() => {
     switch (activeTab) {
       case 'service':
-        return listings.filter(l => l.type === 'SERVICE');
-      // Products vs Secondhand: same GOODS type, split by which form
-      // created the listing (attributes.goodsTier), not who posted it —
-      // see CategoryListing.tsx / Publish.tsx, 2026-09-06.
-      case 'products':
-        return listings.filter(l => l.type === 'GOODS' && (l as any).attributes?.goodsTier === 'PRODUCT');
+        return listings.filter(l => l.type === 'SERVICE' || (l.type === 'GOODS' && (l as any).attributes?.goodsTier === 'PRODUCT'));
       case 'secondhand':
-        return listings.filter(l => l.type === 'GOODS' && (l as any).attributes?.goodsTier !== 'PRODUCT');
-      case 'task':
-        return listings.filter(l => l.type === 'TASK');
-      case 'rental':
-        return listings.filter(l => l.type === 'RENTAL');
+        return listings.filter(l => (l.type === 'GOODS' && (l as any).attributes?.goodsTier !== 'PRODUCT') || l.type === 'RENTAL');
       case 'all':
       default:
         return listings;
@@ -144,10 +136,7 @@ const Index = () => {
   const tabs: { id: TabType; label: string; icon: any }[] = [
     { id: 'all', label: t.all, icon: Flame },
     { id: 'service', label: t.service, icon: Wrench },
-    { id: 'products', label: t.products, icon: ShoppingBag },
-    { id: 'task', label: t.task, icon: ClipboardList },
     { id: 'secondhand', label: t.secondhand, icon: RefreshCw },
-    { id: 'rental', label: t.rental, icon: Camera },
     { id: 'community', label: t.community, icon: MessageSquareQuote },
   ];
 
