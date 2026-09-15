@@ -1,7 +1,7 @@
 // Supabase Edge Function: create-welcome-conversation
 // Deploy: supabase functions deploy create-welcome-conversation
 //
-// Seeds a new user's chat list with a conversation with 渥帮客服 (see
+// Seeds a new user's chat list with a conversation with 小海狸 (see
 // src/config/support.ts for the account id) plus a canned welcome
 // message, so a first-time visitor to /chat sees something instead of an
 // empty list. Runs with the service-role key because the welcome message
@@ -26,7 +26,12 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const WELCOME_MESSAGE = "欢迎来到渥帮 JustWeDo！有任何问题都可以在这里给我们留言。\nWelcome to JustWeDo! Feel free to message us here with any questions.";
+// This is the very first thing every new visitor ever hears from her — a
+// generic "欢迎来到渥帮" corporate greeting here would completely undercut
+// the 2026-09-14 personality rewrite (see ai-support-reply/index.ts) no
+// matter how warm the AI replies are afterward, since this message doesn't
+// go through the AI at all. She should actually introduce herself by name.
+const WELCOME_MESSAGE = "嗨，我是小海狸🦫～可能是你在渥帮认识的第一个「邻居」！有啥问题尽管问我，随便唠嗑也欢迎，我会尽量帮你搞定～\nHi, I'm Beaver 🦫 — probably the first \"neighbor\" you'll meet on JustWeDo! Ask me anything, or just say hi — I'll do my best to help.";
 
 serve(async (req) => {
     if (req.method === "OPTIONS") {

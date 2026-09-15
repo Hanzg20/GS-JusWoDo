@@ -6,6 +6,7 @@ import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePresenceStore } from "@/stores/presenceStore";
 import { useOrderStore } from "@/stores/orderStore";
+import { SUPPORT_USER_ID } from "@/config/support";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -68,9 +69,22 @@ const Chat = () => {
                 return !blockedUserIds.includes(otherUserId);
             });
 
+        // 小海狸's conversation always pins to the top — another cue (with
+        // the official badge below) that she's the platform's actual
+        // support channel, not just another chat that happens to sort by
+        // recency like everyone else. Array.sort is stable (ES2019+), so
+        // this only reorders the support conversation itself; everyone
+        // else keeps their existing relative order.
+        const pinned = [...notBlocked].sort((a, b) => {
+            const aIsSupport = (a.participantA === currentUser?.id ? a.participantB : a.participantA) === SUPPORT_USER_ID;
+            const bIsSupport = (b.participantA === currentUser?.id ? b.participantB : b.participantA) === SUPPORT_USER_ID;
+            if (aIsSupport === bIsSupport) return 0;
+            return aIsSupport ? -1 : 1;
+        });
+
         const query = searchQuery.trim().toLowerCase();
-        if (!query) return notBlocked;
-        return notBlocked.filter(conv => (conv.otherUserName || '').toLowerCase().includes(query));
+        if (!query) return pinned;
+        return pinned.filter(conv => (conv.otherUserName || '').toLowerCase().includes(query));
     }, [conversations, blockedUserIds, currentUser?.id, searchQuery]);
 
     const activeOtherUserId = useMemo(() => {
@@ -271,10 +285,20 @@ const Chat = () => {
                                                 {conv.unreadCount}
                                             </div>
                                         )}
-                                        {/* 1-on-1 indicator */}
-                                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full border-2 border-card flex items-center justify-center">
-                                            <User className="w-2.5 h-2.5 text-white" />
-                                        </div>
+                                        {/* Warmer isn't the same as unofficial — 小海狸's casual voice
+                                            (see ai-support-reply/index.ts) shouldn't leave a visitor
+                                            unsure whether this is genuinely the platform's own support
+                                            channel, so her conversation gets an official badge here
+                                            instead of the generic 1-on-1 indicator every other chat gets. */}
+                                        {(conv.participantA === currentUser?.id ? conv.participantB : conv.participantA) === SUPPORT_USER_ID ? (
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-card flex items-center justify-center" title="渥帮官方客服">
+                                                <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                                            </div>
+                                        ) : (
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full border-2 border-card flex items-center justify-center">
+                                                <User className="w-2.5 h-2.5 text-white" />
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex-1 text-left overflow-hidden">
                                         <div className="flex justify-between items-baseline mb-0.5">
@@ -346,7 +370,11 @@ const Chat = () => {
                                                 )}
                                             </div>
                                             {/* Role Badge */}
-                                            {activeOrder && (
+                                            {activeOtherUserId === SUPPORT_USER_ID ? (
+                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-card flex items-center justify-center" title="渥帮官方客服">
+                                                    <ShieldCheck className="w-3 h-3 text-white" />
+                                                </div>
+                                            ) : activeOrder && (
                                                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border-2 border-card flex items-center justify-center">
                                                     {currentUser?.id === activeOrder.buyerId ? (
                                                         <div title="Seller">
@@ -367,10 +395,19 @@ const Chat = () => {
                                                 <h3 className="text-sm font-bold tracking-tight truncate">
                                                     {activeConversation?.otherUserName || 'User'}
                                                 </h3>
-                                                {/* 1-on-1 Chat Indicator */}
-                                                <Badge variant="outline" className="h-4 px-1.5 text-[9px] font-black border-primary/20 text-primary">
-                                                    1-ON-1
-                                                </Badge>
+                                                {/* Casual/playful tone (see ai-support-reply/index.ts) shouldn't
+                                                    leave it unclear that this is genuinely the platform's own
+                                                    support channel — an explicit badge instead of the generic
+                                                    1-on-1 indicator every other chat gets. */}
+                                                {activeOtherUserId === SUPPORT_USER_ID ? (
+                                                    <Badge className="h-4 px-1.5 text-[9px] font-black bg-primary/10 text-primary border-none">
+                                                        渥帮官方客服
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="h-4 px-1.5 text-[9px] font-black border-primary/20 text-primary">
+                                                        1-ON-1
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <div className="flex items-center gap-1">
