@@ -48,16 +48,36 @@ interface ConfigState {
     initializeLanguage: () => void;
 }
 
-// Detect browser language
+// Detect the visitor's language on first run. `navigator.language` alone
+// is an unreliable signal for this product's actual audience — Chinese
+// speakers in Ottawa very often run an en-CA/en-US OS or browser locale
+// day-to-day while still wanting Chinese content here, and inside the
+// Mini Program's sandboxed <web-view> the webview's own reported language
+// can be generic/wrong regardless of the phone's real system language
+// (the same class of "web-view can't see native context" gap already
+// solved for geolocation — see GeoNodeAutoSelect in App.tsx).
 const detectBrowserLanguage = (): 'en' | 'zh' => {
-    // Get browser language(s)
-    const browserLang = navigator.language || (navigator as any).userLanguage;
+    // Mini Program shell reads the phone's real system language (a native
+    // API the web-view itself has no access to — see pages/webview/webview.js
+    // in the JustWeDo-MiniProgram project) and passes it in as ?wx_lang=,
+    // e.g. "zh_CN"/"zh_TW"/"en". Authoritative when present — it can only
+    // ever be set by our own Mini Program shell, never a regular visitor.
+    const wxLang = new URLSearchParams(window.location.search).get('wx_lang');
+    if (wxLang) {
+        console.log('[Language Detection] Mini Program wx_lang:', wxLang);
+        return wxLang.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    }
 
+    // Regular web / WeChat in-app browser: navigator.language is the
+    // primary UI locale, but navigator.languages is the visitor's full
+    // ordered preference list — checking it too catches a bilingual setup
+    // (e.g. ['en-US', 'zh-CN']) where Chinese is listed but not first.
+    const browserLang = navigator.language || (navigator as any).userLanguage;
     console.log('[Language Detection] Browser language:', browserLang);
     console.log('[Language Detection] All languages:', navigator.languages);
 
-    // Check if Chinese
-    if (browserLang.toLowerCase().startsWith('zh')) {
+    const candidates = [browserLang, ...(navigator.languages || [])].filter(Boolean);
+    if (candidates.some((l) => l.toLowerCase().startsWith('zh'))) {
         console.log('[Language Detection] Detected Chinese, setting to zh');
         return 'zh';
     }
