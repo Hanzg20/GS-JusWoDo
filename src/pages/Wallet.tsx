@@ -45,13 +45,13 @@ const Wallet = () => {
     // Earnings Queries
     const { data: earnings, isLoading: isLoadingEarnings } = useQuery({
         queryKey: ['provider-earnings', currentUser?.providerProfileId],
-        queryFn: () => currentUser?.providerProfileId ? payoutRepository.getProviderEarnings(currentUser.providerProfileProfileId || '') : null,
+        queryFn: () => currentUser?.providerProfileId ? payoutRepository.getProviderEarnings(currentUser.providerProfileId || '') : null,
         enabled: !!isProvider && !!currentUser?.providerProfileId,
     });
 
     const { data: payoutRequests, isLoading: isLoadingPayouts } = useQuery({
         queryKey: ['payout-requests', currentUser?.providerProfileId],
-        queryFn: () => currentUser?.providerProfileId ? payoutRepository.getRequests(currentUser.providerProfileProfileId || '') : Promise.resolve([]),
+        queryFn: () => currentUser?.providerProfileId ? payoutRepository.getRequests(currentUser.providerProfileId || '') : Promise.resolve([]),
         enabled: !!isProvider && !!currentUser?.providerProfileId,
     });
 
@@ -60,7 +60,7 @@ const Wallet = () => {
         mutationFn: async (data: { amountCents: number, method: string, details: any }) => {
             if (!currentUser?.providerProfileId) throw new Error("Not a provider");
             return payoutRepository.createRequest({
-                providerId: currentUser.providerProfileProfileId || '',
+                providerId: currentUser.providerProfileId || '',
                 amountCents: data.amountCents,
                 currency: 'CAD',
                 method: data.method,

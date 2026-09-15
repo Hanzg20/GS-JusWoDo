@@ -24,7 +24,7 @@ interface NodePickerProps {
 //
 // Not to be confused with LocationPicker.tsx, which is an unrelated,
 // pre-existing map/pin-drop component (lat/lng + address) used by
-// FormFieldRenderer.tsx and PublishService.tsx.
+// FormFieldRenderer.tsx.
 // Location/neighborhood names are always shown in English regardless of
 // the app's language setting — Ottawa-area place names ("Barrhaven",
 // "ByWard Market") don't have meaningful Chinese equivalents, and the

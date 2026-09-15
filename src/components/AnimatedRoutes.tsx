@@ -29,7 +29,6 @@ const CommunityPostDetail = lazy(() => import("../pages/CommunityPostDetail"));
 const UserProfile = lazy(() => import("../pages/UserProfile"));
 const MyListings = lazy(() => import("../pages/MyListings"));
 const ProviderDashboard = lazy(() => import("../pages/ProviderDashboard"));
-const PublishService = lazy(() => import("../pages/provider/PublishService"));
 const ReviewSubmission = lazy(() => import("../pages/ReviewSubmission"));
 const LeaveReview = lazy(() => import("../pages/LeaveReview"));
 const ProviderProfile = lazy(() => import("../pages/ProviderProfile"));
@@ -63,7 +62,6 @@ export const AnimatedRoutes = () => {
                     <Route path="/service/:id" element={<PageTransition><ServiceDetail /></PageTransition>} />
                     <Route path="/post-gig" element={<PageTransition><Publish /></PageTransition>} />
                     <Route path="/publish" element={<PageTransition><Publish /></PageTransition>} />
-                    <Route path="/provider/publish-service" element={<PageTransition><PublishService /></PageTransition>} />
                     <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
                     <Route path="/category/:type" element={<PageTransition><CategoryListing /></PageTransition>} />
                     <Route path="/search" element={<PageTransition><CategoryListing /></PageTransition>} />
