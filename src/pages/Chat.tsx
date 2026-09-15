@@ -648,14 +648,21 @@ const Chat = () => {
                                 <div className="flex flex-col gap-2">
                                     {/* Quick Actions Bar - Improved scrolling */}
                                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1 snap-x snap-mandatory">
-                                        {activeOrder?.status === 'PENDING_QUOTE' && currentUser?.id === activeOrder.providerId && (
+                                        {/* activeOrder.providerId is provider_profiles.id, not the
+                                            provider's auth.users.id — currentUser.id can never equal
+                                            it, so this (and the context prop below) always evaluated
+                                            as false/buyer for a real provider. Order already carries
+                                            providerUserId ("The auth.users.id of the provider") for
+                                            exactly this comparison — see jwd_chat_provider_fk_bug_and_ai_support
+                                            memory for the same mismatch fixed elsewhere. */}
+                                        {activeOrder?.status === 'PENDING_QUOTE' && currentUser?.id === activeOrder.providerUserId && (
                                             <Button variant="outline" size="sm" className="h-6 px-2 rounded-full border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 text-[10px] font-bold" onClick={handleSendQuote}>
                                                 <DollarSign className="w-3 h-3 mr-1" /> SEND QUOTE
                                             </Button>
                                         )}
                                         <QuickReplyTemplates
                                             onSelectReply={(text) => setInput(text)}
-                                            context={currentUser?.id === activeOrder?.providerId ? 'seller' : 'buyer'}
+                                            context={currentUser?.id === activeOrder?.providerUserId ? 'seller' : 'buyer'}
                                         />
                                         <EmojiPicker onEmojiSelect={(emoji) => setInput(prev => prev + emoji)} />
                                         <ImageUpload onImageUploaded={async (url) => {

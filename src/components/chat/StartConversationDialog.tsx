@@ -49,11 +49,16 @@ export const StartConversationDialog: React.FC<StartConversationDialogProps> = (
         searching: 'Searching...',
     };
 
-    // Filter orders where user can chat (either buyer or seller)
+    // Filter orders where user can chat (either buyer or seller). order.providerId
+    // is provider_profiles.id, not the provider's auth.users.id — comparing it
+    // directly to currentUser.id always evaluated false, so a provider's own
+    // sold orders never showed up here at all. order.providerUserId is the
+    // correct field (same mismatch fixed elsewhere — see
+    // jwd_chat_provider_fk_bug_and_ai_support memory).
     const chatableOrders = orders.filter(order => {
         // User is buyer or seller
         const isBuyer = order.buyerId === currentUser?.id;
-        const isSeller = order.providerId === currentUser?.id;
+        const isSeller = order.providerUserId === currentUser?.id;
         return isBuyer || isSeller;
     }).slice(0, 5); // Show only recent 5
 

@@ -104,7 +104,13 @@ const OrderDetail = () => {
     }
 
     const isBuyer = order.buyerId === currentUser.id;
-    const isProvider = order.providerId === currentUser.id;
+    // order.providerId is provider_profiles.id, not the provider's
+    // auth.users.id — comparing it to currentUser.id always evaluated
+    // false, so none of the 5 provider-only action buttons below ever
+    // showed for a real provider. order.providerUserId is the correct
+    // field (same mismatch fixed elsewhere — see
+    // jwd_chat_provider_fk_bug_and_ai_support memory).
+    const isProvider = order.providerUserId === currentUser.id;
 
     const handleSubmitQuote = async (amount: number) => {
         setIsLoading(true);

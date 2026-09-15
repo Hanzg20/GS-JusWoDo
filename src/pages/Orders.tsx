@@ -39,8 +39,13 @@ const Orders = () => {
         };
     }, [currentUser?.id, loadUserOrders, subscribeToOrders, unsubscribeFromOrders]);
 
+    // o.providerId is provider_profiles.id, not the provider's auth.users.id
+    // — comparing it to currentUser?.id always evaluated false, so the
+    // "seller" view showed zero orders for a real provider. o.providerUserId
+    // is the correct field (same mismatch fixed elsewhere — see
+    // jwd_chat_provider_fk_bug_and_ai_support memory).
     const userOrders = orders.filter(o =>
-        viewMode === 'buyer' ? o.buyerId === currentUser?.id : o.providerId === currentUser?.id
+        viewMode === 'buyer' ? o.buyerId === currentUser?.id : o.providerUserId === currentUser?.id
     );
 
     useEffect(() => {
