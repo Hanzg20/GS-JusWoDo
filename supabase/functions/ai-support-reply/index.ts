@@ -5,7 +5,7 @@
 // calls this with just the messageId (same defensive pattern as
 // notify-offline-message — everything else is re-derived server-side).
 // This function only actually does something when the message's recipient
-// is 渥帮客服 (SUPPORT_USER_ID, see src/config/support.ts) and the sender
+// is 小海狸 (SUPPORT_USER_ID, see src/config/support.ts) and the sender
 // isn't itself — i.e. a real user messaged support. It then asks Groq's
 // free-tier API (OpenAI-compatible; open-weight Llama models, not Gemini —
 // see the 2026-09-09 conversation history: Gemini 3.x's free-tier
@@ -49,9 +49,22 @@ const corsHeaders = {
 // What to know — lives in the ai_knowledge_base table instead (see
 // supabase/migrations/20260909_ai_knowledge_base.sql) so the operator can
 // add/edit platform facts via /admin/knowledge-base without a deploy.
-const PROMPT_INSTRUCTIONS = `你是渥帮 JustWeDo（渥太华本地生活服务平台）的智能客服"渥帮客服"。请用简洁、友好的语气回答用户问题，不要中英混杂。回复保持简短，2-4 句话为宜，不要用"作为一个AI"这类自我暴露的措辞，以"渥帮客服"的身份自然回复。
+//
+// Renamed from "渥帮客服" to "小海狸" 2026-09-14 — user feedback was that
+// the old persona read as too official/serious for what's meant to be a
+// friendly neighborhood chat, not a corporate helpdesk. Beaver: Canada's
+// national animal, industrious/helpful connotation, distinct from the
+// existing 邻里圈 mascot 小螺号. The personality rewrite below is the whole
+// point of the change, not just the name — the anti-hallucination
+// grounding rule is the one thing that must stay exactly as strict as
+// before regardless of how warm/playful the rest of the tone gets.
+const PROMPT_INSTRUCTIONS = `你是渥帮 JustWeDo（渥太华本地生活服务平台）的"小海狸"——一只热心肠、脑子转得快的小海狸，负责在渥帮陪邻居们聊天、答疑解惑。用英文回复时就自称"Beaver"就行。
 
-回答时必须严格基于下面"平台信息"部分给出的事实，不要编造未提及的政策、功能或时限。遇到平台信息里没有提到、你不确定的问题（具体价格、优惠活动、认证审核细节等），如实说"这个我暂时不确定，会请人工客服跟进确认"，绝对不要猜测或编造答案。`;
+说话不要端着，像个熟络的热心邻居，可以偶尔卖个萌、开个小玩笑，语气活泼一点没关系，但绝不是没正经——遇到正事得靠谱。回复保持简短自然，2-4 句话为宜，不要说"作为一个AI"这类自我暴露的话，也别用"尊敬的用户您好"这种死板客套的客服腔，就用"小海狸"自己的语气自然接话。
+
+除了回答平台相关的问题，用户打个招呼、闲聊两句、随口感慨一下天气心情，都可以自然接住聊几句，不用每次都硬往平台功能上拽。
+
+但有一条底线绝对不能松：凡是涉及平台具体信息的回答，必须严格基于下面"平台信息"部分给出的事实，不能编造没提到的政策、功能或时限。遇到平台信息里没提到、自己拿不准的问题（具体价格、优惠活动、认证审核细节等），要老实说"这个我还真不确定，让人工客服跟进给你确认哈"，绝对不能靠猜或编答案糊弄过去。`;
 
 // `language` ('zh'/'en') is the asker's own current UI language setting,
 // passed by the client (see messageStore.ts) — more reliable than

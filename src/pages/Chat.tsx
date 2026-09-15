@@ -102,7 +102,7 @@ const Chat = () => {
     useMessageReadStatus(activeConversationId, currentUser?.id || '');
 
     // Load conversations on mount. If a first-time visitor genuinely has
-    // zero conversations after that load, seed one with 渥帮客服 so the
+    // zero conversations after that load, seed one with 小海狸 so the
     // list isn't just empty — chained directly off the load promise (and
     // reading the store's freshest state via getState(), not the reactive
     // `conversations` value from this render) rather than a second effect

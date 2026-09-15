@@ -136,7 +136,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             // configured yet; the Edge Function handles both as no-ops).
             supabase.functions.invoke('notify-offline-message', { body: { messageId: newMessage.id } }).catch(() => {});
 
-            // AI auto-reply for messages sent to 渥帮客服 — also a no-op
+            // AI auto-reply for messages sent to 小海狸 — also a no-op
             // fire-and-forget; the function itself checks whether this
             // message was actually addressed to support before doing
             // anything (every message send calls this, not just ones to
