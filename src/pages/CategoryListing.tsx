@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { toast } from "sonner";
 import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 import { cn } from "@/lib/utils";
+import { MASCOT_BY_TYPE } from "@/config/mascots";
 
 type SortBy = 'newest' | 'rating' | 'reviews' | 'distance';
 
@@ -378,10 +379,25 @@ const CategoryListing = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-20 text-muted-foreground">
-                        <p className="text-lg">No {getPageTitle(type)} found yet</p>
-                        <p className="text-sm">Try different keywords or enable Smart Search for better matches</p>
-                    </div>
+                    (() => {
+                        const mascot = MASCOT_BY_TYPE[type?.toLowerCase() as keyof typeof MASCOT_BY_TYPE];
+                        if (!mascot) {
+                            return (
+                                <div className="text-center py-20 text-muted-foreground">
+                                    <p className="text-lg">No {getPageTitle(type)} found yet</p>
+                                    <p className="text-sm">Try different keywords or enable Smart Search for better matches</p>
+                                </div>
+                            );
+                        }
+                        const message = (language === 'zh' ? mascot.emptyStateZh : mascot.emptyStateEn)
+                            .replace('{title}', getPageTitle(type) || '');
+                        return (
+                            <div className="text-center py-20 text-muted-foreground">
+                                <img src={mascot.avatar} alt={mascot.name} className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted/40" />
+                                <p className="text-base font-medium max-w-xs mx-auto">{message}</p>
+                            </div>
+                        );
+                    })()
                 )}
             </main>
 

@@ -89,7 +89,11 @@ const ReviewSubmission = () => {
                 colors: ['#FFD700', '#FFA500', '#FF4500', '#4CAF50']
             });
 
-            toast.success(isNeighborStory ? "Review submitted! You've earned 50 JinBeans! 🎉" : "Review submitted! 🎉");
+            toast.success(
+                isNeighborStory
+                    ? (language === 'zh' ? "评价提交成功，获得 50 金豆奖励！🎉" : "Review submitted! You've earned 50 JinBeans! 🎉")
+                    : (language === 'zh' ? '评价提交成功！🎉' : "Review submitted! 🎉")
+            );
 
             // Delay navigation slightly to enjoy confetti
             setTimeout(() => {

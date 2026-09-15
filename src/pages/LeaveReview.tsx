@@ -114,7 +114,11 @@ const LeaveReview = () => {
                 colors: ['#FFD700', '#FFA500', '#FF4500', '#4CAF50']
             });
 
-            toast.success(isZh ? '评价提交成功，谢谢您！🎉' : 'Review submitted — thank you! 🎉');
+            toast.success(
+                isNeighborStory
+                    ? (isZh ? '评价提交成功，获得 50 金豆奖励！🎉' : "Review submitted — you've earned 50 JinBeans! 🎉")
+                    : (isZh ? '评价提交成功，谢谢您！🎉' : 'Review submitted — thank you! 🎉')
+            );
 
             setTimeout(() => {
                 navigate(`/service/${master.id}`);
