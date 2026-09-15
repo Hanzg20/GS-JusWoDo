@@ -3,7 +3,36 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { consumeWeChatLoginState, consumeReturnTo, WeChatAuthMode } from "@/lib/wechatAuth";
 import { useConfigStore } from "@/stores/configStore";
-import { Loader2, AlertCircle } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+
+// verifyOtp() establishing a session doesn't mean authStore's currentUser
+// is populated yet — that happens a moment later, async, via the
+// onAuthStateChange listener in authStore.ts (which does its own network
+// round-trip to fetch the profile). Navigating away immediately after
+// verifyOtp (the old behavior) raced that: the header could show the
+// logged-in avatar (once currentUser did populate) while whatever page the
+// visitor landed on — most visibly /login, when they started the flow
+// from there — still rendered its logged-out UI for a beat, with nothing
+// on screen explaining what was happening. Waits here instead, with a
+// short timeout as a fallback so a visitor is never stuck if something
+// about the auth-state sync goes wrong.
+function waitForCurrentUser(timeoutMs = 5000): Promise<void> {
+    if (useAuthStore.getState().currentUser) return Promise.resolve();
+    return new Promise((resolve) => {
+        const unsubscribe = useAuthStore.subscribe((state) => {
+            if (state.currentUser) {
+                clearTimeout(timer);
+                unsubscribe();
+                resolve();
+            }
+        });
+        const timer = setTimeout(() => {
+            unsubscribe();
+            resolve();
+        }, timeoutMs);
+    });
+}
 
 // Where wechatAuth.ts sends the browser back to after WeChat's OAuth step
 // (either the "微信登录" button's consent screen, or the invisible
@@ -26,9 +55,11 @@ const WeChatCallback = () => {
     const { language } = useConfigStore();
     const [error, setError] = useState<string | null>(null);
     const [mode, setMode] = useState<WeChatAuthMode>('consent');
+    const [success, setSuccess] = useState(false);
 
     const t = {
         signingIn: language === 'zh' ? '正在用微信登录…' : 'Signing in with WeChat…',
+        signedIn: language === 'zh' ? '登录成功！' : 'Signed in!',
         failed: language === 'zh' ? '微信登录失败' : 'WeChat login failed',
         backToLogin: language === 'zh' ? '返回登录页' : 'Back to login',
     };
@@ -44,8 +75,17 @@ const WeChatCallback = () => {
             // actually on before startWeChatOAuth() redirected them here
             // (e.g. a specific community post opened from a WeChat Moments
             // share), not always home. Every navigate() below should land
-            // them back there, success or failure alike.
-            const returnTo = consumeReturnTo();
+            // them back there, success or failure alike — except /login
+            // itself: sending a freshly-authenticated visitor back to the
+            // login page (the common case, since that's usually where the
+            // "微信登录" button was clicked from) just shows them the login
+            // form again for a beat, which reads as "did this even work?"
+            // regardless of any timing race. Home is always a safe landing
+            // spot for someone who's just signed in.
+            const consumedReturnTo = consumeReturnTo();
+            const returnTo = (consumedReturnTo === '/login' || consumedReturnTo.startsWith('/login?'))
+                ? '/'
+                : consumedReturnTo;
 
             const fail = (message: string) => {
                 if (currentMode === 'silent') {
@@ -86,6 +126,18 @@ const WeChatCallback = () => {
                 });
                 if (verifyError) throw verifyError;
 
+                // Wait for authStore's currentUser to actually populate
+                // before leaving this page — otherwise the header can show
+                // the logged-in avatar while the destination page (still
+                // reading stale state) briefly renders as logged-out, with
+                // nothing on screen to explain the gap.
+                await waitForCurrentUser();
+
+                if (currentMode === 'consent') {
+                    setSuccess(true);
+                    await new Promise((resolve) => setTimeout(resolve, 600));
+                }
+
                 navigate(returnTo, { replace: true });
             } catch (err: any) {
                 console.error('WeChat login failed:', err);
@@ -116,6 +168,11 @@ const WeChatCallback = () => {
                         >
                             {t.backToLogin}
                         </button>
+                    </>
+                ) : success ? (
+                    <>
+                        <CheckCircle2 className="w-10 h-10 text-primary mx-auto" />
+                        <p className="text-sm text-muted-foreground">{t.signedIn}</p>
                     </>
                 ) : (
                     <>
