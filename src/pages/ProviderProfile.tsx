@@ -12,6 +12,8 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useMessageStore } from '@/stores/messageStore';
+import { toast } from 'sonner';
 import { ProviderInventoryDashboard } from '@/components/inventory/ProviderInventoryDashboard';
 import { CouponManager } from '@/components/coupon';
 
@@ -127,8 +129,32 @@ export default function ProviderProfile() {
 
     const isOwner = currentUser && provider && currentUser.id === provider.userId;
 
-    const handleContactProvider = () => {
-        navigate('/chat', { state: { providerId } });
+    // Was navigate('/chat', { state: { providerId } }) — Chat.tsx never
+    // reads location.state at all, so this created no conversation; the
+    // buyer just landed on the chat list with nothing new there, and the
+    // provider's avatar never showed up because no conversation existed.
+    // Also, `providerId` here is provider_profiles.id (the URL param),
+    // not the provider's real auth.users.id — conversations.participant_a/b
+    // require the latter (the same FK mismatch already fixed on
+    // ServiceDetail.tsx's Chat button — see jwd_chat_provider_fk_bug_and_ai_support
+    // memory), so a naive fix passing providerId straight through would
+    // still have failed. Mirrors ServiceDetail.tsx's working handleChat.
+    const handleContactProvider = async () => {
+        if (!currentUser) {
+            navigate('/login');
+            return;
+        }
+        if (!provider?.userId) {
+            toast.error(language === 'zh' ? '暂时无法联系该商家' : 'Unable to contact this provider right now');
+            return;
+        }
+        try {
+            await useMessageStore.getState().createConversation(currentUser.id, provider.userId);
+            navigate('/chat');
+        } catch (err) {
+            console.error('Failed to start conversation:', err);
+            toast.error(language === 'zh' ? '发起聊天失败，请重试' : 'Failed to start chat, please try again');
+        }
     };
 
     if (isLoading) {
