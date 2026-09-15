@@ -73,22 +73,13 @@ const ReviewSubmission = () => {
                 isNeighborStory,
             });
 
-            // Reward JinBeans if story is promoted
-            if (isNeighborStory) {
-                try {
-                    const beanRepo = repositoryFactory.getBeanRepository();
-                    await beanRepo.addTransaction({
-                        userId: currentUser.id,
-                        amount: 50,
-                        type: 'STORY_BONUS',
-                        descriptionZh: '评价故事奖励',
-                        descriptionEn: 'Review story bonus'
-                    });
-                } catch (beanError) {
-                    console.error("Failed to reward beans:", beanError);
-                    // Don't fail the whole submission if bean reward fails
-                }
-            }
+            // The neighbor-story bean reward is handled server-side by the
+            // on_review_created_award_beans trigger (process_review_bean_reward,
+            // reads jinbean_rules.REVIEW_REWARD) — it fires on every review
+            // insert regardless of insertion path. A duplicate client-side
+            // award call used to live here (and on LeaveReview.tsx), paying
+            // out 50+50=100 beans against a promised 50 — see the
+            // 2026-09-13 duplicate-reward fix.
 
             // Confetti Celebration!
             confetti({
@@ -98,16 +89,22 @@ const ReviewSubmission = () => {
                 colors: ['#FFD700', '#FFA500', '#FF4500', '#4CAF50']
             });
 
-            toast.success("Review submitted! You've earned 50 JinBeans! 🎉");
+            toast.success(isNeighborStory ? "Review submitted! You've earned 50 JinBeans! 🎉" : "Review submitted! 🎉");
 
             // Delay navigation slightly to enjoy confetti
             setTimeout(() => {
                 navigate(`/service/${order.masterId}`);
             }, 2000);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Submission failed:", error);
-            toast.error("Failed to submit review. Please try again.");
+            // 23505 = unique_violation — the reviews_buyer_listing_unique
+            // constraint (2026-09-14), one review per buyer per listing.
+            if (error?.code === '23505') {
+                toast.error("You've already reviewed this listing.");
+            } else {
+                toast.error("Failed to submit review. Please try again.");
+            }
             setIsSubmitting(false);
         }
     };

@@ -99,20 +99,13 @@ const LeaveReview = () => {
                 isNeighborStory,
             });
 
-            if (isNeighborStory) {
-                try {
-                    const beanRepo = repositoryFactory.getBeanRepository();
-                    await beanRepo.addTransaction({
-                        userId: currentUser.id,
-                        amount: 50,
-                        type: 'STORY_BONUS',
-                        descriptionZh: '评价故事奖励',
-                        descriptionEn: 'Review story bonus'
-                    });
-                } catch (beanError) {
-                    console.error("Failed to reward beans:", beanError);
-                }
-            }
+            // The neighbor-story bean reward is handled server-side by the
+            // on_review_created_award_beans trigger (process_review_bean_reward,
+            // reads jinbean_rules.REVIEW_REWARD) — it fires on every review
+            // insert regardless of insertion path. A duplicate client-side
+            // award call used to live here (and on ReviewSubmission.tsx),
+            // paying out 50+50=100 beans against a promised 50 — see the
+            // 2026-09-13 duplicate-reward fix.
 
             confetti({
                 particleCount: 150,
@@ -126,9 +119,17 @@ const LeaveReview = () => {
             setTimeout(() => {
                 navigate(`/service/${master.id}`);
             }, 2000);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Submission failed:", error);
-            toast.error(isZh ? '提交失败，请重试' : 'Failed to submit review. Please try again.');
+            // 23505 = unique_violation — the reviews_buyer_listing_unique
+            // constraint (2026-09-14), one review per buyer per listing.
+            // The UI above already blocks this via existingReview, but a
+            // second tab / resubmit race could still reach here.
+            if (error?.code === '23505') {
+                toast.error(isZh ? '您已经评价过这个服务了' : "You've already reviewed this listing.");
+            } else {
+                toast.error(isZh ? '提交失败，请重试' : 'Failed to submit review. Please try again.');
+            }
             setIsSubmitting(false);
         }
     };
