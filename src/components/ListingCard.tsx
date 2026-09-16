@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { Star, MapPin, Tag, TrendingUp, Heart, Sparkles, Layers } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Star, MapPin, Tag, TrendingUp, Heart, Sparkles, Layers, ChevronRight } from "lucide-react";
 import { ListingMaster } from "@/types/domain";
 import { useListingStore } from "@/stores/listingStore";
 import { useProviderStore } from "@/stores/providerStore";
@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: number } }) => {
+    const navigate = useNavigate();
     const { listingItems } = useListingStore();
     const { getProviderById } = useProviderStore();
     const { refCodes, language } = useConfigStore();
@@ -271,9 +272,22 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                         </h3>
                     </div>
 
-                    {/* Provider Info - Single line */}
+                    {/* Provider Info - now a real tap target to their profile
+                        (was inert text) — lets a browsing visitor check who
+                        they'd actually be dealing with before committing to
+                        open the full listing, matching how identity-driven
+                        this platform's differentiation already is elsewhere.
+                        stopPropagation + preventDefault so it doesn't also
+                        trigger the card's own Link to the listing. */}
                     {provider && (
-                        <div className="flex items-center gap-1.5 mb-2 sm:mb-3">
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                navigate(`/provider/${provider.id}`);
+                            }}
+                            className="group/provider flex items-center gap-1.5 mb-2 sm:mb-3 -mx-1 px-1 py-0.5 rounded-lg hover:bg-muted/40 transition-colors text-left w-fit max-w-full"
+                        >
                             <div className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black border ${provider.identity === 'MERCHANT'
                                 ? 'bg-blue-50/50 text-blue-600 border-blue-100'
                                 : 'bg-green-50/50 text-green-600 border-green-100'
@@ -282,10 +296,11 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                                     ? (language === 'zh' ? '商' : 'M')
                                     : (language === 'zh' ? '邻' : 'N')}
                             </div>
-                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground/60 truncate">
+                            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground/60 truncate group-hover/provider:text-primary transition-colors">
                                 {displayBusinessName}
                             </span>
-                        </div>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground/30 shrink-0 opacity-0 group-hover/provider:opacity-100 transition-opacity" />
+                        </button>
                     )}
 
                     {/* Footer: Price Focus */}
