@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "@/components/Header";
-import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX, Undo2, Trash2, Copy, Reply, Languages, X } from "lucide-react";
+import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX, Undo2, Trash2, Copy, Reply, Languages, X, UserPlus, Archive, Inbox } from "lucide-react";
 import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePresenceStore } from "@/stores/presenceStore";
@@ -57,6 +57,9 @@ const Chat = () => {
         sendQuote,
         recallMessage,
         deleteMessageForMe,
+        archiveConversation,
+        unarchiveConversation,
+        deleteConversationForMe,
         cleanup
     } = useMessageStore();
     const { orders } = useOrderStore();
@@ -67,6 +70,8 @@ const Chat = () => {
     const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
     const [showStartDialog, setShowStartDialog] = useState(false);
     const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+    const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
+    const [showArchived, setShowArchived] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const notificationService = useRef<MessageNotificationService | null>(null);
@@ -76,16 +81,33 @@ const Chat = () => {
     useEffect(() => {
         if (currentUser?.id) {
             userRepository.getBlockedUserIds(currentUser.id).then(setBlockedUserIds).catch(console.error);
+            userRepository.getFollowingUserIds(currentUser.id).then(setFollowingUserIds).catch(console.error);
         }
     }, [currentUser?.id]);
 
+    // Conversations after the two "invisible to me" filters (blocked,
+    // deleted-for-me) but before the archived/active split — shared by
+    // both visibleConversations and the archived-count badge so the two
+    // never drift out of sync with each other.
+    const selectableConversations = useMemo(() => {
+        return conversations.filter(conv => {
+            const otherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
+            if (blockedUserIds.includes(otherUserId)) return false;
+            if ((conv.deletedFor || []).includes(currentUser?.id || '')) return false;
+            return true;
+        });
+    }, [conversations, blockedUserIds, currentUser?.id]);
+
+    const archivedCount = useMemo(
+        () => selectableConversations.filter(conv => (conv.archivedFor || []).includes(currentUser?.id || '')).length,
+        [selectableConversations, currentUser?.id]
+    );
+
     const visibleConversations = useMemo(() => {
-        const notBlocked = blockedUserIds.length === 0
-            ? conversations
-            : conversations.filter(conv => {
-                const otherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
-                return !blockedUserIds.includes(otherUserId);
-            });
+        const byArchiveView = selectableConversations.filter(conv => {
+            const isArchived = (conv.archivedFor || []).includes(currentUser?.id || '');
+            return showArchived ? isArchived : !isArchived;
+        });
 
         // 小海狸's conversation always pins to the top — another cue (with
         // the official badge below) that she's the platform's actual
@@ -93,7 +115,7 @@ const Chat = () => {
         // recency like everyone else. Array.sort is stable (ES2019+), so
         // this only reorders the support conversation itself; everyone
         // else keeps their existing relative order.
-        const pinned = [...notBlocked].sort((a, b) => {
+        const pinned = [...byArchiveView].sort((a, b) => {
             const aIsSupport = (a.participantA === currentUser?.id ? a.participantB : a.participantA) === SUPPORT_USER_ID;
             const bIsSupport = (b.participantA === currentUser?.id ? b.participantB : b.participantA) === SUPPORT_USER_ID;
             if (aIsSupport === bIsSupport) return 0;
@@ -103,7 +125,7 @@ const Chat = () => {
         const query = searchQuery.trim().toLowerCase();
         if (!query) return pinned;
         return pinned.filter(conv => (conv.otherUserName || '').toLowerCase().includes(query));
-    }, [conversations, blockedUserIds, currentUser?.id, searchQuery]);
+    }, [selectableConversations, currentUser?.id, searchQuery, showArchived]);
 
     const activeOtherUserId = useMemo(() => {
         const conv = conversations.find(c => c.id === activeConversationId);
@@ -111,16 +133,65 @@ const Chat = () => {
         return conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
     }, [conversations, activeConversationId, currentUser?.id]);
 
-    const handleBlockUser = async () => {
-        if (!currentUser?.id || !activeOtherUserId) return;
+    const handleBlockUser = async (targetUserId?: string) => {
+        const otherUserId = targetUserId || activeOtherUserId;
+        if (!currentUser?.id || !otherUserId) return;
         try {
-            await userRepository.blockUser(currentUser.id, activeOtherUserId);
-            setBlockedUserIds(prev => [...prev, activeOtherUserId]);
-            setActiveConversation(null);
-            toast.success("User blocked");
+            await userRepository.blockUser(currentUser.id, otherUserId);
+            setBlockedUserIds(prev => [...prev, otherUserId]);
+            if (activeOtherUserId === otherUserId) setActiveConversation(null);
+            toast.success(isZh ? '已拉黑' : 'User blocked');
         } catch (err) {
             console.error('Failed to block user:', err);
-            toast.error("Failed to block user");
+            toast.error(isZh ? '拉黑失败，请重试' : 'Failed to block user');
+        }
+    };
+
+    const handleToggleFollow = async (otherUserId: string) => {
+        if (!currentUser?.id) return;
+        const isFollowing = followingUserIds.includes(otherUserId);
+        try {
+            if (isFollowing) {
+                await userRepository.unfollowUser(currentUser.id, otherUserId);
+                setFollowingUserIds(prev => prev.filter(id => id !== otherUserId));
+                toast.success(isZh ? '已取消关注' : 'Unfollowed');
+            } else {
+                await userRepository.followUser(currentUser.id, otherUserId);
+                setFollowingUserIds(prev => [...prev, otherUserId]);
+                toast.success(isZh ? '已关注' : 'Followed');
+            }
+        } catch (err) {
+            console.error('Failed to toggle follow:', err);
+            toast.error(isZh ? '操作失败，请重试' : 'Failed, please try again');
+        }
+    };
+
+    const handleToggleArchive = async (conversationId: string, isArchived: boolean) => {
+        if (!currentUser?.id) return;
+        try {
+            if (isArchived) {
+                await unarchiveConversation(conversationId, currentUser.id);
+                toast.success(isZh ? '已取消归档' : 'Unarchived');
+            } else {
+                await archiveConversation(conversationId, currentUser.id);
+                if (activeConversationId === conversationId) setActiveConversation(null);
+                toast.success(isZh ? '已归档' : 'Archived');
+            }
+        } catch (err) {
+            console.error('Failed to toggle archive:', err);
+            toast.error(isZh ? '操作失败，请重试' : 'Failed, please try again');
+        }
+    };
+
+    const handleDeleteConversation = async (conversationId: string) => {
+        if (!currentUser?.id) return;
+        try {
+            await deleteConversationForMe(conversationId, currentUser.id);
+            if (activeConversationId === conversationId) setActiveConversation(null);
+            toast.success(isZh ? '已删除' : 'Deleted');
+        } catch (err) {
+            console.error('Failed to delete conversation:', err);
+            toast.error(isZh ? '删除失败，请重试' : 'Failed to delete, please try again');
         }
     };
 
@@ -336,10 +407,19 @@ const Chat = () => {
                 )}>
                     <div className="p-4 border-b border-border/50">
                         <div className="flex items-center justify-between mb-4 px-1">
-                            <h2 className="font-bold text-lg tracking-tight">Chat</h2>
-                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none">
-                                {visibleConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0)} New
-                            </Badge>
+                            {showArchived ? (
+                                <button onClick={() => setShowArchived(false)} className="flex items-center gap-1.5 text-lg font-bold tracking-tight">
+                                    <ArrowLeft className="w-4 h-4" />
+                                    {isZh ? '已归档聊天' : 'Archived Chats'}
+                                </button>
+                            ) : (
+                                <>
+                                    <h2 className="font-bold text-lg tracking-tight">Chat</h2>
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-none">
+                                        {visibleConversations.reduce((acc, curr) => acc + (curr.unreadCount || 0), 0)} New
+                                    </Badge>
+                                </>
+                            )}
                         </div>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -351,6 +431,15 @@ const Chat = () => {
                                 className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-muted/50 border-none outline-none text-xs"
                             />
                         </div>
+                        {!showArchived && archivedCount > 0 && (
+                            <button
+                                onClick={() => setShowArchived(true)}
+                                className="w-full flex items-center gap-2 mt-3 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <Archive className="w-3.5 h-3.5" />
+                                {isZh ? `已归档聊天 (${archivedCount})` : `Archived Chats (${archivedCount})`}
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -358,26 +447,35 @@ const Chat = () => {
                             <div className="p-8 text-center text-xs text-muted-foreground animate-pulse">Loading conversations...</div>
                         ) : visibleConversations.length === 0 ? (
                             <div className="p-8 text-center text-muted-foreground">
-                                <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                                <p className="text-xs mb-4">No chats yet</p>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-8"
-                                    onClick={() => setShowStartDialog(true)}
-                                >
-                                    Start Chat
-                                </Button>
+                                {showArchived ? (
+                                    <>
+                                        <Archive className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                        <p className="text-xs mb-4">{isZh ? '暂无已归档聊天' : 'No archived chats'}</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                        <p className="text-xs mb-4">No chats yet</p>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-xs h-8"
+                                            onClick={() => setShowStartDialog(true)}
+                                        >
+                                            Start Chat
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             visibleConversations.map(conv => {
                                 const convOtherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
                                 return (
-                                <button
+                                <div
                                     key={`sidebar-conv-${conv.id}`}
                                     onClick={() => setActiveConversation(conv.id)}
                                     className={cn(
-                                        "w-full px-4 py-3 flex items-center gap-3 transition-all relative group",
+                                        "w-full px-4 py-3 flex items-center gap-3 transition-all relative group cursor-pointer",
                                         activeConversationId === conv.id ? 'bg-primary/5' : 'hover:bg-muted/30'
                                     )}
                                 >
@@ -441,7 +539,41 @@ const Chat = () => {
                                             </p>
                                         </div>
                                     </div>
-                                </button>
+
+                                    {/* Row actions */}
+                                    <div
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                    >
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="w-6 h-6 rounded-full hover:bg-muted flex items-center justify-center">
+                                                    <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-xl min-w-[130px] p-1">
+                                                {convOtherUserId !== SUPPORT_USER_ID && (
+                                                    <DropdownMenuItem onClick={() => handleToggleFollow(convOtherUserId)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                        <UserPlus className="w-3.5 h-3.5" />
+                                                        {followingUserIds.includes(convOtherUserId) ? (isZh ? '取消关注' : 'Unfollow') : (isZh ? '关注' : 'Follow')}
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem onClick={() => handleToggleArchive(conv.id, showArchived)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                    <Archive className="w-3.5 h-3.5" />
+                                                    {showArchived ? (isZh ? '取消归档' : 'Unarchive') : (isZh ? '归档' : 'Archive')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDeleteConversation(conv.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold text-red-500 focus:text-red-500">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    {isZh ? '删除' : 'Delete'}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleBlockUser(convOtherUserId)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold text-red-500 focus:text-red-500">
+                                                    <UserX className="w-3.5 h-3.5" />
+                                                    {isZh ? '拉黑' : 'Block'}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
                             );})
                         )}
                     </div>
@@ -570,19 +702,39 @@ const Chat = () => {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-2xl min-w-[160px] p-2">
+                                                {activeOtherUserId && activeOtherUserId !== SUPPORT_USER_ID && (
+                                                    <DropdownMenuItem onClick={() => handleToggleFollow(activeOtherUserId)} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                        <UserPlus className="w-4 h-4" />
+                                                        {followingUserIds.includes(activeOtherUserId) ? (isZh ? '取消关注' : 'Unfollow') : (isZh ? '关注' : 'Follow')}
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {activeConversationId && (
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleToggleArchive(activeConversationId, !!activeConversation?.archivedFor?.includes(currentUser?.id || ''))}
+                                                        className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm"
+                                                    >
+                                                        <Archive className="w-4 h-4" />
+                                                        {activeConversation?.archivedFor?.includes(currentUser?.id || '') ? (isZh ? '取消归档' : 'Unarchive') : (isZh ? '归档' : 'Archive')}
+                                                    </DropdownMenuItem>
+                                                )}
                                                 {activeOtherUserId && (
                                                     <ReportDialog
                                                         targetType="USER"
                                                         targetId={activeOtherUserId}
                                                         trigger={
                                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
-                                                                <Shield className="w-4 h-4" /> Report
+                                                                <Shield className="w-4 h-4" /> {isZh ? '举报' : 'Report'}
                                                             </DropdownMenuItem>
                                                         }
                                                     />
                                                 )}
-                                                <DropdownMenuItem onClick={handleBlockUser} className="gap-2 text-red-500 focus:text-red-500 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
-                                                    <UserX className="w-4 h-4" /> Block
+                                                {activeConversationId && (
+                                                    <DropdownMenuItem onClick={() => handleDeleteConversation(activeConversationId)} className="gap-2 text-red-500 focus:text-red-500 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                        <Trash2 className="w-4 h-4" /> {isZh ? '删除' : 'Delete'}
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem onClick={() => handleBlockUser()} className="gap-2 text-red-500 focus:text-red-500 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                    <UserX className="w-4 h-4" /> {isZh ? '拉黑' : 'Block'}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

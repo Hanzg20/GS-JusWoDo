@@ -298,6 +298,19 @@ export class SupabaseUserRepository implements IUserRepository {
         return (data || []).map(row => row.blocked_id);
     }
 
+    /** All user ids the given user follows — id-only, same shape as
+     * getBlockedUserIds, for building a quick lookup Set without the
+     * profile joins getFollowing() does for its paginated UI use. */
+    async getFollowingUserIds(followerId: string): Promise<string[]> {
+        const { data, error } = await supabase
+            .from('user_followers')
+            .select('following_id')
+            .eq('follower_id', followerId);
+
+        if (error) throw error;
+        return (data || []).map(row => row.following_id);
+    }
+
     /**
      * Check if user A is following user B
      */

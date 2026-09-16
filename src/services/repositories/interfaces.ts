@@ -112,6 +112,8 @@ export interface Conversation {
     lastMessageAt: string;
     createdAt: string;
     metadata?: Record<string, any>;
+    archivedFor?: string[]; // user ids this conversation is archived for
+    deletedFor?: string[]; // user ids this conversation is hidden from (delete-for-me only)
 }
 
 export interface Message {
@@ -145,6 +147,9 @@ export interface IMessageRepository {
     subscribeToMessages(conversationId: string, callback: (message: Message, eventType: 'INSERT' | 'UPDATE') => void): () => void;
     recallMessage(messageId: string): Promise<void>;
     deleteMessageForSelf(messageId: string, userId: string): Promise<void>;
+    archiveConversation(conversationId: string, userId: string): Promise<void>;
+    unarchiveConversation(conversationId: string, userId: string): Promise<void>;
+    deleteConversationForSelf(conversationId: string, userId: string): Promise<void>;
     subscribeToUserEvents(userId: string, callback: (event: { type: 'CONVERSATION_UPDATE' | 'NEW_MESSAGE', data: any }) => void): () => void;
     getUnreadCount(userId: string): Promise<number>;
     getConversationUnreadCounts(userId: string): Promise<Map<string, number>>;

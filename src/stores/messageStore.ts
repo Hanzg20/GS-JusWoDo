@@ -10,6 +10,8 @@ export interface Conversation {
     orderId?: string;
     lastMessageAt: string;
     createdAt: string;
+    archivedFor?: string[];
+    deletedFor?: string[];
     // UI enrichment
     otherUserName?: string;
     otherUserAvatar?: string;
@@ -53,6 +55,9 @@ interface MessageState {
     updateMessageReadStatus: (messageIds: string[], isRead: boolean) => void;
     recallMessage: (messageId: string) => Promise<void>;
     deleteMessageForMe: (messageId: string, userId: string) => Promise<void>;
+    archiveConversation: (conversationId: string, userId: string) => Promise<void>;
+    unarchiveConversation: (conversationId: string, userId: string) => Promise<void>;
+    deleteConversationForMe: (conversationId: string, userId: string) => Promise<void>;
     cleanup: () => void;
 }
 
@@ -312,6 +317,30 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         await repo.deleteMessageForSelf(messageId, userId);
         set(state => ({
             messages: state.messages.map(m => m.id === messageId ? { ...m, deletedFor: [...(m.deletedFor || []), userId] } : m)
+        }));
+    },
+
+    archiveConversation: async (conversationId: string, userId: string) => {
+        const repo = repositoryFactory.getMessageRepository();
+        await repo.archiveConversation(conversationId, userId);
+        set(state => ({
+            conversations: state.conversations.map(c => c.id === conversationId ? { ...c, archivedFor: [...(c.archivedFor || []), userId] } : c)
+        }));
+    },
+
+    unarchiveConversation: async (conversationId: string, userId: string) => {
+        const repo = repositoryFactory.getMessageRepository();
+        await repo.unarchiveConversation(conversationId, userId);
+        set(state => ({
+            conversations: state.conversations.map(c => c.id === conversationId ? { ...c, archivedFor: (c.archivedFor || []).filter(id => id !== userId) } : c)
+        }));
+    },
+
+    deleteConversationForMe: async (conversationId: string, userId: string) => {
+        const repo = repositoryFactory.getMessageRepository();
+        await repo.deleteConversationForSelf(conversationId, userId);
+        set(state => ({
+            conversations: state.conversations.map(c => c.id === conversationId ? { ...c, deletedFor: [...(c.deletedFor || []), userId] } : c)
         }));
     },
 

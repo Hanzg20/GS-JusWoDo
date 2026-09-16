@@ -12,7 +12,9 @@ export class SupabaseMessageRepository implements IMessageRepository {
                 order_id,
                 last_message_at,
                 created_at,
-                metadata
+                metadata,
+                archived_for,
+                deleted_for
             `)
             .or(`participant_a.eq.${userId},participant_b.eq.${userId}`)
             .order('last_message_at', { ascending: false });
@@ -228,6 +230,60 @@ export class SupabaseMessageRepository implements IMessageRepository {
         if (error) throw error;
     }
 
+    async archiveConversation(conversationId: string, userId: string): Promise<void> {
+        const { data: existing, error: fetchError } = await supabase
+            .from('conversations')
+            .select('archived_for')
+            .eq('id', conversationId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const archivedFor = Array.from(new Set([...(existing?.archived_for || []), userId]));
+        const { error } = await supabase
+            .from('conversations')
+            .update({ archived_for: archivedFor })
+            .eq('id', conversationId);
+
+        if (error) throw error;
+    }
+
+    async unarchiveConversation(conversationId: string, userId: string): Promise<void> {
+        const { data: existing, error: fetchError } = await supabase
+            .from('conversations')
+            .select('archived_for')
+            .eq('id', conversationId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const archivedFor = (existing?.archived_for || []).filter((id: string) => id !== userId);
+        const { error } = await supabase
+            .from('conversations')
+            .update({ archived_for: archivedFor })
+            .eq('id', conversationId);
+
+        if (error) throw error;
+    }
+
+    async deleteConversationForSelf(conversationId: string, userId: string): Promise<void> {
+        const { data: existing, error: fetchError } = await supabase
+            .from('conversations')
+            .select('deleted_for')
+            .eq('id', conversationId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const deletedFor = Array.from(new Set([...(existing?.deleted_for || []), userId]));
+        const { error } = await supabase
+            .from('conversations')
+            .update({ deleted_for: deletedFor })
+            .eq('id', conversationId);
+
+        if (error) throw error;
+    }
+
     subscribeToMessages(conversationId: string, callback: (message: Message, eventType: 'INSERT' | 'UPDATE') => void): () => void {
         if (import.meta.env.VITE_DEBUG_MODE === 'true') {
             console.log(`[🔵 Realtime] Setting up subscription for conversation: ${conversationId}`);
@@ -368,7 +424,9 @@ export class SupabaseMessageRepository implements IMessageRepository {
             orderId: data.order_id,
             lastMessageAt: data.last_message_at,
             createdAt: data.created_at,
-            metadata: data.metadata || {}
+            metadata: data.metadata || {},
+            archivedFor: data.archived_for || [],
+            deletedFor: data.deleted_for || []
         };
     }
 
