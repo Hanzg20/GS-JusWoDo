@@ -1,7 +1,9 @@
 // JWD's mascot family — see jwd_mascot_family memory. One consistent
 // naming dimension: "小 + 两字物种名" (matches the two already-shipped
-// mascots, 小海狸/AI客服 and 小螺号/邻里圈真言), each tied to a real
-// Ottawa-area animal whose real-world habit maps onto its module.
+// mascots, 小海狸/AI客服 and 小百灵/邻里圈真言 — renamed 2026-09-16 from
+// 小螺号, which was an object/instrument name, not a species, and broke
+// this exact convention), each tied to a real Ottawa-area animal whose
+// real-world habit maps onto its module.
 // Placeholder avatars only (dicebear fun-emoji, same stopgap used for
 // 小海狸) — real illustrated artwork needs a designer/image tool this
 // session doesn't have, swap these out once that exists.

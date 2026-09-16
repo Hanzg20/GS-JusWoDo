@@ -54,7 +54,7 @@ const corsHeaders = {
 // the old persona read as too official/serious for what's meant to be a
 // friendly neighborhood chat, not a corporate helpdesk. Beaver: Canada's
 // national animal, industrious/helpful connotation, distinct from the
-// existing 邻里圈 mascot 小螺号. The personality rewrite below is the whole
+// existing 邻里圈 mascot 小百灵. The personality rewrite below is the whole
 // point of the change, not just the name — the anti-hallucination
 // grounding rule is the one thing that must stay exactly as strict as
 // before regardless of how warm/playful the rest of the tone gets.

@@ -288,7 +288,7 @@ const CommunityPostDetail = () => {
                             shared card/Moments link can tell this is 渥帮's
                             own site, and has a one-tap way home. A text
                             wordmark, not the logo image — the post author's
-                            own avatar sits right next to this, and 小螺号
+                            own avatar sits right next to this, and 小百灵
                             (a real, common author) uses that same logo
                             image as her avatar, so an icon here looked like
                             a duplicated/broken icon rather than a brand mark. */}
