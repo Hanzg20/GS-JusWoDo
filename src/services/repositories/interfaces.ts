@@ -123,6 +123,9 @@ export interface Message {
     messageType?: string; // 'TEXT', 'QUOTE', 'SYSTEM'
     metadata?: Record<string, any>;
     createdAt: string;
+    isRecalled?: boolean;
+    recalledAt?: string;
+    deletedFor?: string[]; // user ids this message is hidden from (delete-for-me only)
 }
 
 // Admin-only view of a conversation — shows both participants by name
@@ -139,7 +142,9 @@ export interface IMessageRepository {
     sendMessage(conversationId: string, senderId: string, content: string, messageType?: string, metadata?: Record<string, any>): Promise<Message>;
     createConversation(participantA: string, participantB: string, orderId?: string): Promise<Conversation>;
     markAsRead(conversationId: string, userId: string): Promise<void>;
-    subscribeToMessages(conversationId: string, callback: (message: Message) => void): () => void;
+    subscribeToMessages(conversationId: string, callback: (message: Message, eventType: 'INSERT' | 'UPDATE') => void): () => void;
+    recallMessage(messageId: string): Promise<void>;
+    deleteMessageForSelf(messageId: string, userId: string): Promise<void>;
     subscribeToUserEvents(userId: string, callback: (event: { type: 'CONVERSATION_UPDATE' | 'NEW_MESSAGE', data: any }) => void): () => void;
     getUnreadCount(userId: string): Promise<number>;
     getConversationUnreadCounts(userId: string): Promise<Map<string, number>>;

@@ -27,6 +27,9 @@ export interface Message {
     messageType?: string;
     metadata?: Record<string, any>;
     createdAt: string;
+    isRecalled?: boolean;
+    recalledAt?: string;
+    deletedFor?: string[];
 }
 
 interface MessageState {
@@ -48,6 +51,8 @@ interface MessageState {
     subscribeToActiveConversation: () => void;
     subscribeToGlobalEvents: (userId: string) => void;
     updateMessageReadStatus: (messageIds: string[], isRead: boolean) => void;
+    recallMessage: (messageId: string) => Promise<void>;
+    deleteMessageForMe: (messageId: string, userId: string) => Promise<void>;
     cleanup: () => void;
 }
 
@@ -219,27 +224,28 @@ export const useMessageStore = create<MessageState>((set, get) => ({
             console.log('[MessageStore] Subscribing to active conversation:', activeConversationId);
         }
         const repo = repositoryFactory.getMessageRepository();
-        const unsubscribe = repo.subscribeToMessages(activeConversationId, (newMessage) => {
+        const unsubscribe = repo.subscribeToMessages(activeConversationId, (message, eventType) => {
             if (import.meta.env.VITE_DEBUG_MODE === 'true') {
-                console.log('[MessageStore] Received new message via callback:', {
-                    id: newMessage.id,
-                    senderId: newMessage.senderId,
-                    content: newMessage.content.substring(0, 50)
+                console.log('[MessageStore] Received message via callback:', {
+                    eventType,
+                    id: message.id,
+                    senderId: message.senderId,
+                    content: message.content.substring(0, 50)
                 });
             }
 
             set(state => {
+                // An UPDATE (recall, delete-for-me) always replaces the
+                // existing row rather than appending — the other party's
+                // realtime callback is how a recall shows up live for them.
+                if (eventType === 'UPDATE') {
+                    return { messages: state.messages.map(m => m.id === message.id ? message : m) };
+                }
                 // Avoid duplicates
-                if (state.messages.find(m => m.id === newMessage.id)) {
-                    if (import.meta.env.VITE_DEBUG_MODE === 'true') {
-                        console.log('[MessageStore] Duplicate message ignored:', newMessage.id);
-                    }
+                if (state.messages.find(m => m.id === message.id)) {
                     return state;
                 }
-                if (import.meta.env.VITE_DEBUG_MODE === 'true') {
-                    console.log('[MessageStore] Adding new message to store');
-                }
-                return { messages: [...state.messages, newMessage] };
+                return { messages: [...state.messages, message] };
             });
         });
 
@@ -291,6 +297,22 @@ export const useMessageStore = create<MessageState>((set, get) => ({
                 totalUnreadCount: Math.max(0, newTotalUnread)
             };
         });
+    },
+
+    recallMessage: async (messageId: string) => {
+        const repo = repositoryFactory.getMessageRepository();
+        await repo.recallMessage(messageId);
+        set(state => ({
+            messages: state.messages.map(m => m.id === messageId ? { ...m, isRecalled: true } : m)
+        }));
+    },
+
+    deleteMessageForMe: async (messageId: string, userId: string) => {
+        const repo = repositoryFactory.getMessageRepository();
+        await repo.deleteMessageForSelf(messageId, userId);
+        set(state => ({
+            messages: state.messages.map(m => m.id === messageId ? { ...m, deletedFor: [...(m.deletedFor || []), userId] } : m)
+        }));
     },
 
     cleanup: () => {

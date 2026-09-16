@@ -201,7 +201,34 @@ export class SupabaseMessageRepository implements IMessageRepository {
         if (error) throw error;
     }
 
-    subscribeToMessages(conversationId: string, callback: (message: Message) => void): () => void {
+    async recallMessage(messageId: string): Promise<void> {
+        const { error } = await supabase
+            .from('messages')
+            .update({ is_recalled: true, recalled_at: new Date().toISOString() })
+            .eq('id', messageId);
+
+        if (error) throw error;
+    }
+
+    async deleteMessageForSelf(messageId: string, userId: string): Promise<void> {
+        const { data: existing, error: fetchError } = await supabase
+            .from('messages')
+            .select('deleted_for')
+            .eq('id', messageId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const deletedFor = Array.from(new Set([...(existing?.deleted_for || []), userId]));
+        const { error } = await supabase
+            .from('messages')
+            .update({ deleted_for: deletedFor })
+            .eq('id', messageId);
+
+        if (error) throw error;
+    }
+
+    subscribeToMessages(conversationId: string, callback: (message: Message, eventType: 'INSERT' | 'UPDATE') => void): () => void {
         if (import.meta.env.VITE_DEBUG_MODE === 'true') {
             console.log(`[🔵 Realtime] Setting up subscription for conversation: ${conversationId}`);
         }
@@ -220,7 +247,19 @@ export class SupabaseMessageRepository implements IMessageRepository {
                     if (import.meta.env.VITE_DEBUG_MODE === 'true') {
                         console.log('[✅ Realtime] New message received via subscription:', payload.new);
                     }
-                    callback(this.mapMessage(payload.new));
+                    callback(this.mapMessage(payload.new), 'INSERT');
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `conversation_id=eq.${conversationId}`
+                },
+                (payload) => {
+                    callback(this.mapMessage(payload.new), 'UPDATE');
                 }
             )
             .subscribe((status, err) => {
@@ -342,7 +381,10 @@ export class SupabaseMessageRepository implements IMessageRepository {
             isRead: data.is_read,
             messageType: data.message_type || 'TEXT',
             metadata: data.metadata || {},
-            createdAt: data.created_at
+            createdAt: data.created_at,
+            isRecalled: data.is_recalled || false,
+            recalledAt: data.recalled_at || undefined,
+            deletedFor: data.deleted_for || []
         };
     }
 }

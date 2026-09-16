@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "@/components/Header";
-import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX } from "lucide-react";
+import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX, Undo2, Trash2 } from "lucide-react";
 import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePresenceStore } from "@/stores/presenceStore";
@@ -55,6 +55,8 @@ const Chat = () => {
         setActiveConversation,
         sendMessage,
         sendQuote,
+        recallMessage,
+        deleteMessageForMe,
         cleanup
     } = useMessageStore();
     const { orders } = useOrderStore();
@@ -178,6 +180,43 @@ const Chat = () => {
     const activeOrder = useMemo(() =>
         activeConversation?.orderId ? orders.find(o => o.id === activeConversation.orderId) : null,
         [orders, activeConversation]);
+
+    // "删除" (delete) hides a message from just the deleting party's own
+    // view (WeChat's "delete for me only" semantics) — filtered here at
+    // render time rather than in the repo, so the admin conversation
+    // viewer still sees everything for moderation.
+    const visibleMessages = useMemo(
+        () => messages.filter(m => !(m.deletedFor || []).includes(currentUser?.id || '')),
+        [messages, currentUser?.id]
+    );
+
+    // WeChat allows recalling a message you sent within a short window
+    // after sending; enforced client-side only (no server-side check),
+    // matching this app's existing row-level-trust RLS style elsewhere.
+    const RECALL_WINDOW_MS = 2 * 60 * 1000;
+    const canRecall = (msg: { senderId: string; createdAt: string; isRecalled?: boolean }) =>
+        msg.senderId === currentUser?.id &&
+        !msg.isRecalled &&
+        (Date.now() - new Date(msg.createdAt).getTime()) < RECALL_WINDOW_MS;
+
+    const handleRecallMessage = async (messageId: string) => {
+        try {
+            await recallMessage(messageId);
+        } catch (err) {
+            console.error('Failed to recall message:', err);
+            toast.error(isZh ? '撤回失败，请重试' : 'Failed to recall, please try again');
+        }
+    };
+
+    const handleDeleteMessage = async (messageId: string) => {
+        if (!currentUser?.id) return;
+        try {
+            await deleteMessageForMe(messageId, currentUser.id);
+        } catch (err) {
+            console.error('Failed to delete message:', err);
+            toast.error(isZh ? '删除失败，请重试' : 'Failed to delete, please try again');
+        }
+    };
 
     const handleSendMessage = async () => {
         if (!input.trim() || !currentUser?.id) return;
@@ -306,7 +345,7 @@ const Chat = () => {
                                             channel, so her conversation gets an official badge here
                                             instead of the generic 1-on-1 indicator every other chat gets. */}
                                         {convOtherUserId === SUPPORT_USER_ID ? (
-                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-card flex items-center justify-center" title={isZh ? '官方客服' : 'Official Support'}>
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-card flex items-center justify-center" title={isZh ? '客服' : 'Support'}>
                                                 <ShieldCheck className="w-2.5 h-2.5 text-white" />
                                             </div>
                                         ) : (
@@ -353,9 +392,9 @@ const Chat = () => {
                         <>
                             <div className="bg-amber-50/80 border-b border-amber-200/50 px-4 py-1.5 flex items-center justify-center text-[10px] font-bold text-amber-800 text-center">
                                 <ShieldCheck className="w-3 h-3 mr-1.5" />
-                                {currentUser?.settings?.language === 'zh'
-                                    ? '安全提示：为了您的资金安全，请勿脱离平台进行交易。私下转账无法享受平台担保。'
-                                    : 'Safety Tip: Keep payments inside the app to be protected by Escrow. Never transfer money externally.'}
+                                {isZh
+                                    ? '安全提示：见面交易请选择公共场所，交易前核实对方身份，谨防诈骗。'
+                                    : 'Safety Tip: Meet in public places, verify the other party before dealing, and stay alert for scams.'}
                             </div>
                             <div className="px-4 py-3 border-b border-border/40 bg-gradient-to-r from-muted/5 to-primary/5">
                                 <div className="flex items-center justify-between">
@@ -386,7 +425,7 @@ const Chat = () => {
                                             </div>
                                             {/* Role Badge */}
                                             {activeOtherUserId === SUPPORT_USER_ID ? (
-                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-card flex items-center justify-center" title={isZh ? '官方客服' : 'Official Support'}>
+                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-card flex items-center justify-center" title={isZh ? '客服' : 'Support'}>
                                                     <ShieldCheck className="w-3 h-3 text-white" />
                                                 </div>
                                             ) : activeOrder && (
@@ -416,7 +455,7 @@ const Chat = () => {
                                                     1-on-1 indicator every other chat gets. */}
                                                 {activeOtherUserId === SUPPORT_USER_ID ? (
                                                     <Badge className="h-4 px-1.5 text-[9px] font-black bg-primary/10 text-primary border-none">
-                                                        {isZh ? '官方客服' : 'Official Support'}
+                                                        {isZh ? '客服' : 'Support'}
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="h-4 px-1.5 text-[9px] font-black border-primary/20 text-primary">
@@ -542,7 +581,7 @@ const Chat = () => {
 
                             {/* Messages List */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-chat-pattern">
-                                {messages.length === 0 ? (
+                                {visibleMessages.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center p-10 opacity-50">
                                         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                                             <Hash className="w-8 h-8 text-muted-foreground" />
@@ -551,16 +590,18 @@ const Chat = () => {
                                         <p className="text-xs max-w-xs mt-2">Messages are secure. Start your neighborhood conversation now.</p>
                                     </div>
                                 ) : (
-                                    messages.map((msg, idx) => {
+                                    visibleMessages.map((msg, idx) => {
                                         const isMe = msg.senderId === currentUser?.id;
                                         const isSystem = msg.messageType === 'SYSTEM';
                                         const isQuote = msg.messageType === 'QUOTE';
                                         const isImage = msg.messageType === 'IMAGE';
                                         const isLocation = msg.messageType === 'LOCATION';
+                                        const avatarUrl = isMe ? currentUser?.avatar : activeConversation?.otherUserAvatar;
+                                        const avatarInitial = (isMe ? (currentUser?.name || 'U') : getDisplayName(activeOtherUserId, activeConversation?.otherUserName)).charAt(0).toUpperCase();
 
                                         // Show date separator
                                         const showDateSeparator = idx === 0 ||
-                                            new Date(messages[idx - 1].createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
+                                            new Date(visibleMessages[idx - 1].createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
 
                                         const dateLabel = (() => {
                                             const msgDate = new Date(msg.createdAt);
@@ -591,12 +632,54 @@ const Chat = () => {
                                                             {msg.content}
                                                         </Badge>
                                                     </div>
+                                                ) : msg.isRecalled ? (
+                                                    /* Recalled Message */
+                                                    <div className="flex justify-center my-4">
+                                                        <Badge variant="secondary" className="bg-muted/50 text-[10px] font-medium text-muted-foreground border-none">
+                                                            {isMe
+                                                                ? (isZh ? '你撤回了一条消息' : 'You recalled a message')
+                                                                : (isZh ? '对方撤回了一条消息' : 'The other person recalled a message')}
+                                                        </Badge>
+                                                    </div>
                                                 ) : (
                                                     /* Regular Message */
-                                                    <div className={cn("flex flex-col mb-3", isMe ? 'items-end' : 'items-start')}>
+                                                    <div className={cn("flex items-end gap-2 mb-3", isMe ? 'flex-row-reverse' : 'flex-row')}>
+                                                        {/* Avatar */}
+                                                        <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary/10 to-primary/20 border border-primary/10 mb-4">
+                                                            {avatarUrl ? (
+                                                                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-primary/70">
+                                                                    {avatarInitial}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <div className={cn(
-                                                            "max-w-[85%] sm:max-w-[70%] group relative",
+                                                            "max-w-[78%] sm:max-w-[65%] group relative",
                                                         )}>
+                                                            {/* Message actions — appear on hover */}
+                                                            <div className={cn(
+                                                                "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity z-10",
+                                                                isMe ? "-left-7" : "-right-7"
+                                                            )}>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <button className="w-5 h-5 rounded-full bg-muted/70 hover:bg-muted flex items-center justify-center">
+                                                                            <MoreVertical className="w-3 h-3 text-muted-foreground" />
+                                                                        </button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align={isMe ? "end" : "start"} className="rounded-xl min-w-[110px] p-1">
+                                                                        {canRecall(msg) && (
+                                                                            <DropdownMenuItem onClick={() => handleRecallMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                                <Undo2 className="w-3.5 h-3.5" /> {isZh ? '撤回' : 'Recall'}
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        <DropdownMenuItem onClick={() => handleDeleteMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold text-red-500 focus:text-red-500">
+                                                                            <Trash2 className="w-3.5 h-3.5" /> {isZh ? '删除' : 'Delete'}
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
                                                             <div className={cn(
                                                                 "px-3 py-2 rounded-2xl shadow-sm text-sm",
                                                                 isMe
