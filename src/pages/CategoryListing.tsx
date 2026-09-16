@@ -282,7 +282,7 @@ const CategoryListing = () => {
                                 className={`rounded-full h-8 ${isSmartSearch ? 'shadow-sm' : ''}`}
                                 onClick={() => setIsSmartSearch(true)}
                             >
-                                <Sparkles className="w-3 h-3 mr-1" /> Smart Search
+                                <Sparkles className="w-3 h-3 mr-1" /> {language === 'zh' ? '智能搜索' : 'Smart Search'}
                             </Button>
                             <Button
                                 variant={!isSmartSearch ? 'default' : 'ghost'}
@@ -290,7 +290,7 @@ const CategoryListing = () => {
                                 className={`rounded-full h-8 ${!isSmartSearch ? 'shadow-sm' : ''}`}
                                 onClick={() => setIsSmartSearch(false)}
                             >
-                                Keyword
+                                {language === 'zh' ? '关键词' : 'Keyword'}
                             </Button>
                         </div>
                         {pillarCategories.length > 0 && (
@@ -358,7 +358,9 @@ const CategoryListing = () => {
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <Loader2 className="w-10 h-10 text-primary animate-spin" />
                         <p className="text-muted-foreground animate-pulse">
-                            {isSmartSearch ? 'AI is analyzing your query...' : 'Searching...'}
+                            {isSmartSearch
+                                ? (language === 'zh' ? 'AI 正在分析你的搜索…' : 'AI is analyzing your query...')
+                                : (language === 'zh' ? '搜索中…' : 'Searching...')}
                         </p>
                     </div>
                 ) : type?.toLowerCase() === 'task' && !currentUser?.isVerifiedProvider ? (
@@ -384,8 +386,12 @@ const CategoryListing = () => {
                         if (!mascot) {
                             return (
                                 <div className="text-center py-20 text-muted-foreground">
-                                    <p className="text-lg">No {getPageTitle(type)} found yet</p>
-                                    <p className="text-sm">Try different keywords or enable Smart Search for better matches</p>
+                                    <p className="text-lg">
+                                        {language === 'zh' ? `暂时还没有${getPageTitle(type)}` : `No ${getPageTitle(type)} found yet`}
+                                    </p>
+                                    <p className="text-sm">
+                                        {language === 'zh' ? '换个关键词试试，或开启智能搜索获得更精准的结果' : 'Try different keywords or enable Smart Search for better matches'}
+                                    </p>
                                 </div>
                             );
                         }

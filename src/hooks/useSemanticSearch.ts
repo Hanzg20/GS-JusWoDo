@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { repositoryFactory } from '@/services/repositories/factory';
 import { ListingMaster } from '@/types/domain';
 import { useCommunity } from '@/context/CommunityContext';
 import { browseNodeId } from '@/stores/configStore';
@@ -14,6 +14,13 @@ interface UseSemanticSearchOptions {
     limit?: number;
 }
 
+// This used to duplicate ListingRepository.search()'s isSemantic branch
+// entirely — its own generate-embedding call, its own match_listings RPC
+// call, its own keyword-search fallback — maintained completely separately
+// from the "real" search path CategoryListing.tsx uses. Any fix to one
+// (threshold tuning, fallback behavior) silently didn't apply to the other.
+// Now this hook is just a thin debounce/loading-state wrapper around the
+// same repository method everything else already calls.
 export const useSemanticSearch = (
     query: string,
     options: UseSemanticSearchOptions = {}
@@ -35,88 +42,43 @@ export const useSemanticSearch = (
             return;
         }
 
-        const searchWithAI = async () => {
+        const controller = { cancelled: false };
+
+        const runSearch = async () => {
             setLoading(true);
             setError(null);
-
             try {
-                // Step 1: Get query embedding from Edge Function
-                const { data: embeddingData, error: embeddingError } = await supabase.functions.invoke(
-                    'generate-embedding',
-                    {
-                        body: { text: query }
-                    }
-                );
-
-                if (embeddingError) {
-                    throw new Error(`Embedding generation failed: ${embeddingError.message}`);
+                const listingRepo = repositoryFactory.getListingRepository();
+                const data = await listingRepo.search({
+                    query,
+                    isSemantic: true,
+                    nodeId: browseNodeId(activeNodeId),
+                    limit,
+                });
+                if (!controller.cancelled) {
+                    // search()'s isSemantic branch falls back to a plain
+                    // keyword search internally on embedding failure — those
+                    // rows won't carry a real `similarity`, so default to 0
+                    // rather than leaving it undefined for this hook's callers.
+                    setResults(data.map(item => ({ ...item, similarity: item.similarity ?? 0 })));
                 }
-
-                const queryEmbedding = embeddingData.embedding;
-
-                // Step 2: Perform vector similarity search
-                const { data: searchResults, error: searchError } = await supabase.rpc(
-                    'match_listings',
-                    {
-                        query_embedding: queryEmbedding,
-                        match_threshold: threshold,
-                        match_count: limit,
-                        filter_node_id: browseNodeId(activeNodeId)
-                    }
-                );
-
-                if (searchError) {
-                    throw new Error(`Search failed: ${searchError.message}`);
-                }
-
-                setResults(searchResults || []);
             } catch (err) {
-                console.error('Semantic search error:', err);
-                setError(err as Error);
-
-                // Fallback to text-based search
-                performTextSearch(query);
+                if (!controller.cancelled) {
+                    console.error('Semantic search error:', err);
+                    setError(err as Error);
+                    setResults([]);
+                }
             } finally {
-                setLoading(false);
+                if (!controller.cancelled) setLoading(false);
             }
         };
 
-        // Debounce search
-        const timeoutId = setTimeout(searchWithAI, 300);
-        return () => clearTimeout(timeoutId);
+        const timeoutId = setTimeout(runSearch, 300);
+        return () => {
+            controller.cancelled = true;
+            clearTimeout(timeoutId);
+        };
     }, [query, enabled, threshold, limit, activeNodeId]);
-
-    const performTextSearch = async (searchQuery: string) => {
-        try {
-            let qb = supabase
-                .from('listing_masters')
-                .select('*')
-                .or(`title_zh.ilike.%${searchQuery}%,title_en.ilike.%${searchQuery}%,description_zh.ilike.%${searchQuery}%`)
-                .eq('status', 'PUBLISHED');
-
-            const filterNodeId = browseNodeId(activeNodeId);
-            if (filterNodeId) qb = qb.eq('node_id', filterNodeId);
-
-            const { data, error: textSearchError } = await qb.limit(limit);
-
-            if (!textSearchError && data) {
-                // Map DB results to domain objects if needed, though they match mostly
-                setResults(data.map(item => ({
-                    ...item,
-                    titleZh: item.title_zh,
-                    titleEn: item.title_en,
-                    descriptionZh: item.description_zh,
-                    descriptionEn: item.description_en,
-                    providerId: item.provider_id,
-                    categoryId: item.category_id,
-                    nodeId: item.node_id,
-                    similarity: 0.5
-                })));
-            }
-        } catch (err) {
-            console.error('Text search fallback failed:', err);
-        }
-    };
 
     return {
         results,

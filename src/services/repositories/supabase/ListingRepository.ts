@@ -36,6 +36,7 @@ export class SupabaseListingRepository implements IListingRepository {
             isPromoted: row.is_promoted,
             distanceMeters: row.distance_meters,
             searchScore: row.search_score,
+            similarity: row.similarity,
             createdAt: row.created_at,
             updatedAt: row.updated_at
         };

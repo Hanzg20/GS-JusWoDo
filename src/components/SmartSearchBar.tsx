@@ -57,9 +57,11 @@ export function SmartSearchBar({ isCompact = false }: SmartSearchBarProps) {
     }
   };
 
-  const handleCategorySelect = (categoryId: string) => {
-    // Category picks go straight to that category's listing page.
-    navigate(`/category/${categoryId}`);
+  const handleCategorySelect = (path: string) => {
+    // CategoryMenu now passes a full route (pillars route differently —
+    // /community for Neighbors, /category/service or /category/secondhand
+    // for the other two), not a bare category id.
+    navigate(path);
     setShowCategoryMenu(false);
   };
 

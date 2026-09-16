@@ -200,6 +200,7 @@ export interface ListingMaster extends BaseEntity {
   distanceMeters?: number; // Calculated distance from search center
   distanceApprox?: boolean; // true when distanceMeters is estimated from a community node center, not precise GPS
   searchScore?: number; // Hybrid ranking score
+  similarity?: number; // Cosine similarity from a semantic (vector) search — only present on results from search({ isSemantic: true })
 
   // New: Link to child items
   itemIds?: string[];
