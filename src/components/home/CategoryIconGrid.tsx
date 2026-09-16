@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { useConfigStore } from "@/stores/configStore";
-import { ChevronRight } from "lucide-react";
 import { getIcon } from "@/lib/iconMapper";
 import { motion } from "framer-motion";
 import { MASCOT_BY_PILLAR } from "@/config/mascots";
@@ -21,7 +20,7 @@ import { MASCOT_BY_PILLAR } from "@/config/mascots";
 const FALLBACK_PILLARS = [
   { codeId: 'PILLAR_SERVICE', path: '/category/service', zhName: '本地服务', enName: 'Services', extraData: { icon: 'Wrench', bgColor: 'bg-orange-50 text-orange-600 border-orange-100', badgeColor: 'bg-orange-500', desc_zh: '保洁 / 维修 / 铲雪 / 接送 / 商户产品', desc_en: 'Cleaning, repairs, snow, rides & merchant products' } },
   { codeId: 'PILLAR_HELP', path: '/community', zhName: '邻里圈', enName: 'Neighbors', extraData: { icon: 'Users', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 任务委托 / 推荐 / 资讯', desc_en: 'Ask, post a task, recommend, local news' } },
-  { codeId: 'PILLAR_GOODS', path: '/category/secondhand', zhName: '闲置 & 租赁', enName: 'Secondhand & Rentals', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 设备场地租赁', desc_en: 'Used items, giveaways & gear/space rentals' } },
+  { codeId: 'PILLAR_GOODS', path: '/category/secondhand', zhName: '闲置 & 租赁', enName: 'Marketplace', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 设备场地租赁', desc_en: 'Used items, giveaways & gear/space rentals' } },
 ];
 
 /**
@@ -48,7 +47,6 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
           const mascot = MASCOT_BY_PILLAR[pillar.codeId];
           const path = extra.path || '/';
           const name = isZh ? pillar.zhName : (pillar.enName || pillar.zhName);
-          const desc = isZh ? extra.desc_zh : extra.desc_en;
           const count = counts[pillar.codeId] || 0;
 
           return (
@@ -57,37 +55,28 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              whileHover={{ y: -3, scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => navigate(path)}
-              className="group relative flex flex-col justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-2xs hover:shadow-md transition-all text-left"
+              className="group flex flex-col items-center gap-2 py-3 rounded-2xl hover:bg-slate-50 transition-colors"
             >
-              <div className="flex items-start justify-between mb-2">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-3xs transition-transform group-hover:scale-105 ${extra.bgColor || 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+              <div className="relative">
+                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 group-active:scale-95 ${extra.bgColor || 'bg-slate-50 text-slate-600'}`}>
                   {mascot ? (
-                    <img src={mascot.avatar} alt={mascot.name} className="w-9 h-9 object-contain" />
+                    <img src={mascot.avatar} alt={mascot.name} className="w-14 h-14 sm:w-16 sm:h-16 object-contain" />
                   ) : (
-                    <Icon className="w-5 h-5" strokeWidth={2.2} />
+                    <Icon className="w-8 h-8 sm:w-9 sm:h-9" strokeWidth={2} />
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  {count > 0 && (
-                    <span className={`text-[10px] font-black text-white px-2 py-0.5 rounded-full ${extra.badgeColor || 'bg-slate-500'}`}>
-                      {count}
-                    </span>
-                  )}
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
-                </div>
+                {count > 0 && (
+                  <span className={`absolute -top-1 -right-1 min-w-[20px] h-5 px-1 flex items-center justify-center text-[10px] font-black text-white rounded-full border-2 border-white ${extra.badgeColor || 'bg-slate-500'}`}>
+                    {count}
+                  </span>
+                )}
               </div>
 
-              <div>
-                <h3 className="text-sm font-black tracking-tight text-slate-900 group-hover:text-primary transition-colors">
-                  {name}
-                </h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-0.5 line-clamp-1">
-                  {desc}
-                </p>
-              </div>
+              <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 group-hover:text-primary transition-colors">
+                {name}
+              </h3>
             </motion.button>
           );
         })}
