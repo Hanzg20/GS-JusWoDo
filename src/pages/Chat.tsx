@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "@/components/Header";
-import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX, Undo2, Trash2 } from "lucide-react";
+import { Search, MoreVertical, Video, Image, Mic, Send, MessageCircle, DollarSign, Package, CheckCircle2, Clock, ChevronRight, Hash, Loader2, User, ShoppingBag, Store, UserCircle, Check, CheckCheck, ArrowLeft, MapPin, ShieldCheck, Shield, UserX, Undo2, Trash2, Copy, Reply, Languages, X } from "lucide-react";
 import { useMessageStore } from "@/stores/messageStore";
 import { useAuthStore } from "@/stores/authStore";
 import { usePresenceStore } from "@/stores/presenceStore";
@@ -62,6 +62,9 @@ const Chat = () => {
     const { orders } = useOrderStore();
 
     const [input, setInput] = useState("");
+    const [replyingTo, setReplyingTo] = useState<typeof messages[number] | null>(null);
+    const [translations, setTranslations] = useState<Record<string, string>>({});
+    const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
     const [showStartDialog, setShowStartDialog] = useState(false);
     const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -218,6 +221,15 @@ const Chat = () => {
         }
     };
 
+    // Preview text for a message being quoted (引用) — non-text message
+    // types get a generic label instead of their raw content (a location's
+    // lat/lng or an image URL isn't meaningful to show in the quote bar).
+    const getReplyPreviewText = (msg: typeof messages[number]) => {
+        if (msg.messageType === 'IMAGE') return isZh ? '[图片]' : '[Image]';
+        if (msg.messageType === 'LOCATION') return isZh ? '[位置]' : '[Location]';
+        return (msg.content || '').slice(0, 80);
+    };
+
     const handleSendMessage = async () => {
         if (!input.trim() || !currentUser?.id) return;
 
@@ -226,8 +238,60 @@ const Chat = () => {
             navigator.vibrate(10);
         }
 
-        await sendMessage(currentUser.id, input);
+        const metadata = replyingTo ? {
+            quotedMessageId: replyingTo.id,
+            quotedSenderId: replyingTo.senderId,
+            quotedContent: getReplyPreviewText(replyingTo),
+        } : undefined;
+
+        await sendMessage(currentUser.id, input, 'TEXT', metadata);
         setInput("");
+        setReplyingTo(null);
+    };
+
+    const handleCopyMessage = async (msg: typeof messages[number]) => {
+        try {
+            await navigator.clipboard.writeText(msg.content);
+            toast.success(isZh ? '已复制' : 'Copied');
+        } catch (err) {
+            console.error('Failed to copy message:', err);
+            toast.error(isZh ? '复制失败' : 'Failed to copy');
+        }
+    };
+
+    const handleTranslateMessage = async (msg: typeof messages[number]) => {
+        if (translations[msg.id]) {
+            setTranslations(prev => {
+                const next = { ...prev };
+                delete next[msg.id];
+                return next;
+            });
+            return;
+        }
+
+        setTranslatingIds(prev => new Set(prev).add(msg.id));
+        try {
+            const { data, error } = await supabase.functions.invoke('translate-text', {
+                body: { text: msg.content, targetLanguage: isZh ? 'zh' : 'en' }
+            });
+            if (error) throw error;
+            if (data?.skipped) {
+                toast.info(isZh ? '消息已经是中文了' : 'Message is already in English');
+            } else if (data?.translated) {
+                setTranslations(prev => ({ ...prev, [msg.id]: data.translated }));
+            } else {
+                throw new Error('No translation returned');
+            }
+        } catch (err) {
+            console.error('Failed to translate message:', err);
+            toast.error(isZh ? '翻译失败，请重试' : 'Failed to translate, please try again');
+        } finally {
+            setTranslatingIds(prev => {
+                const next = new Set(prev);
+                next.delete(msg.id);
+                return next;
+            });
+        }
     };
 
     const handleSendQuote = async () => {
@@ -669,6 +733,19 @@ const Chat = () => {
                                                                         </button>
                                                                     </DropdownMenuTrigger>
                                                                     <DropdownMenuContent align={isMe ? "end" : "start"} className="rounded-xl min-w-[110px] p-1">
+                                                                        {!isImage && (
+                                                                            <DropdownMenuItem onClick={() => handleCopyMessage(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                                <Copy className="w-3.5 h-3.5" /> {isZh ? '复制' : 'Copy'}
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        <DropdownMenuItem onClick={() => setReplyingTo(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                            <Reply className="w-3.5 h-3.5" /> {isZh ? '引用' : 'Reply'}
+                                                                        </DropdownMenuItem>
+                                                                        {!isImage && (
+                                                                            <DropdownMenuItem onClick={() => handleTranslateMessage(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                                <Languages className="w-3.5 h-3.5" /> {translations[msg.id] ? (isZh ? '隐藏翻译' : 'Hide Translation') : (isZh ? '翻译' : 'Translate')}
+                                                                            </DropdownMenuItem>
+                                                                        )}
                                                                         {canRecall(msg) && (
                                                                             <DropdownMenuItem onClick={() => handleRecallMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
                                                                                 <Undo2 className="w-3.5 h-3.5" /> {isZh ? '撤回' : 'Recall'}
@@ -687,6 +764,19 @@ const Chat = () => {
                                                                     : 'bg-white border border-border/50 text-foreground rounded-tl-none',
                                                                 isQuote && 'bg-orange-50 border-orange-200 text-orange-950 rounded-2xl'
                                                             )}>
+                                                                {msg.metadata?.quotedMessageId && (
+                                                                    <div className={cn(
+                                                                        "mb-1.5 px-2 py-1 rounded-lg text-[11px] border-l-2 overflow-hidden",
+                                                                        isMe ? "bg-white/10 border-white/40" : "bg-muted/50 border-primary/30"
+                                                                    )}>
+                                                                        <p className="font-bold opacity-80 truncate">
+                                                                            {msg.metadata.quotedSenderId === currentUser?.id
+                                                                                ? (isZh ? '我' : 'Me')
+                                                                                : getDisplayName(activeOtherUserId, activeConversation?.otherUserName)}
+                                                                        </p>
+                                                                        <p className="opacity-70 truncate">{msg.metadata.quotedContent}</p>
+                                                                    </div>
+                                                                )}
                                                                 {isQuote ? (
                                                                     <div className="space-y-2">
                                                                         <div className="flex items-center gap-2 border-b border-orange-200 pb-1.5 mb-1.5">
@@ -751,6 +841,17 @@ const Chat = () => {
                                                                 ) : (
                                                                     <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                                                 )}
+                                                                {translatingIds.has(msg.id) && (
+                                                                    <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-current/10 opacity-60">
+                                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        <span className="text-[10px]">{isZh ? '翻译中...' : 'Translating...'}</span>
+                                                                    </div>
+                                                                )}
+                                                                {translations[msg.id] && (
+                                                                    <p className="mt-1.5 pt-1.5 border-t border-current/10 text-xs leading-relaxed whitespace-pre-wrap opacity-80">
+                                                                        {translations[msg.id]}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                             <div className={cn(
                                                                 "flex items-center gap-1.5 mt-1 px-1",
@@ -783,6 +884,26 @@ const Chat = () => {
                             {/* Ultra Slim Input Area - with safe area for mobile bottom nav */}
                             <div className="p-3 pb-20 md:pb-3 bg-muted/5 border-t border-border/40">
                                 <div className="flex flex-col gap-2">
+                                    {/* Reply preview (引用) */}
+                                    {replyingTo && (
+                                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/40 border-l-2 border-primary/40">
+                                            <Reply className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-bold text-primary/80 truncate">
+                                                    {replyingTo.senderId === currentUser?.id
+                                                        ? (isZh ? '回复我自己' : 'Replying to yourself')
+                                                        : (isZh ? `回复 ${getDisplayName(activeOtherUserId, activeConversation?.otherUserName)}` : `Replying to ${getDisplayName(activeOtherUserId, activeConversation?.otherUserName)}`)}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground truncate">{getReplyPreviewText(replyingTo)}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setReplyingTo(null)}
+                                                className="w-5 h-5 rounded-full hover:bg-muted flex items-center justify-center flex-shrink-0"
+                                            >
+                                                <X className="w-3.5 h-3.5 text-muted-foreground" />
+                                            </button>
+                                        </div>
+                                    )}
                                     {/* Quick Actions Bar - Improved scrolling */}
                                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1 snap-x snap-mandatory">
                                         {/* activeOrder.providerId is provider_profiles.id, not the
