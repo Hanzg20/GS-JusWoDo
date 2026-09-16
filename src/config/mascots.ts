@@ -49,12 +49,17 @@ export const MASCOT_SQUIRREL: Mascot = {
 };
 
 // 小百灵/小海狸 are real accounts (community mascot, AI support), not
-// pure UI config like the three above — but the homepage pillar grid
-// needs her avatar path too, so it's exported here rather than
-// hardcoded a second time in CategoryIconGrid.tsx.
+// pure UI config like the three above — but other pages (homepage
+// pillar grid, 404 page) need their avatar paths too, so they're
+// exported here rather than hardcoded again at each call site.
 export const MASCOT_LARK: Mascot = {
     name: '小百灵',
     avatar: '/mascots/lark.png',
+};
+
+export const MASCOT_BEAVER: Mascot = {
+    name: '小海狸',
+    avatar: '/mascots/beaver.png',
 };
 
 // Maps a CategoryListing.tsx `type` param to the mascot whose module it

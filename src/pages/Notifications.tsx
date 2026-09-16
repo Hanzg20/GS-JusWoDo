@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    ChevronLeft, Bell, BellOff, Info,
+    ChevronLeft, Bell, Info,
     Trash2, CheckCheck, Gift, ShoppingBag,
     MessageSquare, ShieldCheck, Star,
     Settings, Clock
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MASCOT_BEAVER } from "@/config/mascots";
 
 interface Notification {
     id: string;
@@ -177,9 +178,11 @@ const Notifications = () => {
                                 </div>
                             ))
                         ) : (
-                            <div className="py-20 flex flex-col items-center justify-center text-center opacity-30">
-                                <BellOff className="w-16 h-16 mb-4" />
-                                <p className="font-black italic">{t.empty}</p>
+                            <div className="py-20 flex flex-col items-center justify-center text-center">
+                                <img src={MASCOT_BEAVER.avatar} alt={MASCOT_BEAVER.name} className="w-20 h-20 mb-3 opacity-70" />
+                                <p className="font-black text-muted-foreground">
+                                    {language === 'zh' ? '小海狸也没收到什么新消息～' : "小海狸 hasn't got anything new for you yet"}
+                                </p>
                             </div>
                         )}
                     </TabsContent>
