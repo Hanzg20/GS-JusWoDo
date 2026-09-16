@@ -18,9 +18,9 @@ import { MASCOT_BY_PILLAR } from "@/config/mascots";
 // works — only the top-level homepage tile is gone; CategoryListing.tsx and
 // Community.tsx expose sibling tabs so they stay reachable.
 const FALLBACK_PILLARS = [
-  { codeId: 'PILLAR_SERVICE', path: '/category/service', zhName: '本地服务', enName: 'Services', extraData: { icon: 'Wrench', bgColor: 'bg-orange-50 text-orange-600 border-orange-100', badgeColor: 'bg-orange-500', desc_zh: '保洁 / 维修 / 铲雪 / 接送 / 商户产品', desc_en: 'Cleaning, repairs, snow, rides & merchant products' } },
-  { codeId: 'PILLAR_HELP', path: '/community', zhName: '邻里圈', enName: 'Neighbors', extraData: { icon: 'Users', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 任务委托 / 推荐 / 资讯', desc_en: 'Ask, post a task, recommend, local news' } },
-  { codeId: 'PILLAR_GOODS', path: '/category/secondhand', zhName: '闲置 & 租赁', enName: 'Marketplace', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 设备场地租赁', desc_en: 'Used items, giveaways & gear/space rentals' } },
+  { codeId: 'PILLAR_SERVICE', path: '/category/service', zhName: '寻服务·找达人', enName: 'Services', extraData: { icon: 'Wrench', bgColor: 'bg-orange-50 text-orange-600 border-orange-100', badgeColor: 'bg-orange-500', desc_zh: '保洁 / 维修 / 铲雪 / 接送 / 商户产品', desc_en: 'Cleaning, repairs, snow, rides & merchant products' } },
+  { codeId: 'PILLAR_HELP', path: '/community', zhName: '聊家常·助友邻', enName: 'Neighbors', extraData: { icon: 'Users', bgColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', badgeColor: 'bg-emerald-500', desc_zh: '求助 / 任务委托 / 推荐 / 资讯', desc_en: 'Ask, post a task, recommend, local news' } },
+  { codeId: 'PILLAR_GOODS', path: '/category/secondhand', zhName: '淘二手·租闲置', enName: 'Marketplace', extraData: { icon: 'RefreshCw', bgColor: 'bg-purple-50 text-purple-600 border-purple-100', badgeColor: 'bg-purple-500', desc_zh: '闲置买卖 / 免费送 / 设备场地租赁', desc_en: 'Used items, giveaways & gear/space rentals' } },
 ];
 
 /**
