@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
+import { useConfigStore } from "@/stores/configStore";
 import { useNavigate } from "react-router-dom";
 
 export const PhoneLogin = () => {
     const navigate = useNavigate();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
     const [loading, setLoading] = useState(false);
     const [phone, setPhone] = useState("");
     const [otpCode, setOtpCode] = useState("");
@@ -53,11 +56,11 @@ export const PhoneLogin = () => {
         const phoneRegex = /^\+1[2-9]\d{9}$/;
 
         if (!phone) {
-            setPhoneError("请输入手机号");
+            setPhoneError(isZh ? "请输入手机号" : "Please enter a phone number");
             return false;
         }
         if (!phoneRegex.test(cleanPhone)) {
-            setPhoneError("请输入有效的加拿大手机号");
+            setPhoneError(isZh ? "请输入有效的加拿大手机号" : "Please enter a valid Canadian phone number");
             return false;
         }
         setPhoneError(null);
@@ -93,15 +96,15 @@ export const PhoneLogin = () => {
 
             setStep('VERIFY');
             setTimer(60);
-            toast.success(`验证码已发送至 ${phone}`);
+            toast.success(isZh ? `验证码已发送至 ${phone}` : `Code sent to ${phone}`);
         } catch (err: any) {
             const msg = err.message.includes('rate_limit')
-                ? '发送太频繁，请稍后再试'
+                ? (isZh ? '发送太频繁，请稍后再试' : 'Too many attempts, please try again later')
                 : err.message.includes('Invalid phone')
-                ? '手机号格式不正确，请使用加拿大号码'
+                ? (isZh ? '手机号格式不正确，请使用加拿大号码' : 'Invalid phone format, please use a Canadian number')
                 : err.message.includes('SMS could not be sent')
-                ? '短信发送失败，请检查 Supabase 配置'
-                : "发送失败，请稍后重试";
+                ? (isZh ? '短信发送失败，请检查 Supabase 配置' : 'Failed to send SMS, please check the Supabase configuration')
+                : (isZh ? "发送失败，请稍后重试" : "Failed to send, please try again later");
             setError(msg);
             toast.error(msg);
             console.error('[Phone OTP Error]', err);
@@ -115,7 +118,7 @@ export const PhoneLogin = () => {
         setError(null);
 
         if (otpCode.length !== 6) {
-            setError("请输入6位验证码");
+            setError(isZh ? "请输入6位验证码" : "Please enter the 6-digit code");
             return;
         }
 
@@ -131,15 +134,15 @@ export const PhoneLogin = () => {
 
             if (verifyError) throw verifyError;
 
-            toast.success("验证成功，正在登录...");
+            toast.success(isZh ? "验证成功，正在登录..." : "Verified, signing you in...");
             await useAuthStore.getState().initializeAuth();
             navigate("/");
         } catch (err: any) {
             const msg = err.message.includes('expired')
-                ? '验证码已过期，请重新获取'
+                ? (isZh ? '验证码已过期，请重新获取' : 'Code expired, please request a new one')
                 : err.message.includes('invalid')
-                ? '验证码错误，请重新输入'
-                : "验证失败，请稍后重试";
+                ? (isZh ? '验证码错误，请重新输入' : 'Incorrect code, please try again')
+                : (isZh ? "验证失败，请稍后重试" : "Verification failed, please try again later");
             setError(msg);
             toast.error(msg);
             console.error('[Phone OTP Verify Error]', err);
@@ -154,7 +157,7 @@ export const PhoneLogin = () => {
                 <form onSubmit={handleSendOtp} className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">
-                            手机号码（加拿大）
+                            {isZh ? '手机号码（加拿大）' : 'Phone Number (Canada)'}
                         </label>
                         <div className="relative">
                             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -177,7 +180,7 @@ export const PhoneLogin = () => {
                             )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            💡 提示：输入时自动格式化为加拿大格式
+                            {isZh ? '💡 提示：输入时自动格式化为加拿大格式' : "💡 Tip: automatically formatted as you type"}
                         </p>
                     </div>
 
@@ -196,18 +199,20 @@ export const PhoneLogin = () => {
                         {loading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                发送中...
+                                {isZh ? '发送中...' : 'Sending...'}
                             </div>
                         ) : timer > 0 ? (
-                            `重新发送 (${timer}秒)`
+                            isZh ? `重新发送 (${timer}秒)` : `Resend (${timer}s)`
                         ) : (
-                            '发送验证码'
+                            isZh ? '发送验证码' : 'Send Code'
                         )}
                     </Button>
 
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <p className="text-xs text-blue-700 leading-relaxed">
-                            📱 <strong>首次使用？</strong> 验证码将发送至您的手机，用于登录和注册。
+                            {isZh
+                                ? <>📱 <strong>首次使用？</strong> 验证码将发送至您的手机，用于登录和注册。</>
+                                : <>📱 <strong>First time?</strong> A code will be sent to your phone for sign-in and registration.</>}
                         </p>
                     </div>
                 </form>
@@ -215,16 +220,16 @@ export const PhoneLogin = () => {
                 <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                         <p className="text-sm text-green-700">
-                            📲 验证码已发送至 <strong className="font-mono">{phone}</strong>
+                            {isZh ? <>📲 验证码已发送至 <strong className="font-mono">{phone}</strong></> : <>📲 Code sent to <strong className="font-mono">{phone}</strong></>}
                         </p>
                         <p className="text-xs text-green-600 mt-1">
-                            请查看短信并输入6位验证码
+                            {isZh ? '请查看短信并输入6位验证码' : 'Check your texts and enter the 6-digit code'}
                         </p>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">
-                            验证码
+                            {isZh ? '验证码' : 'Verification Code'}
                         </label>
                         <div className="relative">
                             <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -256,10 +261,10 @@ export const PhoneLogin = () => {
                         {loading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                验证中...
+                                {isZh ? '验证中...' : 'Verifying...'}
                             </div>
                         ) : (
-                            '确认登录'
+                            isZh ? '确认登录' : 'Confirm Sign In'
                         )}
                     </Button>
 
@@ -273,7 +278,7 @@ export const PhoneLogin = () => {
                             }}
                             className="text-sm text-muted-foreground hover:text-primary transition-colors"
                         >
-                            ← 返回修改手机号
+                            {isZh ? '← 返回修改手机号' : '← Back to edit phone number'}
                         </button>
                         <button
                             type="button"
@@ -289,7 +294,7 @@ export const PhoneLogin = () => {
                                     : 'text-primary hover:underline'
                             }`}
                         >
-                            {timer > 0 ? `重新发送(${timer}s)` : '重新发送'}
+                            {timer > 0 ? `${isZh ? '重新发送' : 'Resend'}(${timer}s)` : (isZh ? '重新发送' : 'Resend')}
                         </button>
                     </div>
                 </form>
