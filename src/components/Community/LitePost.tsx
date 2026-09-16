@@ -10,6 +10,7 @@ import { Plus, MapPin, Send, Loader2, Edit2, Shield, Calendar, MapPinned } from 
 import ImageUploader from "@/components/common/ImageUploader";
 import { useAuthStore } from "@/stores/authStore";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
+import { useConfigStore } from "@/stores/configStore";
 import { toast } from "sonner";
 import { CommunityPostType, FactType, FactData, FACT_TYPE_CONFIG } from "@/types/community";
 import { MediaEmbed } from "./MediaEmbed";
@@ -33,22 +34,22 @@ interface LitePostProps {
     };
 }
 
-const LITE_CATEGORIES: { id: CommunityPostType; label: string; icon: string; tag: string }[] = [
-    { id: 'MOMENT', label: '邻里', icon: '🏘️', tag: '#邻里' },
-    { id: 'ACTION', label: '参加', icon: '🤝', tag: '#活动' },
-    { id: 'HELP', label: '求助', icon: '🆘', tag: '#求助' },
-    { id: 'NOTICE', label: '公告', icon: '📢', tag: '#公告' },
+const LITE_CATEGORIES: { id: CommunityPostType; labelZh: string; labelEn: string; icon: string; tag: string }[] = [
+    { id: 'MOMENT', labelZh: '邻里', labelEn: 'Neighbor', icon: '🏘️', tag: '#邻里' },
+    { id: 'ACTION', labelZh: '参加', labelEn: 'Join', icon: '🤝', tag: '#活动' },
+    { id: 'HELP', labelZh: '求助', labelEn: 'Help', icon: '🆘', tag: '#求助' },
+    { id: 'NOTICE', labelZh: '公告', labelEn: 'Notice', icon: '📢', tag: '#公告' },
 ];
 
 // 真言事件类型选项
-const FACT_TYPE_OPTIONS: { id: FactType; label: string; icon: string }[] = [
-    { id: 'SERVICE_EXPERIENCE', label: '服务体验', icon: '🛠️' },
-    { id: 'PROPERTY_ISSUE', label: '物业问题', icon: '🏠' },
-    { id: 'PRICE_CHANGE', label: '价格变动', icon: '💰' },
-    { id: 'SAFETY_ALERT', label: '安全提醒', icon: '⚠️' },
-    { id: 'RECOMMENDATION', label: '真心推荐', icon: '⭐' },
-    { id: 'NEIGHBORHOOD_INFO', label: '社区信息', icon: '📍' },
-    { id: 'OTHER', label: '其他', icon: '📝' },
+const FACT_TYPE_OPTIONS: { id: FactType; labelZh: string; labelEn: string; icon: string }[] = [
+    { id: 'SERVICE_EXPERIENCE', labelZh: '服务体验', labelEn: 'Service Experience', icon: '🛠️' },
+    { id: 'PROPERTY_ISSUE', labelZh: '物业问题', labelEn: 'Property Issue', icon: '🏠' },
+    { id: 'PRICE_CHANGE', labelZh: '价格变动', labelEn: 'Price Change', icon: '💰' },
+    { id: 'SAFETY_ALERT', labelZh: '安全提醒', labelEn: 'Safety Alert', icon: '⚠️' },
+    { id: 'RECOMMENDATION', labelZh: '真心推荐', labelEn: 'Recommendation', icon: '⭐' },
+    { id: 'NEIGHBORHOOD_INFO', labelZh: '社区信息', labelEn: 'Neighborhood Info', icon: '📍' },
+    { id: 'OTHER', labelZh: '其他', labelEn: 'Other', icon: '📝' },
 ];
 
 export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostProps) {
@@ -75,6 +76,8 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
     const { currentUser } = useAuthStore();
     const { createPost, updatePost } = useCommunityPostStore();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
 
     // Initialize form when opening in edit mode
     useEffect(() => {
@@ -106,30 +109,30 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
     const handlePost = async () => {
         if (!currentUser) {
-            toast.error("请先登录");
+            toast.error(isZh ? "请先登录" : "Please log in first");
             return;
         }
 
         if (!description && images.length === 0) {
-            toast.error("加点内容吧！图片或文字都行");
+            toast.error(isZh ? "加点内容吧！图片或文字都行" : "Add something! A photo or a few words works");
             return;
         }
 
         // 真言模式验证
         if (isFact) {
             if (!factOccurredAt) {
-                toast.error("真言模式需要填写发生时间");
+                toast.error(isZh ? "真言模式需要填写发生时间" : "Fact mode requires the date it happened");
                 return;
             }
             if (!factLocation) {
-                toast.error("真言模式需要填写发生地点");
+                toast.error(isZh ? "真言模式需要填写发生地点" : "Fact mode requires the location");
                 return;
             }
         }
 
         setIsSubmitting(true);
         try {
-            const finalTitle = title.trim() || description.slice(0, 30) || (isEditMode ? "编辑动态" : "邻里分享");
+            const finalTitle = title.trim() || description.slice(0, 30) || (isEditMode ? (isZh ? "编辑动态" : "Edited post") : (isZh ? "邻里分享" : "Neighbor share"));
             const priceInCents = price ? Math.floor(parseFloat(price) * 100) : undefined;
             const nodeId = currentUser.nodeId || 'NODE_LEES';
 
@@ -158,7 +161,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                     tags: [selectedCat.tag.replace('#', '')],
                     factData: factData,
                 });
-                toast.success("动态已更新");
+                toast.success(isZh ? "动态已更新" : "Post updated");
             } else {
                 // CREATE
                 await createPost(currentUser.id, {
@@ -175,7 +178,11 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                     isFact: isFact,
                     factData: factData,
                 });
-                toast.success(isFact ? "真言发布成功！等待邻居验证" : "发布成功！已在真言展示");
+                toast.success(
+                    isFact
+                        ? (isZh ? "真言发布成功！等待邻居验证" : "Fact posted! Waiting on neighbor verification")
+                        : (isZh ? "发布成功！已在真言展示" : "Posted! It's now live in the feed")
+                );
             }
 
             setOpen(false);
@@ -183,7 +190,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
             onSuccess?.();
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "操作失败，请重试");
+            toast.error(error.message || (isZh ? "操作失败，请重试" : "Something went wrong, please try again"));
         } finally {
             setIsSubmitting(false);
         }
@@ -218,10 +225,10 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
             <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl border-none max-h-[90vh]">
                 <DialogHeader className="p-6 bg-primary/5 pb-4 shrink-0">
                     <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
-                        {isEditMode ? '编辑动态' : '发个动态'} <span className="text-primary">Neighbor</span>
+                        {isEditMode ? (isZh ? '编辑动态' : 'Edit Post') : (isZh ? '发个动态' : 'New Post')} <span className="text-primary">Neighbor</span>
                     </DialogTitle>
                     <DialogDescription className="sr-only">
-                        快速发布社区动态，分享闲置、求助、活动等内容
+                        {isZh ? '快速发布社区动态，分享闲置、求助、活动等内容' : 'Quickly post to the community — share items, ask for help, or announce an event'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -239,7 +246,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                     }`}
                             >
                                 <span>{cat.icon}</span>
-                                <span>{cat.label}</span>
+                                <span>{isZh ? cat.labelZh : cat.labelEn}</span>
                             </button>
                         ))}
                     </div>
@@ -252,10 +259,12 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                             </div>
                             <div>
                                 <Label htmlFor="fact-mode" className="font-bold text-base cursor-pointer">
-                                    真言模式
+                                    {isZh ? '真言模式' : 'Fact Mode'}
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    {isFact ? '需填写时间地点，邻居可验证' : '开启后可获得邻居共识认证'}
+                                    {isFact
+                                        ? (isZh ? '需填写时间地点，邻居可验证' : 'Requires a date and location — neighbors can verify it')
+                                        : (isZh ? '开启后可获得邻居共识认证' : 'Turn on to get neighbor-verified consensus')}
                                 </p>
                             </div>
                         </div>
@@ -272,7 +281,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                         <div className="space-y-4 p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="flex items-center gap-2 text-amber-600 mb-2">
                                 <Shield className="w-4 h-4" />
-                                <span className="text-sm font-bold">真言信息 (必填)</span>
+                                <span className="text-sm font-bold">{isZh ? '真言信息 (必填)' : 'Fact Details (required)'}</span>
                             </div>
 
                             {/* 发生时间 */}
@@ -282,7 +291,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                 </div>
                                 <Input
                                     type="date"
-                                    placeholder="发生时间"
+                                    placeholder={isZh ? "发生时间" : "Date it happened"}
                                     value={factOccurredAt}
                                     onChange={(e) => setFactOccurredAt(e.target.value)}
                                     className="bg-white/50 border-amber-500/20 focus-visible:ring-amber-500 rounded-xl"
@@ -295,7 +304,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                     <MapPinned className="w-5 h-5" />
                                 </div>
                                 <Input
-                                    placeholder="发生地点 (如: XX小区/XX店铺)"
+                                    placeholder={isZh ? "发生地点 (如: XX小区/XX店铺)" : "Location (e.g. XX condo / XX store)"}
                                     value={factLocation}
                                     onChange={(e) => setFactLocation(e.target.value)}
                                     className="bg-white/50 border-amber-500/20 focus-visible:ring-amber-500 rounded-xl"
@@ -309,14 +318,14 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                 </div>
                                 <Select value={factType} onValueChange={(v) => setFactType(v as FactType)}>
                                     <SelectTrigger className="bg-white/50 border-amber-500/20 focus:ring-amber-500 rounded-xl">
-                                        <SelectValue placeholder="选择事件类型" />
+                                        <SelectValue placeholder={isZh ? "选择事件类型" : "Select event type"} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {FACT_TYPE_OPTIONS.map((type) => (
                                             <SelectItem key={type.id} value={type.id}>
                                                 <span className="flex items-center gap-2">
                                                     <span>{type.icon}</span>
-                                                    <span>{type.label}</span>
+                                                    <span>{isZh ? type.labelZh : type.labelEn}</span>
                                                 </span>
                                             </SelectItem>
                                         ))}
@@ -326,7 +335,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
                             {/* 涉及对象 (可选) */}
                             <Input
-                                placeholder="涉及对象 (可选，如: XX家政/张师傅)"
+                                placeholder={isZh ? "涉及对象 (可选，如: XX家政/张师傅)" : "Involved party (optional, e.g. XX Cleaning / Mr. Zhang)"}
                                 value={factSubjectName}
                                 onChange={(e) => setFactSubjectName(e.target.value)}
                                 className="bg-white/50 border-amber-500/20 focus-visible:ring-amber-500 rounded-xl"
@@ -334,7 +343,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
                             {/* 证据图片 */}
                             <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">证据图片 (可选，最多3张)</Label>
+                                <Label className="text-xs text-muted-foreground">{isZh ? '证据图片 (可选，最多3张)' : 'Evidence photos (optional, up to 3)'}</Label>
                                 <ImageUploader
                                     bucketName="listing-media"
                                     onUpload={setFactEvidence}
@@ -369,13 +378,13 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                 className={`rounded-full px-4 flex gap-2 font-bold ${showMediaInput ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
                             >
                                 <Plus className={`w-4 h-4 transition-transform ${showMediaInput ? 'rotate-45' : ''}`} />
-                                {showMediaInput ? '移除链接' : '添加视频/音频链接'}
+                                {showMediaInput ? (isZh ? '移除链接' : 'Remove link') : (isZh ? '添加视频/音频链接' : 'Add video/audio link')}
                             </Button>
                         </div>
 
                         {showMediaInput && (
                             <Input
-                                placeholder="粘贴 YouTube/B站/小红书/Spotify 链接..."
+                                placeholder={isZh ? "粘贴 YouTube/B站/小红书/Spotify 链接..." : "Paste a YouTube/Bilibili/Xiaohongshu/Spotify link..."}
                                 value={mediaUrl}
                                 onChange={(e) => setMediaUrl(e.target.value)}
                                 className="bg-primary/5 border-primary/20 focus-visible:ring-1 focus-visible:ring-primary rounded-2xl h-12 p-4 text-base"
@@ -383,13 +392,13 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                         )}
 
                         <Input
-                            placeholder="写个标题 (可选)"
+                            placeholder={isZh ? "写个标题 (可选)" : "Add a title (optional)"}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             className="bg-muted/10 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-2xl h-12 p-4 text-base font-bold"
                         />
                         <Textarea
-                            placeholder="分享点新鲜事..."
+                            placeholder={isZh ? "分享点新鲜事..." : "Share what's new..."}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             className="min-h-[120px] bg-muted/10 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-2xl p-4 text-base resize-none"
@@ -403,7 +412,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                 </div>
                                 <Input
                                     type="number"
-                                    placeholder={selectedCat.id === 'ACTION' ? "出个价 (CAD)" : "预算范围 (CAD)"}
+                                    placeholder={selectedCat.id === 'ACTION' ? (isZh ? "出个价 (CAD)" : "Set a price (CAD)") : (isZh ? "预算范围 (CAD)" : "Budget range (CAD)")}
                                     value={price}
                                     onChange={(e) => setPrice(e.target.value)}
                                     className="bg-transparent border-none focus-visible:ring-0 text-lg font-bold p-0"
@@ -430,7 +439,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    <span>{isEditMode ? '保存修改' : '立即发布'}</span>
+                                    <span>{isEditMode ? (isZh ? '保存修改' : 'Save Changes') : (isZh ? '立即发布' : 'Post Now')}</span>
                                     {isEditMode ? <Edit2 className="w-4 h-4 ml-1" /> : <Send className="w-4 h-4" />}
                                 </>
                             )}
