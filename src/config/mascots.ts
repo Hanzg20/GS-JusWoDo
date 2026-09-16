@@ -48,6 +48,15 @@ export const MASCOT_SQUIRREL: Mascot = {
     rewardEn: "Little Squirrel stashed {amount} JinBeans for you 🌰",
 };
 
+// 小百灵/小海狸 are real accounts (community mascot, AI support), not
+// pure UI config like the three above — but the homepage pillar grid
+// needs her avatar path too, so it's exported here rather than
+// hardcoded a second time in CategoryIconGrid.tsx.
+export const MASCOT_LARK: Mascot = {
+    name: '小百灵',
+    avatar: '/mascots/lark.png',
+};
+
 // Maps a CategoryListing.tsx `type` param to the mascot whose module it
 // belongs to — mirrors the TYPE_TO_PILLAR grouping already established
 // there (products shares Services' mascot, rental shares Secondhand's).
@@ -56,4 +65,15 @@ export const MASCOT_BY_TYPE: Partial<Record<PillarType, Mascot>> = {
     products: MASCOT_BEE,
     secondhand: MASCOT_RACCOON,
     rental: MASCOT_RACCOON,
+};
+
+// Maps a homepage pillar's ref_codes codeId (or FALLBACK_PILLARS entry,
+// same codeIds) to the mascot that fronts it on CategoryIconGrid.tsx —
+// so a visitor sees the same character on the homepage tile and later
+// inside that module, instead of the animal feeling introduced out of
+// nowhere the first time they hit an empty state.
+export const MASCOT_BY_PILLAR: Record<string, Mascot> = {
+    PILLAR_SERVICE: MASCOT_BEE,
+    PILLAR_HELP: MASCOT_LARK,
+    PILLAR_GOODS: MASCOT_RACCOON,
 };

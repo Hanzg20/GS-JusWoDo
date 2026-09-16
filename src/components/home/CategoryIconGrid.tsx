@@ -3,6 +3,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { ChevronRight } from "lucide-react";
 import { getIcon } from "@/lib/iconMapper";
 import { motion } from "framer-motion";
+import { MASCOT_BY_PILLAR } from "@/config/mascots";
 
 // Fallback used only if ref_codes hasn't been migrated yet (no PILLAR rows) —
 // keeps the homepage from breaking before the DB migration lands.
@@ -44,6 +45,7 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
         {pillars.map((pillar, idx) => {
           const extra = pillar.extraData || {};
           const Icon = getIcon(extra.icon);
+          const mascot = MASCOT_BY_PILLAR[pillar.codeId];
           const path = extra.path || '/';
           const name = isZh ? pillar.zhName : (pillar.enName || pillar.zhName);
           const desc = isZh ? extra.desc_zh : extra.desc_en;
@@ -62,7 +64,11 @@ export function CategoryIconGrid({ counts = {} }: { counts?: Record<string, numb
             >
               <div className="flex items-start justify-between mb-2">
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shadow-3xs transition-transform group-hover:scale-105 ${extra.bgColor || 'bg-slate-50 text-slate-600 border-slate-100'}`}>
-                  <Icon className="w-5 h-5" strokeWidth={2.2} />
+                  {mascot ? (
+                    <img src={mascot.avatar} alt={mascot.name} className="w-9 h-9 object-contain" />
+                  ) : (
+                    <Icon className="w-5 h-5" strokeWidth={2.2} />
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   {count > 0 && (
