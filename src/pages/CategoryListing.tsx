@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import SEO from "@/components/SEO";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -52,8 +52,16 @@ const CategoryListing = () => {
     const { refCodes, language, activeNodeId } = useConfigStore();
     const [isSmartSearch, setIsSmartSearch] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
-    const [selectedIndustryId, setSelectedIndustryId] = useState<string | undefined>(undefined);
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+    // Deep-link support: a link (e.g. the search bar's category dropdown)
+    // can jump straight to a specific industry or category via
+    // ?industryId=/?categoryId=, not just land on the pillar page and make
+    // the visitor pick it again.
+    const [selectedIndustryId, setSelectedIndustryId] = useState<string | undefined>(
+        searchParams.get('industryId') || undefined
+    );
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(
+        searchParams.get('categoryId') || undefined
+    );
     const [sortBy, setSortBy] = useState<SortBy>('newest');
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -158,10 +166,29 @@ const CategoryListing = () => {
         return sortedListings.filter(item => categoryIds.has(item.categoryId));
     }, [sortedListings, selectedIndustryId, selectedCategoryId, pillarCategories]);
 
+    // Skip the reset on mount — otherwise it immediately wipes out the
+    // ?categoryId= deep-link initial state above. Only clear the filters
+    // when `type` genuinely changes later in the same SPA session (e.g.
+    // navigating from Services to Marketplace via the sibling tabs).
+    const isFirstTypeRender = useRef(true);
     useEffect(() => {
+        if (isFirstTypeRender.current) {
+            isFirstTypeRender.current = false;
+            return;
+        }
         setSelectedCategoryId(undefined);
         setSelectedIndustryId(undefined);
     }, [type]);
+
+    // A deep-linked categoryId arrives without its parent industry — derive
+    // it once refCodes are loaded so the industry tab highlights correctly
+    // too, not just the category filter chip.
+    useEffect(() => {
+        if (selectedCategoryId && !selectedIndustryId) {
+            const cat = refCodes.find(r => r.codeId === selectedCategoryId);
+            if (cat?.parentId) setSelectedIndustryId(cat.parentId);
+        }
+    }, [selectedCategoryId, selectedIndustryId, refCodes]);
 
     // "products" and "secondhand" are both really GOODS underneath — split
     // by which form created the listing (see 2026-09-06), not a real type

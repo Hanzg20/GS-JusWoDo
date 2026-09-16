@@ -11,10 +11,11 @@ interface CategoryMenuProps {
 // completely disconnected from the real ref_codes taxonomy everything else
 // (CategoryIconGrid, CategoryListing) reads from — any new category (e.g.
 // 汽车服务) never reached this menu, and it never adapted to `language`.
-// Now reads the same live ref_codes data, grouped by pillar with each
-// pillar's real INDUSTRY tier nested underneath (skipping the leaf CATEGORY
-// tier — that level's own filter chips already live on the category page
-// itself, see CategoryListing.tsx's pillarCategories).
+// Now reads the same live ref_codes data: pillar → industry → category, all
+// 3 real tiers, since a user expects a specific category like 汽车服务 to
+// actually show up here, not just at the industry level. Category clicks
+// deep-link via ?categoryId= (CategoryListing.tsx reads it on mount and
+// pre-filters to exactly that category, not just the pillar page).
 const PILLARS: { pillarId: string; path: string }[] = [
     { pillarId: 'PILLAR_SERVICE', path: '/category/service' },
     { pillarId: 'PILLAR_HELP', path: '/community' },
@@ -62,17 +63,38 @@ export function CategoryMenu({ onSelect, onClose }: CategoryMenuProps) {
                             </button>
                             {industries.length > 0 && (
                                 <div className="pl-3 space-y-0.5 mb-1">
-                                    {industries.map(industry => (
-                                        <button
-                                            key={industry.codeId}
-                                            onClick={() => handleClick(path)}
-                                            className="w-full flex items-center px-3 py-1.5 hover:bg-muted/50 rounded-lg transition-colors text-left"
-                                        >
-                                            <span className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                                                {isZh ? industry.zhName : (industry.enName || industry.zhName)}
-                                            </span>
-                                        </button>
-                                    ))}
+                                    {industries.map(industry => {
+                                        const categories = refCodes
+                                            .filter(r => r.type === 'CATEGORY' && r.parentId === industry.codeId)
+                                            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+                                        return (
+                                            <div key={industry.codeId}>
+                                                <button
+                                                    onClick={() => handleClick(`${path}?industryId=${industry.codeId}`)}
+                                                    className="w-full flex items-center px-3 py-1.5 hover:bg-muted/50 rounded-lg transition-colors text-left"
+                                                >
+                                                    <span className="text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
+                                                        {isZh ? industry.zhName : (industry.enName || industry.zhName)}
+                                                    </span>
+                                                </button>
+                                                {categories.length > 0 && (
+                                                    <div className="pl-3">
+                                                        {categories.map(category => (
+                                                            <button
+                                                                key={category.codeId}
+                                                                onClick={() => handleClick(`${path}?categoryId=${category.codeId}`)}
+                                                                className="w-full flex items-center px-3 py-1 hover:bg-muted/50 rounded-lg transition-colors text-left"
+                                                            >
+                                                                <span className="text-[11px] font-medium text-muted-foreground/80 hover:text-foreground transition-colors">
+                                                                    {isZh ? category.zhName : (category.enName || category.zhName)}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
