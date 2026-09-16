@@ -10,6 +10,7 @@ import {
 import { Navigation, MapPin, Car, Clock } from "lucide-react";
 import { smartNavigate, openGoogleMaps, openAppleMaps, openWaze, getNavigationInfo } from "@/utils/navigation";
 import { useLocation } from "@/hooks/useLocation";
+import { useConfigStore } from "@/stores/configStore";
 import { toast } from "sonner";
 
 interface NavigationButtonProps {
@@ -35,6 +36,8 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
 }) => {
     const { coords } = useLocation();
     const [isOpen, setIsOpen] = useState(false);
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
 
     const navigationOptions = {
         latitude,
@@ -45,14 +48,14 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
 
     const handleSmartNavigate = () => {
         smartNavigate(navigationOptions);
-        toast.success('正在打开导航应用...', {
+        toast.success(isZh ? '正在打开导航应用...' : 'Opening navigation app...', {
             description: address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
         });
     };
 
     // 计算距离信息
     const navInfo = coords
-        ? getNavigationInfo(coords.lat, coords.lng, latitude, longitude, 'zh')
+        ? getNavigationInfo(coords.lat, coords.lng, latitude, longitude, isZh ? 'zh' : 'en')
         : null;
 
     // 如果不显示下拉菜单，使用简单按钮
@@ -65,7 +68,7 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
                 onClick={handleSmartNavigate}
             >
                 <Navigation className="w-4 h-4 mr-2" />
-                导航
+                {isZh ? '导航' : 'Navigate'}
             </Button>
         );
     }
@@ -75,7 +78,7 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
             <DropdownMenuTrigger asChild>
                 <Button variant={variant} size={size} className={className}>
                     <Navigation className="w-4 h-4 mr-2" />
-                    导航
+                    {isZh ? '导航' : 'Navigate'}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72">
@@ -116,7 +119,7 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
                         <span className="text-lg">🗺️</span>
                         <div>
                             <p className="font-medium">Google Maps</p>
-                            <p className="text-xs text-muted-foreground">使用Google地图导航</p>
+                            <p className="text-xs text-muted-foreground">{isZh ? '使用Google地图导航' : 'Navigate with Google Maps'}</p>
                         </div>
                     </div>
                 </DropdownMenuItem>
@@ -132,7 +135,7 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
                         <span className="text-lg">🍎</span>
                         <div>
                             <p className="font-medium">Apple Maps</p>
-                            <p className="text-xs text-muted-foreground">使用苹果地图导航</p>
+                            <p className="text-xs text-muted-foreground">{isZh ? '使用苹果地图导航' : 'Navigate with Apple Maps'}</p>
                         </div>
                     </div>
                 </DropdownMenuItem>
@@ -148,7 +151,7 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
                         <span className="text-lg">🚗</span>
                         <div>
                             <p className="font-medium">Waze</p>
-                            <p className="text-xs text-muted-foreground">使用Waze实时路况导航</p>
+                            <p className="text-xs text-muted-foreground">{isZh ? '使用Waze实时路况导航' : 'Navigate with real-time traffic via Waze'}</p>
                         </div>
                     </div>
                 </DropdownMenuItem>
@@ -157,7 +160,7 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
                     <>
                         <DropdownMenuSeparator />
                         <div className="px-3 py-2 text-xs text-muted-foreground">
-                            <p className="font-medium mb-1">目的地地址：</p>
+                            <p className="font-medium mb-1">{isZh ? '目的地地址：' : 'Destination address:'}</p>
                             <p className="line-clamp-2">{address}</p>
                         </div>
                     </>

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { useConfigStore } from '@/stores/configStore';
 
 interface NotificationOptions {
     enableSound?: boolean;
@@ -82,14 +83,15 @@ export class MessageNotificationService {
         }
 
         // Show toast notification
+        const isZh = useConfigStore.getState().language === 'zh';
         const title = message.isQuote
-            ? `💰 New Quote from ${message.senderName}`
+            ? (isZh ? `💰 ${message.senderName} 发来新报价` : `💰 New Quote from ${message.senderName}`)
             : `💬 ${message.senderName}`;
 
         toast.success(title, {
             description: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
             action: {
-                label: 'View',
+                label: isZh ? '查看' : 'View',
                 onClick: () => {
                     window.location.href = `/chat?conversation=${message.conversationId}`;
                 }
@@ -188,16 +190,22 @@ export class MessageNotificationService {
             // Show summary notification
             const conversationCount = Object.keys(messagesByConversation).length;
             const totalMessages = unreadMessages.length;
+            const isZh = useConfigStore.getState().language === 'zh';
 
-            toast.info(`You have ${totalMessages} unread message${totalMessages > 1 ? 's' : ''} from ${conversationCount} conversation${conversationCount > 1 ? 's' : ''}`, {
-                action: {
-                    label: 'View All',
-                    onClick: () => {
-                        window.location.href = '/messages';
-                    }
-                },
-                duration: 8000,
-            });
+            toast.info(
+                isZh
+                    ? `您有 ${totalMessages} 条未读消息，来自 ${conversationCount} 个对话`
+                    : `You have ${totalMessages} unread message${totalMessages > 1 ? 's' : ''} from ${conversationCount} conversation${conversationCount > 1 ? 's' : ''}`,
+                {
+                    action: {
+                        label: isZh ? '查看全部' : 'View All',
+                        onClick: () => {
+                            window.location.href = '/messages';
+                        }
+                    },
+                    duration: 8000,
+                }
+            );
         }
 
         // Update last seen

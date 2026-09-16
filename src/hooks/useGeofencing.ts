@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { calculateDistance } from '@/utils/navigation';
+import { useConfigStore } from '@/stores/configStore';
 import { toast } from 'sonner';
 
 export interface GeofenceRegion {
@@ -64,6 +65,8 @@ export function useGeofencing(options: UseGeofencingOptions = {}) {
     const [locationError, setLocationError] = useState<string | null>(null);
     const watchIdRef = useRef<number | null>(null);
     const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
 
     // 添加地理围栏区域
     const addRegion = useCallback((region: GeofenceRegion) => {
@@ -124,8 +127,8 @@ export function useGeofencing(options: UseGeofencingOptions = {}) {
                 console.log(`[Geofence] Entered region: ${region.name || region.id}`);
 
                 if (showNotifications) {
-                    toast.success('进入服务区域', {
-                        description: region.name || `您已进入 ${region.radiusMeters / 1000}km 范围内`
+                    toast.success(isZh ? '进入服务区域' : 'Entered service area', {
+                        description: region.name || (isZh ? `您已进入 ${region.radiusMeters / 1000}km 范围内` : `You're now within ${region.radiusMeters / 1000}km`)
                     });
                 }
 
@@ -135,8 +138,8 @@ export function useGeofencing(options: UseGeofencingOptions = {}) {
                 console.log(`[Geofence] Exited region: ${region.name || region.id}`);
 
                 if (showNotifications) {
-                    toast.info('离开服务区域', {
-                        description: region.name || `您已离开服务范围`
+                    toast.info(isZh ? '离开服务区域' : 'Left service area', {
+                        description: region.name || (isZh ? `您已离开服务范围` : `You've left the service area`)
                     });
                 }
 
