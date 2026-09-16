@@ -14,12 +14,15 @@ import { SellerQuoteModal } from "@/components/checkout/SellerQuoteModal";
 import { useMessageStore } from "@/stores/messageStore";
 import { Order } from "@/types/orders";
 import { PAYMENTS_ENABLED } from "@/config/launchFlags";
+import { useConfigStore } from "@/stores/configStore";
 
 const Orders = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const paymentStatus = searchParams.get('payment');
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
     const { orders, updateOrderStatus, updateOrder, loadUserOrders, subscribeToOrders, unsubscribeFromOrders } = useOrderStore();
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('all');
     const [viewMode, setViewMode] = useState<'buyer' | 'seller'>('buyer');
@@ -55,17 +58,17 @@ const Orders = () => {
         }
 
         if (paymentStatus === 'success') {
-            toast.success('Payment Successful! Your order is being processed.', {
+            toast.success(isZh ? '支付成功！订单正在处理中。' : 'Payment Successful! Your order is being processed.', {
                 duration: 5000,
                 icon: <CheckCircle className="w-5 h-5 text-green-500" />
             });
             window.history.replaceState({}, '', '/orders');
             setActiveTab('pending');
         } else if (paymentStatus === 'cancelled') {
-            toast.info('Payment cancelled.');
+            toast.info(isZh ? '支付已取消。' : 'Payment cancelled.');
             window.history.replaceState({}, '', '/orders');
         }
-    }, [currentUser, navigate, paymentStatus]);
+    }, [currentUser, navigate, paymentStatus, isZh]);
 
     if (!currentUser) {
         return null; // Don't render anything while waiting for the effect
@@ -80,21 +83,21 @@ const Orders = () => {
     const getStatusConfig = (status: OrderStatus) => {
         switch (status) {
             case 'PENDING_PAYMENT':
-                return { icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50', label: '待支付' };
+                return { icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50', label: isZh ? '待支付' : 'Pending Payment' };
             case 'PENDING_CONFIRMATION':
-                return { icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-50', label: '待确认' };
+                return { icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-50', label: isZh ? '待确认' : 'Pending Confirmation' };
             case 'PENDING_QUOTE':
-                return { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', label: '待报价' };
+                return { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', label: isZh ? '待报价' : 'Pending Quote' };
             case 'WAITING_FOR_PRICE_APPROVAL':
-                return { icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50', label: '待确认价格' };
+                return { icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50', label: isZh ? '待确认价格' : 'Pending Price Approval' };
             case 'IN_PROGRESS':
-                return { icon: Package, color: 'text-purple-500', bg: 'bg-purple-50', label: '进行中' };
+                return { icon: Package, color: 'text-purple-500', bg: 'bg-purple-50', label: isZh ? '进行中' : 'In Progress' };
             case 'COMPLETED':
-                return { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50', label: '已完成' };
+                return { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50', label: isZh ? '已完成' : 'Completed' };
             case 'CANCELLED':
-                return { icon: XCircle, color: 'text-gray-500', bg: 'bg-gray-50', label: '已取消' };
+                return { icon: XCircle, color: 'text-gray-500', bg: 'bg-gray-50', label: isZh ? '已取消' : 'Cancelled' };
             case 'PENDING_DEPOSIT':
-                return { icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50', label: '待付押金' };
+                return { icon: Clock, color: 'text-orange-500', bg: 'bg-orange-50', label: isZh ? '待付押金' : 'Pending Deposit' };
             default:
                 return { icon: Package, color: 'text-gray-500', bg: 'bg-gray-50', label: status };
         }
@@ -111,8 +114,10 @@ const Orders = () => {
             await updateOrderStatus(orderId, 'IN_PROGRESS');
             toast.success(
                 order.pricing.total.amount > 0
-                    ? `Confirmed — please arrange payment (${order.pricing.total.formatted}) directly with them.`
-                    : 'Confirmed!'
+                    ? (isZh
+                        ? `已确认——请直接和对方协商支付 (${order.pricing.total.formatted})。`
+                        : `Confirmed — please arrange payment (${order.pricing.total.formatted}) directly with them.`)
+                    : (isZh ? '已确认！' : 'Confirmed!')
             );
             return;
         }
@@ -144,7 +149,7 @@ const Orders = () => {
 
             if (error || !data?.url) {
                 console.error('Stripe session error:', error);
-                toast.error('Payment system unavailable');
+                toast.error(isZh ? '支付系统暂不可用' : 'Payment system unavailable');
                 return;
             }
 
@@ -201,7 +206,7 @@ const Orders = () => {
     const handleAcceptQuote = async (orderId: string) => {
         const order = orders.find(o => o.id === orderId);
         if (!order || !order.metadata?.quoteAmount) {
-            toast.error("Invalid quote data");
+            toast.error(isZh ? '报价数据无效' : 'Invalid quote data');
             return;
         }
 
@@ -235,14 +240,14 @@ const Orders = () => {
             handlePayOrder(orderId);
         } catch (error) {
             console.error('Failed to accept quote:', error);
-            toast.error("Failed to accept quote");
+            toast.error(isZh ? '接受报价失败' : 'Failed to accept quote');
         }
     };
 
     const handleRejectQuote = async (orderId: string) => {
-        if (window.confirm('Are you sure you want to reject this quote?')) {
+        if (window.confirm(isZh ? '确定要拒绝这个报价吗？' : 'Are you sure you want to reject this quote?')) {
             await updateOrderStatus(orderId, 'CANCELLED');
-            toast.info("Quote rejected");
+            toast.info(isZh ? '报价已拒绝' : 'Quote rejected');
         }
     };
 
@@ -251,7 +256,7 @@ const Orders = () => {
             <Header />
 
             <div className="container max-w-4xl py-8 px-4">
-                <h1 className="text-3xl font-extrabold mb-6">My Orders</h1>
+                <h1 className="text-3xl font-extrabold mb-6">{isZh ? '我的订单' : 'My Orders'}</h1>
 
                 {/* View Mode Toggle */}
                 <div className="flex gap-4 mb-4">
@@ -259,13 +264,13 @@ const Orders = () => {
                         onClick={() => setViewMode('buyer')}
                         className={`pb-2 px-4 font-semibold ${viewMode === 'buyer' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
                     >
-                        I'm Buying
+                        {isZh ? '我买的' : "I'm Buying"}
                     </button>
                     <button
                         onClick={() => setViewMode('seller')}
                         className={`pb-2 px-4 font-semibold ${viewMode === 'seller' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
                     >
-                        I'm Selling
+                        {isZh ? '我卖的' : "I'm Selling"}
                     </button>
                 </div>
 
@@ -278,7 +283,7 @@ const Orders = () => {
                             : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
-                        全部 ({userOrders.length})
+                        {isZh ? '全部' : 'All'} ({userOrders.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('pending')}
@@ -287,7 +292,7 @@ const Orders = () => {
                             : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
-                        进行中
+                        {isZh ? '进行中' : 'In Progress'}
                     </button>
                     <button
                         onClick={() => setActiveTab('completed')}
@@ -296,7 +301,7 @@ const Orders = () => {
                             : 'text-muted-foreground hover:text-foreground'
                             }`}
                     >
-                        已完成
+                        {isZh ? '已完成' : 'Completed'}
                     </button>
                 </div>
 
@@ -304,12 +309,12 @@ const Orders = () => {
                 {filteredOrders.length === 0 ? (
                     <div className="text-center py-20">
                         <Package className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                        <p className="text-muted-foreground">暂无订单</p>
+                        <p className="text-muted-foreground">{isZh ? '暂无订单' : 'No orders yet'}</p>
                         <Button
                             onClick={() => navigate('/')}
                             className="mt-4 btn-action"
                         >
-                            去逛逛
+                            {isZh ? '去逛逛' : 'Start Browsing'}
                         </Button>
                     </div>
                 ) : (
@@ -360,18 +365,18 @@ const Orders = () => {
                                                 )}
                                                 {order.serviceCallFee ? (
                                                     <Badge variant="outline" className="text-[10px] border-orange-100 bg-orange-50 text-orange-600">
-                                                        Booking Fee: ${order.serviceCallFee / 100}
+                                                        {isZh ? '预约费' : 'Booking Fee'}: ${order.serviceCallFee / 100}
                                                     </Badge>
                                                 ) : null}
                                                 {order.depositAmount ? (
                                                     <Badge variant="outline" className="text-[10px] border-amber-100 bg-amber-50 text-amber-600">
-                                                        Deposit: ${order.depositAmount / 100} ({order.depositStatus})
+                                                        {isZh ? '押金' : 'Deposit'}: ${order.depositAmount / 100} ({order.depositStatus})
                                                     </Badge>
                                                 ) : null}
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <p className="text-xs text-muted-foreground">
-                                                    下单时间: {new Date(order.createdAt).toLocaleDateString('zh-CN')}
+                                                    {isZh ? '下单时间' : 'Ordered'}: {new Date(order.createdAt).toLocaleDateString(isZh ? 'zh-CN' : 'en-CA')}
                                                 </p>
                                                 <p className="text-xl font-bold text-primary">
                                                     {order.pricing.total.formatted}
@@ -383,33 +388,33 @@ const Orders = () => {
                                     {/* Buyer Actions */}
                                     {viewMode === 'buyer' && order.status === 'PENDING_PAYMENT' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
-                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'CANCELLED'); }}>Cancel</Button>
-                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); handlePayOrder(order.id); }}>{PAYMENTS_ENABLED ? 'Pay Now' : 'Confirm'}</Button>
+                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'CANCELLED'); }}>{isZh ? '取消' : 'Cancel'}</Button>
+                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); handlePayOrder(order.id); }}>{PAYMENTS_ENABLED ? (isZh ? '立即支付' : 'Pay Now') : (isZh ? '确认' : 'Confirm')}</Button>
                                         </div>
                                     )}
                                     {viewMode === 'buyer' && order.status === 'IN_PROGRESS' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
-                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); completeOrder(order.id); }}>Confirm Complete</Button>
+                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); completeOrder(order.id); }}>{isZh ? '确认完成' : 'Confirm Complete'}</Button>
                                         </div>
                                     )}
 
                                     {viewMode === 'buyer' && order.status === 'WAITING_FOR_PRICE_APPROVAL' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
-                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleRejectQuote(order.id); }}>Reject</Button>
-                                            <Button size="sm" className="btn-action bg-blue-600 hover:bg-blue-700" onClick={(e) => { e.stopPropagation(); handleAcceptQuote(order.id); }}>{PAYMENTS_ENABLED ? 'Accept & Pay' : 'Accept Quote'}</Button>
+                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleRejectQuote(order.id); }}>{isZh ? '拒绝' : 'Reject'}</Button>
+                                            <Button size="sm" className="btn-action bg-blue-600 hover:bg-blue-700" onClick={(e) => { e.stopPropagation(); handleAcceptQuote(order.id); }}>{PAYMENTS_ENABLED ? (isZh ? '接受并支付' : 'Accept & Pay') : (isZh ? '接受报价' : 'Accept Quote')}</Button>
                                         </div>
                                     )}
 
                                     {/* Seller Actions */}
                                     {viewMode === 'seller' && order.status === 'PENDING_CONFIRMATION' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
-                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'CANCELLED'); }}>Reject</Button>
-                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); acceptOrder(order.id); }}>Accept Order</Button>
+                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'CANCELLED'); }}>{isZh ? '拒绝' : 'Reject'}</Button>
+                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); acceptOrder(order.id); }}>{isZh ? '接单' : 'Accept Order'}</Button>
                                         </div>
                                     )}
                                     {viewMode === 'seller' && order.status === 'PENDING_QUOTE' && (
                                         <div className="mt-4 pt-4 border-t border-border flex gap-2 justify-end">
-                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); handleQuoteSubmit(order.id); }}>Submit Quote</Button>
+                                            <Button size="sm" className="btn-action" onClick={(e) => { e.stopPropagation(); handleQuoteSubmit(order.id); }}>{isZh ? '提交报价' : 'Submit Quote'}</Button>
                                         </div>
                                     )}
                                 </div>

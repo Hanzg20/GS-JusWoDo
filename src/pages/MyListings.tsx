@@ -7,8 +7,9 @@ import {
 import { ReviewQrDialog } from "@/components/reviews/ReviewQrDialog";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useListingStore } from "@/stores/listingStore";
+import { useListingStore, getTranslation } from "@/stores/listingStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useConfigStore } from "@/stores/configStore";
 import { useOrderStore } from "@/stores/orderStore";
 import { useProviderStore } from "@/stores/providerStore";
 import { repositoryFactory } from "@/services/repositories/factory";
@@ -20,6 +21,8 @@ import { toast } from "sonner";
 const MyListings = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
     const { listings, listingItems, fetchListings, deleteListing, updateListing, updateItemStatus } = useListingStore();
     const { orders } = useOrderStore();
     const { providers } = useProviderStore();
@@ -81,9 +84,9 @@ const MyListings = () => {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate('/publish?type=SERVICE')}>Service</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/publish?type=GOODS&pro=1')}>Goods</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/publish?type=RENTAL')}>Rental</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/publish?type=SERVICE')}>{isZh ? '服务' : 'Service'}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/publish?type=GOODS&pro=1')}>{isZh ? '商品' : 'Goods'}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/publish?type=RENTAL')}>{isZh ? '租赁' : 'Rental'}</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         );
@@ -103,15 +106,15 @@ const MyListings = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm("确定要删除这条发布吗？此操作不可撤销。")) {
+        if (!window.confirm(isZh ? "确定要删除这条发布吗？此操作不可撤销。" : 'Delete this listing? This cannot be undone.')) {
             return;
         }
 
         try {
             await deleteListing(id);
-            toast.success("已成功删除");
+            toast.success(isZh ? "已成功删除" : 'Deleted successfully');
         } catch (err: any) {
-            toast.error(err.message || "删除失败");
+            toast.error(err.message || (isZh ? "删除失败" : 'Failed to delete'));
         }
     };
 
@@ -119,9 +122,11 @@ const MyListings = () => {
         const nextStatus = currentStatus === 'PUBLISHED' ? 'ARCHIVED' : 'PUBLISHED';
         try {
             await updateListing(id, { status: nextStatus as any });
-            toast.success(nextStatus === 'PUBLISHED' ? "已重新上架" : "已下架");
+            toast.success(nextStatus === 'PUBLISHED'
+                ? (isZh ? "已重新上架" : 'Back online')
+                : (isZh ? "已下架" : 'Taken offline'));
         } catch (err: any) {
-            toast.error(err.message || "操作失败");
+            toast.error(err.message || (isZh ? "操作失败" : 'Action failed'));
         }
     };
 
@@ -130,19 +135,19 @@ const MyListings = () => {
     // generic "Good" for all of GOODS.
     const getTypeBadge = (listing: { type: string; attributes?: any }) => {
         switch (listing.type) {
-            case 'TASK': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none font-black text-[10px] uppercase tracking-tighter">Demand</Badge>;
+            case 'TASK': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '需求' : 'Demand'}</Badge>;
             case 'GOODS': return listing.attributes?.goodsTier === 'PRODUCT'
-                ? <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100 border-none font-black text-[10px] uppercase tracking-tighter">Product</Badge>
-                : <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none font-black text-[10px] uppercase tracking-tighter">Secondhand</Badge>;
-            case 'RENTAL': return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none font-black text-[10px] uppercase tracking-tighter">Rental</Badge>;
+                ? <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '产品' : 'Product'}</Badge>
+                : <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '闲置' : 'Secondhand'}</Badge>;
+            case 'RENTAL': return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '租赁' : 'Rental'}</Badge>;
             case 'SERVICE':
                 // Every listing here is mine, so myIdentity (fetched once
                 // above) applies to all of them — same signal as
                 // ListingCard.tsx's Business/Handyman split.
                 return myIdentity === 'MERCHANT'
-                    ? <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">Business</Badge>
-                    : <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100 border-none font-black text-[10px] uppercase tracking-tighter">Handyman</Badge>;
-            default: return <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">Service</Badge>;
+                    ? <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '商户' : 'Business'}</Badge>
+                    : <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '达人' : 'Handyman'}</Badge>;
+            default: return <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-none font-black text-[10px] uppercase tracking-tighter">{isZh ? '服务' : 'Service'}</Badge>;
         }
     };
 
@@ -154,14 +159,14 @@ const MyListings = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <div>
-                        <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">My Posts <span className="text-primary">.</span></h1>
+                        <h1 className="text-3xl font-black text-foreground tracking-tight mb-2">{isZh ? '我的发布' : 'My Posts'} <span className="text-primary">.</span></h1>
                         <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                            Manage your {myListings.length} active listings & demands
+                            {isZh ? `管理你的 ${myListings.length} 条发布` : `Manage your ${myListings.length} active listings & demands`}
                         </p>
                     </div>
                     {renderCreateNewButton({
                         className: "btn-action gap-2 h-12 px-6 rounded-2xl shadow-warm",
-                        children: <><Plus className="w-5 h-5" /> Create New</>
+                        children: <><Plus className="w-5 h-5" /> {isZh ? '新建发布' : 'Create New'}</>
                     })}
                 </div>
 
@@ -170,11 +175,13 @@ const MyListings = () => {
                     {myListings.length === 0 ? (
                         <div className="text-center py-24 card-warm border-dashed border-2 border-muted bg-transparent">
                             <Layout className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
-                            <p className="text-lg font-black text-muted-foreground mb-6">No posts found yet</p>
+                            <p className="text-lg font-black text-muted-foreground mb-6">{isZh ? '还没有发布内容' : 'No posts found yet'}</p>
                             {renderCreateNewButton({
                                 variant: "outline",
                                 className: "rounded-xl font-bold",
-                                children: isProvider ? "Add your first listing" : "Post your first task or item"
+                                children: isProvider
+                                    ? (isZh ? '发布第一条服务' : 'Add your first listing')
+                                    : (isZh ? '发第一条任务或闲置' : 'Post your first task or item')
                             })}
                         </div>
                     ) : (
@@ -190,7 +197,7 @@ const MyListings = () => {
                                         <div className="relative w-full md:w-48 h-48 flex-shrink-0">
                                             <img
                                                 src={listing.images[0]}
-                                                alt={listing.titleZh}
+                                                alt={getTranslation(listing, 'title')}
                                                 className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
                                             />
                                             <div className="absolute top-3 left-3">
@@ -207,25 +214,25 @@ const MyListings = () => {
                                                             {getTypeBadge(listing)}
                                                             {listing.status === 'ARCHIVED' && (
                                                                 <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-muted font-black text-[10px] uppercase tracking-tighter">
-                                                                    Offline
+                                                                    {isZh ? '已下架' : 'Offline'}
                                                                 </Badge>
                                                             )}
                                                             {/* Set from My Orders > I'm Selling > Mark as Completed on a
                                                                 GOODS order — see orderStore.ts's updateOrderStatus. */}
                                                             {firstItem?.status === 'SOLD' && (
                                                                 <Badge className="bg-slate-800 text-white hover:bg-slate-800 border-none font-black text-[10px] uppercase tracking-tighter">
-                                                                    Sold
+                                                                    {isZh ? '已售出' : 'Sold'}
                                                                 </Badge>
                                                             )}
                                                             {firstItem?.status === 'PENDING' && (
                                                                 <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-none font-black text-[10px] uppercase tracking-tighter">
-                                                                    Pending
+                                                                    {isZh ? '待定' : 'Pending'}
                                                                 </Badge>
                                                             )}
                                                             <span className="text-[10px] font-black text-muted-foreground uppercase opacity-50"># {listing.id.slice(0, 8)}</span>
                                                         </div>
                                                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" /> Just now
+                                                            <Clock className="w-3 h-3" /> {isZh ? '刚刚' : 'Just now'}
                                                         </span>
                                                         <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                                                         <span className="text-[10px] font-black text-primary uppercase tracking-widest">
@@ -233,10 +240,10 @@ const MyListings = () => {
                                                         </span>
                                                     </div>
                                                     <h3 className="text-xl font-black text-foreground tracking-tight line-clamp-1 mb-1 group-hover:text-primary transition-colors">
-                                                        {listing.titleEn || listing.titleZh}
+                                                        {getTranslation(listing, 'title')}
                                                     </h3>
                                                     <p className="text-sm font-medium text-muted-foreground/80 line-clamp-2 leading-relaxed">
-                                                        {listing.descriptionEn || listing.descriptionZh}
+                                                        {getTranslation(listing, 'description')}
                                                     </p>
                                                 </div>
 
@@ -254,15 +261,15 @@ const MyListings = () => {
                                                                     variant="outline"
                                                                     size="icon"
                                                                     className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
-                                                                    title="标记售出状态"
+                                                                    title={isZh ? '标记售出状态' : 'Mark sold status'}
                                                                 >
                                                                     <Tag className="w-4 h-4 text-muted-foreground" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'AVAILABLE')}>Available</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'PENDING')}>Pending</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'SOLD')}>Sold</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'AVAILABLE')}>{isZh ? '在售' : 'Available'}</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'PENDING')}>{isZh ? '待定' : 'Pending'}</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => updateItemStatus(firstItem.id, 'SOLD')}>{isZh ? '已售出' : 'Sold'}</DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     )}
@@ -271,7 +278,7 @@ const MyListings = () => {
                                                         size="icon"
                                                         className={`rounded-xl w-10 h-10 border-muted transition-all duration-300 ${listing.status === 'ARCHIVED' ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'hover:bg-primary/5 hover:border-primary/30'}`}
                                                         onClick={() => handleToggleStatus(listing.id, listing.status)}
-                                                        title={listing.status === 'PUBLISHED' ? '下架 (邻居不可见)' : '重新上架'}
+                                                        title={listing.status === 'PUBLISHED' ? (isZh ? '下架 (邻居不可见)' : 'Take offline (hidden from neighbors)') : (isZh ? '重新上架' : 'Republish')}
                                                     >
                                                         {listing.status === 'PUBLISHED' ? (
                                                             <ArrowDownToLine className="w-4 h-4 text-orange-600" />
@@ -284,7 +291,7 @@ const MyListings = () => {
                                                         size="icon"
                                                         className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                                                         onClick={() => navigate(`/service/${listing.id}`)}
-                                                        title="查看预览"
+                                                        title={isZh ? '查看预览' : 'Preview'}
                                                     >
                                                         <ExternalLink className="w-4 h-4 text-muted-foreground" />
                                                     </Button>
@@ -292,8 +299,8 @@ const MyListings = () => {
                                                         variant="outline"
                                                         size="icon"
                                                         className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
-                                                        onClick={() => setReviewQrListing({ id: listing.id, title: listing.titleEn || listing.titleZh })}
-                                                        title="获取评价二维码"
+                                                        onClick={() => setReviewQrListing({ id: listing.id, title: getTranslation(listing, 'title') })}
+                                                        title={isZh ? '获取评价二维码' : 'Get review QR code'}
                                                     >
                                                         <QrCode className="w-4 h-4 text-muted-foreground" />
                                                     </Button>
@@ -302,7 +309,7 @@ const MyListings = () => {
                                                         size="icon"
                                                         className="rounded-xl w-10 h-10 border-muted hover:bg-primary/5 hover:border-primary/30 transition-all duration-300"
                                                         onClick={() => navigate(`/publish?id=${listing.id}`)}
-                                                        title="修改内容"
+                                                        title={isZh ? '修改内容' : 'Edit'}
                                                     >
                                                         <Edit className="w-4 h-4 text-muted-foreground" />
                                                     </Button>
@@ -311,7 +318,7 @@ const MyListings = () => {
                                                         size="icon"
                                                         className="rounded-xl w-10 h-10 border-red-100 hover:bg-red-50 hover:border-red-200 group/delete transition-all duration-300"
                                                         onClick={() => handleDelete(listing.id)}
-                                                        title="删除发布"
+                                                        title={isZh ? '删除发布' : 'Delete'}
                                                     >
                                                         <Trash2 className="w-4 h-4 text-red-500 group-hover/delete:scale-110 transition-transform" />
                                                     </Button>
@@ -321,11 +328,11 @@ const MyListings = () => {
                                             {/* Attributes / Price */}
                                             <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-muted/50">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-tighter">Price / Budget:</span>
+                                                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-tighter">{isZh ? '价格/预算' : 'Price / Budget'}:</span>
                                                     <span className="text-lg font-black text-primary">
                                                         ${firstItem ? firstItem.pricing.price.amount / 100 : '0'}
                                                     </span>
-                                                    <span className="text-[9px] font-black text-muted-foreground uppercase opacity-50">/{firstItem?.pricing.unit || 'job'}</span>
+                                                    <span className="text-[9px] font-black text-muted-foreground uppercase opacity-50">/{firstItem?.pricing.unit || (isZh ? '单' : 'job')}</span>
                                                 </div>
 
                                                 <div className="h-4 w-px bg-muted mx-2 hidden md:block" />
@@ -334,12 +341,12 @@ const MyListings = () => {
                                                     <div className="flex items-center gap-1">
                                                         <MessageSquare className="w-4 h-4 text-muted-foreground/50" />
                                                         <span className="text-sm font-black text-foreground">{stats.orderCount}</span>
-                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Offers</span>
+                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{isZh ? '报价' : 'Offers'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <Eye className="w-4 h-4 text-muted-foreground/50" />
                                                         <span className="text-sm font-black text-foreground">{stats.views}</span>
-                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Views</span>
+                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{isZh ? '浏览' : 'Views'}</span>
                                                     </div>
                                                 </div>
 
@@ -349,7 +356,7 @@ const MyListings = () => {
                                                         className="ml-auto bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl px-4"
                                                         onClick={() => navigate(`/orders?masterId=${listing.id}`)}
                                                     >
-                                                        Review Offers
+                                                        {isZh ? '查看报价' : 'Review Offers'}
                                                     </Button>
                                                 )}
                                             </div>
