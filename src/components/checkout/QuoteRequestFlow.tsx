@@ -5,6 +5,8 @@ import { ListingMaster, ListingItem } from "@/types/domain";
 import { useOrderStore } from "@/stores/orderStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useMessageStore } from "@/stores/messageStore";
+import { useConfigStore } from "@/stores/configStore";
+import { getTranslation } from "@/stores/listingStore";
 import { Loader2, CheckCircle2, MessageSquare, Calendar as CalendarIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +34,8 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
     const { createOrder } = useOrderStore();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
     const [step, setStep] = useState<Step>('REQUEST');
     const [description, setDescription] = useState('');
     const [preferredDate, setPreferredDate] = useState('');
@@ -40,12 +44,12 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
 
     const handleSubmit = async () => {
         if (!currentUser) {
-            toast.error("Please login to continue");
+            toast.error(isZh ? "请先登录" : "Please login to continue");
             return;
         }
 
         if (!description.trim()) {
-            toast.error("Please describe your needs");
+            toast.error(isZh ? "请描述您的需求" : "Please describe your needs");
             return;
         }
 
@@ -70,11 +74,11 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
                 total: { ...item.pricing.price, formatted: new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(item.pricing.price.amount / 100) }
             },
             snapshot: {
-                masterTitle: master.titleEn || master.titleZh,
-                masterDescription: master.descriptionEn || master.descriptionZh || '',
+                masterTitle: getTranslation(master, 'title'),
+                masterDescription: getTranslation(master, 'description') || '',
                 masterImages: master.images,
-                itemName: item.nameEn || item.nameZh,
-                itemDescription: item.descriptionEn || item.descriptionZh || '',
+                itemName: getTranslation(item, 'name'),
+                itemDescription: getTranslation(item, 'description') || '',
                 itemPricing: {
                     model: item.pricing.model,
                     price: item.pricing.price
@@ -104,9 +108,10 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
                 );
 
                 if (conversation) {
+                    const masterTitle = getTranslation(master, 'title');
                     const messageContent = isVisitFee
-                        ? `I've booked an assessment for "${master.titleEn || master.titleZh}". Looking forward to meeting you!`
-                        : `I've submitted a quote request for "${master.titleEn || master.titleZh}".\nDetails: ${description}`;
+                        ? (isZh ? `我已预约了"${masterTitle}"的上门评估，期待与您见面！` : `I've booked an assessment for "${masterTitle}". Looking forward to meeting you!`)
+                        : (isZh ? `我已提交了"${masterTitle}"的报价请求。\n需求说明：${description}` : `I've submitted a quote request for "${masterTitle}".\nDetails: ${description}`);
 
                     await messageStore.sendMessage(
                         currentUser.id,
@@ -125,7 +130,7 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
             }, 1000);
         } else {
             setStep('REQUEST');
-            toast.error("Request failed. Please try again.");
+            toast.error(isZh ? "请求失败，请重试。" : "Request failed. Please try again.");
         }
     };
 
@@ -134,20 +139,20 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
             <div className="bg-muted/30 p-4 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-primary font-bold">
                     <MessageSquare className="w-4 h-4" />
-                    {isVisitFee ? 'Request On-Site Assessment' : 'Request Custom Quote'}
+                    {isVisitFee ? (isZh ? '预约上门评估' : 'Request On-Site Assessment') : (isZh ? '请求定制报价' : 'Request Custom Quote')}
                 </div>
                 <p className="text-sm text-muted-foreground">
                     {isVisitFee
-                        ? `This service requires an on-site visit fee of $${item.pricing.price.amount / 100}. The provider will contact you to schedule.`
-                        : "Describe your project. The provider will review and send you a price quote."}
+                        ? (isZh ? `该服务需要 $${item.pricing.price.amount / 100} 上门费，服务商会联系您安排时间。` : `This service requires an on-site visit fee of $${item.pricing.price.amount / 100}. The provider will contact you to schedule.`)
+                        : (isZh ? "描述您的需求，服务商会审核并向您发送报价。" : "Describe your project. The provider will review and send you a price quote.")}
                 </p>
             </div>
 
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label>Project Description / Scope</Label>
+                    <Label>{isZh ? '需求描述 / 范围' : 'Project Description / Scope'}</Label>
                     <Textarea
-                        placeholder="Describe what you need done..."
+                        placeholder={isZh ? "描述您需要做的事情..." : "Describe what you need done..."}
                         className="h-32 resize-none"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -155,12 +160,12 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
                 </div>
 
                 <div className="space-y-2">
-                    <Label>Preferred Date (Optional)</Label>
+                    <Label>{isZh ? '期望日期（可选）' : 'Preferred Date (Optional)'}</Label>
                     <div className="relative">
                         <CalendarIcon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="e.g. Next Monday morning"
+                            placeholder={isZh ? "例如：下周一上午" : "e.g. Next Monday morning"}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 pl-9"
                             value={preferredDate}
                             onChange={(e) => setPreferredDate(e.target.value)}
@@ -171,12 +176,12 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
 
             <Button className="w-full h-12 text-lg font-bold" onClick={handleSubmit}>
                 {isVisitFee
-                    ? (PAYMENTS_ENABLED ? `Continue to Payment ($${item.pricing.price.amount / 100})` : 'Request Assessment')
-                    : 'Submit Request'}
+                    ? (PAYMENTS_ENABLED ? (isZh ? `继续付款 ($${item.pricing.price.amount / 100})` : `Continue to Payment ($${item.pricing.price.amount / 100})`) : (isZh ? '请求评估' : 'Request Assessment'))
+                    : (isZh ? '提交请求' : 'Submit Request')}
             </Button>
             <div className="flex justify-center mt-4">
                 <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground">
-                    Cancel
+                    {isZh ? '取消' : 'Cancel'}
                 </Button>
             </div>
 
@@ -189,20 +194,20 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
                 <CheckCircle2 className="w-10 h-10 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="text-center space-y-2">
-                <h3 className="text-2xl font-black">Request Sent!</h3>
+                <h3 className="text-2xl font-black">{isZh ? '请求已发送！' : 'Request Sent!'}</h3>
                 <p className="text-muted-foreground max-w-xs mx-auto">
                     {isVisitFee
-                        ? (PAYMENTS_ENABLED ? "Please complete the payment to confirm your visit." : "The provider will contact you to confirm the visit and arrange payment directly.")
-                        : "The provider has been notified. Check your 'Orders' tab for their response."}
+                        ? (PAYMENTS_ENABLED ? (isZh ? "请完成付款以确认您的预约。" : "Please complete the payment to confirm your visit.") : (isZh ? "服务商会联系您确认上门时间并直接安排付款。" : "The provider will contact you to confirm the visit and arrange payment directly."))
+                        : (isZh ? "服务商已收到通知，请在「订单」页查看他们的回复。" : "The provider has been notified. Check your 'Orders' tab for their response.")}
                 </p>
             </div>
 
             <div className="flex flex-col w-full gap-3 pt-4">
                 <Button className="w-full h-12 font-bold" onClick={() => navigate('/orders')}>
-                    {isVisitFee ? (PAYMENTS_ENABLED ? 'Pay Visit Fee' : 'View Status') : 'View Status'}
+                    {isVisitFee ? (PAYMENTS_ENABLED ? (isZh ? '支付上门费' : 'Pay Visit Fee') : (isZh ? '查看状态' : 'View Status')) : (isZh ? '查看状态' : 'View Status')}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={onClose}>
-                    Close
+                    {isZh ? '关闭' : 'Close'}
                 </Button>
             </div>
         </div>
@@ -213,9 +218,9 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-center">
-                        {step === 'REQUEST' && (isVisitFee ? 'Book Assessment' : 'Request Quote')}
-                        {step === 'PROCESSING' && 'Sending...'}
-                        {step === 'SUCCESS' && 'Success'}
+                        {step === 'REQUEST' && (isVisitFee ? (isZh ? '预约评估' : 'Book Assessment') : (isZh ? '请求报价' : 'Request Quote'))}
+                        {step === 'PROCESSING' && (isZh ? '发送中...' : 'Sending...')}
+                        {step === 'SUCCESS' && (isZh ? '成功' : 'Success')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -223,7 +228,7 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
                 {step === 'PROCESSING' && (
                     <div className="flex flex-col items-center justify-center py-12 space-y-4">
                         <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                        <p className="text-muted-foreground">Submitting your request...</p>
+                        <p className="text-muted-foreground">{isZh ? '正在提交您的请求...' : 'Submitting your request...'}</p>
                     </div>
                 )}
                 {step === 'SUCCESS' && renderSuccessStep()}
