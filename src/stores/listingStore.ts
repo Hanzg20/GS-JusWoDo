@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ListingMaster, ListingItem, ListingType } from '@/types/domain';
 import { toast } from 'sonner';
+import { useConfigStore } from './configStore';
 
 interface ListingState {
     listings: ListingMaster[];
@@ -275,9 +276,21 @@ export const useListingStore = create<ListingState>((set, get) => ({
 }));
 
 // Translation Helpers (Meituan Essence: Efficient & Direct)
-export const getTranslation = (obj: any, fieldBase: string, lang: 'En' | 'Zh' = 'En') => {
+//
+// `lang` used to default to a hardcoded 'En' — every call site that didn't
+// explicitly pass it (the vast majority: ServiceDetail.tsx, ServiceInfo.tsx,
+// GoodsDetailView.tsx, TaskDetailView.tsx, PopularServiceCard.tsx, etc.)
+// always showed English-first title/description regardless of the site's
+// actual language setting. Masked for listings with only one language
+// filled in (see jwd_ugc_monolingual_by_design), but broke for any listing
+// with both fields filled — exactly what a real user reported 2026-09-16
+// ("从中文主页点击...进入详情页后标题和内容都是英文的"). Now falls back to
+// the live configStore language when the caller doesn't pass one, instead
+// of requiring every caller to remember to.
+export const getTranslation = (obj: any, fieldBase: string, lang?: 'En' | 'Zh') => {
     if (!obj) return '';
-    const prioritized = lang === 'En' ? [`${fieldBase}En`, `${fieldBase}Zh`] : [`${fieldBase}Zh`, `${fieldBase}En`];
+    const resolvedLang = lang || (useConfigStore.getState().language === 'zh' ? 'Zh' : 'En');
+    const prioritized = resolvedLang === 'En' ? [`${fieldBase}En`, `${fieldBase}Zh`] : [`${fieldBase}Zh`, `${fieldBase}En`];
     return obj[prioritized[0]] || obj[prioritized[1]] || obj[fieldBase] || '';
 };
 

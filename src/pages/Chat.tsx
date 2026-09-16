@@ -7,6 +7,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { usePresenceStore } from "@/stores/presenceStore";
 import { useOrderStore } from "@/stores/orderStore";
 import { SUPPORT_USER_ID } from "@/config/support";
+import { useConfigStore } from "@/stores/configStore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -32,7 +33,19 @@ import {
 const Chat = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
     const { onlineUserIds } = usePresenceStore();
+
+    // 小海狸's user_profiles.name is a single plain-text DB field ("小海狸"),
+    // not a bilingual zh/en pair like listing content — every English-UI
+    // visitor was seeing her name in Chinese characters in their own chat
+    // list. Special-cased here (same mechanism as her pin-to-top/badge
+    // treatment below) rather than adding a schema column just for one
+    // account.
+    const supportDisplayName = isZh ? '小海狸' : 'Beaver';
+    const getDisplayName = (otherUserId: string | undefined, rawName: string | undefined) =>
+        otherUserId === SUPPORT_USER_ID ? supportDisplayName : (rawName || (isZh ? '用户' : 'User'));
     const {
         conversations,
         messages,
@@ -254,7 +267,9 @@ const Chat = () => {
                                 </Button>
                             </div>
                         ) : (
-                            visibleConversations.map(conv => (
+                            visibleConversations.map(conv => {
+                                const convOtherUserId = conv.participantA === currentUser?.id ? conv.participantB : conv.participantA;
+                                return (
                                 <button
                                     key={`sidebar-conv-${conv.id}`}
                                     onClick={() => setActiveConversation(conv.id)}
@@ -271,12 +286,12 @@ const Chat = () => {
                                             {conv.otherUserAvatar ? (
                                                 <img
                                                     src={conv.otherUserAvatar}
-                                                    alt={conv.otherUserName}
+                                                    alt={getDisplayName(convOtherUserId, conv.otherUserName)}
                                                     className="w-full h-full rounded-full object-cover"
                                                 />
                                             ) : (
                                                 <span className="text-sm font-black text-primary/80">
-                                                    {(conv.otherUserName || 'U').charAt(0).toUpperCase()}
+                                                    {getDisplayName(convOtherUserId, conv.otherUserName).charAt(0).toUpperCase()}
                                                 </span>
                                             )}
                                         </div>
@@ -290,8 +305,8 @@ const Chat = () => {
                                             unsure whether this is genuinely the platform's own support
                                             channel, so her conversation gets an official badge here
                                             instead of the generic 1-on-1 indicator every other chat gets. */}
-                                        {(conv.participantA === currentUser?.id ? conv.participantB : conv.participantA) === SUPPORT_USER_ID ? (
-                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-card flex items-center justify-center" title="渥帮官方客服">
+                                        {convOtherUserId === SUPPORT_USER_ID ? (
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full border-2 border-card flex items-center justify-center" title={isZh ? '官方客服' : 'Official Support'}>
                                                 <ShieldCheck className="w-2.5 h-2.5 text-white" />
                                             </div>
                                         ) : (
@@ -306,7 +321,7 @@ const Chat = () => {
                                                 "text-sm font-semibold truncate",
                                                 activeConversationId === conv.id ? 'text-primary' : 'text-foreground'
                                             )}>
-                                                {conv.otherUserName || 'User'}
+                                                {getDisplayName(convOtherUserId, conv.otherUserName)}
                                             </span>
                                             <span className="text-[10px] text-muted-foreground">
                                                 {new Date(conv.lastMessageAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
@@ -319,12 +334,12 @@ const Chat = () => {
                                                 </Badge>
                                             )}
                                             <p className="text-xs text-muted-foreground truncate opacity-70 flex-1">
-                                                {conv.lastMessagePreview || 'New message'}
+                                                {conv.lastMessagePreview || (isZh ? '新消息' : 'New message')}
                                             </p>
                                         </div>
                                     </div>
                                 </button>
-                            ))
+                            );})
                         )}
                     </div>
                 </div>
@@ -362,7 +377,7 @@ const Chat = () => {
                                                 {activeConversation?.otherUserAvatar ? (
                                                     <img
                                                         src={activeConversation.otherUserAvatar}
-                                                        alt={activeConversation.otherUserName}
+                                                        alt={getDisplayName(activeOtherUserId, activeConversation?.otherUserName)}
                                                         className="w-full h-full rounded-full object-cover"
                                                     />
                                                 ) : (
@@ -371,7 +386,7 @@ const Chat = () => {
                                             </div>
                                             {/* Role Badge */}
                                             {activeOtherUserId === SUPPORT_USER_ID ? (
-                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-card flex items-center justify-center" title="渥帮官方客服">
+                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-card flex items-center justify-center" title={isZh ? '官方客服' : 'Official Support'}>
                                                     <ShieldCheck className="w-3 h-3 text-white" />
                                                 </div>
                                             ) : activeOrder && (
@@ -393,7 +408,7 @@ const Chat = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="text-sm font-bold tracking-tight truncate">
-                                                    {activeConversation?.otherUserName || 'User'}
+                                                    {getDisplayName(activeOtherUserId, activeConversation?.otherUserName)}
                                                 </h3>
                                                 {/* Casual/playful tone (see ai-support-reply/index.ts) shouldn't
                                                     leave it unclear that this is genuinely the platform's own
@@ -401,7 +416,7 @@ const Chat = () => {
                                                     1-on-1 indicator every other chat gets. */}
                                                 {activeOtherUserId === SUPPORT_USER_ID ? (
                                                     <Badge className="h-4 px-1.5 text-[9px] font-black bg-primary/10 text-primary border-none">
-                                                        渥帮官方客服
+                                                        {isZh ? '官方客服' : 'Official Support'}
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="h-4 px-1.5 text-[9px] font-black border-primary/20 text-primary">
@@ -416,7 +431,9 @@ const Chat = () => {
                                                         activeOtherUserId && onlineUserIds.has(activeOtherUserId) ? "bg-green-500 animate-pulse" : "bg-gray-300"
                                                     )} />
                                                     <p className="text-[10px] text-muted-foreground font-medium">
-                                                        {activeOtherUserId && onlineUserIds.has(activeOtherUserId) ? 'Online' : 'Offline'}
+                                                        {activeOtherUserId && onlineUserIds.has(activeOtherUserId)
+                                                            ? (isZh ? '在线' : 'Online')
+                                                            : (isZh ? '离线' : 'Offline')}
                                                     </p>
                                                 </div>
                                                 {/* Role Text */}

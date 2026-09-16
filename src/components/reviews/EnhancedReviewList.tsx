@@ -16,6 +16,7 @@ import { Review, ReviewReaction } from '@/types/domain';
 import { repositoryFactory } from '@/services/repositories/factory';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
+import { useConfigStore } from '@/stores/configStore';
 import { toast } from 'sonner';
 
 interface EnhancedReviewListProps {
@@ -33,6 +34,8 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
     const [replyText, setReplyText] = useState('');
     const [submittingReply, setSubmittingReply] = useState(false);
     const { currentUser } = useAuthStore();
+    const { language } = useConfigStore();
+    const isZh = language === 'zh';
     const reviewRepo = repositoryFactory.getReviewRepository();
     const isOwner = !!currentUser && !!providerUserId && currentUser.id === providerUserId;
 
@@ -80,19 +83,19 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
             await loadReviews();
         } catch (error) {
             console.error('Failed to submit reply:', error);
-            toast.error('Failed to post reply. Please try again.');
+            toast.error(isZh ? '回复发布失败，请重试' : 'Failed to post reply. Please try again.');
         } finally {
             setSubmittingReply(false);
         }
     };
 
-    if (loading) return <div className="p-4 text-center text-muted-foreground animate-pulse font-black uppercase tracking-widest text-[10px]">Loading neighbor reviews...</div>;
+    if (loading) return <div className="p-4 text-center text-muted-foreground animate-pulse font-black uppercase tracking-widest text-[10px]">{isZh ? '正在加载邻居评价…' : 'Loading neighbor reviews...'}</div>;
 
     if (reviews.length === 0) return (
         <div className="p-12 text-center rounded-[40px] bg-muted/20 border-2 border-dashed border-muted/30">
             <MessageSquare className="w-12 h-12 text-muted/30 mx-auto mb-4" />
-            <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest">No Stories Yet</h3>
-            <p className="text-[11px] font-bold text-muted-foreground/50 mt-1 max-w-[200px] mx-auto">Be the first neighbor to share a story about this service!</p>
+            <h3 className="text-sm font-black text-muted-foreground uppercase tracking-widest">{isZh ? '还没有故事' : 'No Stories Yet'}</h3>
+            <p className="text-[11px] font-bold text-muted-foreground/50 mt-1 max-w-[200px] mx-auto">{isZh ? '来做第一个分享故事的邻居吧！' : 'Be the first neighbor to share a story about this service!'}</p>
         </div>
     );
 
@@ -103,7 +106,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
             <div className="flex items-center justify-between mb-8">
                 <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
                     <div className="w-1.5 h-4 bg-primary rounded-full shadow-glow-sm" />
-                    Neighbor Stories
+                    {isZh ? '邻里故事' : 'Neighbor Stories'}
                     <Badge variant="outline" className="ml-2 bg-primary/5 text-primary border-none text-[10px] font-black h-5 px-1.5">{reviews.length}</Badge>
                 </h3>
                 <div className="flex items-center gap-1.5">
@@ -119,7 +122,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                         {review.isNeighborStory && (
                             <div className="absolute top-0 right-0">
                                 <Badge className="bg-accent text-white rounded-bl-3xl border-none text-[9px] font-black tracking-widest uppercase py-1.5 px-4 shadow-sm">
-                                    <Heart className="w-3 h-3 mr-1.5 fill-white" /> Neighbor Story
+                                    <Heart className="w-3 h-3 mr-1.5 fill-white" /> {isZh ? '邻里故事' : 'Neighbor Story'}
                                 </Badge>
                             </div>
                         )}
@@ -128,7 +131,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                             <Avatar className="w-12 h-12 rounded-2xl shadow-card border border-white">
                                 <AvatarImage src={review.buyerAvatar} loading="lazy" />
                                 <AvatarFallback className="bg-primary/10 text-primary font-black uppercase text-xs">
-                                    {review.buyerName?.substring(0, 2) || 'NB'}
+                                    {review.buyerName?.substring(0, 2) || (isZh ? '邻' : 'NB')}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
@@ -185,14 +188,14 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${review.reactions?.some(rc => rc.userId === currentUser?.id && rc.type === 'HELPFUL') ? 'bg-primary text-white shadow-glow-sm' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
                                 >
                                     <ThumbsUp className="w-3.5 h-3.5" />
-                                    <span>Helpful {review.reactions?.filter(r => r.type === 'HELPFUL').length || ''}</span>
+                                    <span>{isZh ? '有用' : 'Helpful'} {review.reactions?.filter(r => r.type === 'HELPFUL').length || ''}</span>
                                 </button>
                                 <button
                                     onClick={() => handleReaction(review.id, 'WARMTH')}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${review.reactions?.some(rc => rc.userId === currentUser?.id && rc.type === 'WARMTH') ? 'bg-accent text-white shadow-glow-sm' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
                                 >
                                     <Heart className="w-3.5 h-3.5" />
-                                    <span>Warm {review.reactions?.filter(r => r.type === 'WARMTH').length || ''}</span>
+                                    <span>{isZh ? '温暖' : 'Warm'} {review.reactions?.filter(r => r.type === 'WARMTH').length || ''}</span>
                                 </button>
                             </div>
 
@@ -209,7 +212,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                             targetId={review.id}
                                             trigger={
                                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
-                                                    <Flag className="w-3.5 h-3.5 mr-2" /> Report
+                                                    <Flag className="w-3.5 h-3.5 mr-2" /> {isZh ? '举报' : 'Report'}
                                                 </DropdownMenuItem>
                                             }
                                         />
@@ -224,7 +227,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     <ShieldCheck className="w-16 h-16 text-primary" />
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <Badge className="bg-primary/20 text-primary text-[9px] font-black uppercase tracking-widest border-none px-2 h-4">Provider's Reply</Badge>
+                                    <Badge className="bg-primary/20 text-primary text-[9px] font-black uppercase tracking-widest border-none px-2 h-4">{isZh ? '商家回复' : "Provider's Reply"}</Badge>
                                 </div>
                                 {review.replies.map((reply) => (
                                     <p key={reply.id} className="text-xs font-bold text-foreground/80 leading-relaxed italic">
@@ -240,7 +243,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     <Textarea
                                         value={replyText}
                                         onChange={(e) => setReplyText(e.target.value)}
-                                        placeholder="Reply to this review as the provider..."
+                                        placeholder={isZh ? '以商家身份回复这条评价…' : 'Reply to this review as the provider...'}
                                         className="min-h-[80px] resize-none rounded-2xl text-sm"
                                         autoFocus
                                     />
@@ -252,7 +255,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                             onClick={() => { setReplyingTo(null); setReplyText(''); }}
                                             disabled={submittingReply}
                                         >
-                                            Cancel
+                                            {isZh ? '取消' : 'Cancel'}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -260,7 +263,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                             onClick={() => handleSubmitReply(review)}
                                             disabled={!replyText.trim() || submittingReply}
                                         >
-                                            {submittingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Post Reply'}
+                                            {submittingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isZh ? '发布回复' : 'Post Reply')}
                                         </Button>
                                     </div>
                                 </div>
@@ -269,7 +272,7 @@ export const EnhancedReviewList: React.FC<EnhancedReviewListProps> = ({ listingI
                                     onClick={() => setReplyingTo(review.id)}
                                     className="mt-4 text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
                                 >
-                                    Reply as provider
+                                    {isZh ? '以商家身份回复' : 'Reply as provider'}
                                 </button>
                             )
                         )}
