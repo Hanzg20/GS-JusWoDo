@@ -47,22 +47,26 @@
     media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
     href="/pwa-icons/splash-1536x2048.png" />
 
-  <!-- SEO -->
-  <title>渥帮 · 渥太华便民平台 | 连接邻里，发现专业！</title>
-  <meta name="description" content="渥帮 (JustWeDo) 专注于 Ottawa 本地社区。轻松查找与快速发布家政清洁、房屋维修、铲雪除草、宠物照顾、接送协助与邻里闲置互助。" />
+  <!-- SEO — this static block is what WeChat/social crawlers actually see
+       (they don't execute JS to pick up SEO.tsx's react-helmet-async
+       tags), so it must be kept in sync with SEO.tsx's defaultTitle/
+       defaultDescription by hand. Official copy per 2026-09-15 brand spec
+       — see jwd_brand_tagline_finalized memory. -->
+  <title>渥帮 · 首都地区便民社区平台 | 连接邻里 · 发现专业</title>
+  <meta name="description" content="汇聚 Ottawa–Gatineau 的本地资源、专业服务与社区活动，让生活更简单。" />
   <meta name="author" content="JWD Team" />
-  <meta name="keywords" content="Ottawa,Kanata,渥太华,Kanata Lakes,本地服务,家政清洁,房屋维修,铲雪,草坪护理,宠物照顾,邻里互助,渥帮,JustWeDo" />
+  <meta name="keywords" content="Ottawa,Gatineau,Kanata,渥太华,加蒂诺,Kanata Lakes,本地服务,家政清洁,房屋维修,铲雪,草坪护理,宠物照顾,邻里互助,渥帮,JustWeDo" />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="渥帮 · 渥太华便民平台 | 连接邻里，发现专业！" />
-  <meta property="og:description" content="渥帮 (JustWeDo) 专注于 Ottawa 本地社区。轻松查找与快速发布家政清洁、房屋维修、铲雪除草、宠物照顾、接送协助与邻里闲置互助。" />
+  <meta property="og:title" content="渥帮 · 首都地区便民社区平台 | 连接邻里 · 发现专业" />
+  <meta property="og:description" content="汇聚 Ottawa–Gatineau 的本地资源、专业服务与社区活动，让生活更简单。" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="渥帮 JWD" />
   <meta property="og:image" content="/pwa-icons/icon-512x512.png" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="渥帮 · 渥太华便民平台 | 连接邻里，发现专业！" />
+  <meta name="twitter:title" content="渥帮 · 首都地区便民社区平台 | 连接邻里 · 发现专业" />
   <meta name="twitter:image" content="/pwa-icons/icon-512x512.png" />
 </head>
 
