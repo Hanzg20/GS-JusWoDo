@@ -7,6 +7,7 @@
  */
 
 import { supabase } from './supabase';
+import { useConfigStore } from '@/stores/configStore';
 
 // 微信 JS-SDK 类型定义
 declare global {
@@ -126,8 +127,9 @@ export async function getWxSignature(url: string): Promise<{
 // all. Skipped if the title already mentions the brand (e.g. the site-wide
 // default title already does) to avoid a redundant double-branded title.
 function brandedTitle(title: string): string {
-    if (/渥帮|justwedo/i.test(title)) return title;
-    return `【渥帮 JustWeDo】${title}`;
+    if (/渥帮|justwedo|jwd/i.test(title)) return title;
+    const language = useConfigStore.getState().language;
+    return language === 'zh' ? `【渥帮】${title}` : `【JWD】${title}`;
 }
 
 /**
