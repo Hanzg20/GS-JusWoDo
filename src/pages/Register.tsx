@@ -269,8 +269,8 @@ const Register = () => {
         <div className="min-h-screen bg-secondary/30 flex items-center justify-center p-4">
             <div className="bg-card w-full max-w-md rounded-3xl shadow-xl overflow-hidden flex flex-col">
                 <div className="bg-gradient-hero p-8 text-center text-white">
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 shadow-glow text-foreground">
-                        <span className="text-3xl font-bold">H</span>
+                    <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mx-auto mb-4 shadow-glow">
+                        <img src="/logo.png" alt="JWD" className="w-11 h-11 object-contain" />
                     </div>
                     <h1 className="text-2xl font-extrabold text-white">{t.joinTitle}</h1>
                     <p className="opacity-80 text-sm text-white">{t.joinSubtitle}</p>
