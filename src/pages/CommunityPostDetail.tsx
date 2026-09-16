@@ -80,6 +80,22 @@ const CommunityPostDetail = () => {
             .catch(console.error);
     }, [currentUser?.id, currentPost?.authorId]);
 
+    // A visitor arriving via a shared card/Moments link lands here with no
+    // real in-app history — `history.state.idx` is 0 for the SPA's initial
+    // entry (react-router's own bookkeeping), vs >0 once they've navigated
+    // somewhere inside the app. `navigate(-1)` for the former either does
+    // nothing or exits back to WeChat's own previous screen, stranding them
+    // with no way back into the site — fall back to the post's parent
+    // feature (邻里圈) instead.
+    const handleBack = () => {
+        const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+        if (idx > 0) {
+            navigate(-1);
+        } else {
+            navigate('/community');
+        }
+    };
+
     const handleFollowAuthor = async () => {
         if (!currentUser) {
             toast.error(language === 'zh' ? '请先登录' : 'Please login first');
@@ -264,9 +280,22 @@ const CommunityPostDetail = () => {
             {/* Immersive Header - Xiaohongshu style */}
             <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl transition-all border-b border-border/10">
                 <div className="flex items-center justify-between px-3 py-1.5 max-w-lg mx-auto h-12">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8 rounded-full hover:bg-muted">
-                        <ChevronLeft className="w-6 h-6" />
-                    </Button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                        <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8 rounded-full hover:bg-muted">
+                            <ChevronLeft className="w-6 h-6" />
+                        </Button>
+                        {/* Visible brand mark so a visitor arriving from a
+                            shared card/Moments link can tell this is 渥帮's
+                            own site, and has a one-tap way home. A text
+                            wordmark, not the logo image — the post author's
+                            own avatar sits right next to this, and 小螺号
+                            (a real, common author) uses that same logo
+                            image as her avatar, so an icon here looked like
+                            a duplicated/broken icon rather than a brand mark. */}
+                        <button onClick={() => navigate('/')} className="shrink-0 text-xs font-black text-primary tracking-tight">
+                            {language === 'zh' ? '渥帮' : 'JWD'}
+                        </button>
+                    </div>
 
                     <div className="flex items-center gap-2 flex-grow mx-2">
                         <div
