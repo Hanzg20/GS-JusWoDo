@@ -540,10 +540,12 @@ const Chat = () => {
                                         </div>
                                     </div>
 
-                                    {/* Row actions */}
+                                    {/* Row actions — always visible (not hover-only): this page runs
+                                        inside a touch-only WeChat Mini Program web-view with no
+                                        mouse, where a hover-reveal control is simply unreachable. */}
                                     <div
                                         onClick={(e) => e.stopPropagation()}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                        className="flex-shrink-0"
                                     >
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -873,42 +875,6 @@ const Chat = () => {
                                                         <div className={cn(
                                                             "max-w-[78%] sm:max-w-[65%] group relative",
                                                         )}>
-                                                            {/* Message actions — appear on hover */}
-                                                            <div className={cn(
-                                                                "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity z-10",
-                                                                isMe ? "-left-7" : "-right-7"
-                                                            )}>
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <button className="w-5 h-5 rounded-full bg-muted/70 hover:bg-muted flex items-center justify-center">
-                                                                            <MoreVertical className="w-3 h-3 text-muted-foreground" />
-                                                                        </button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align={isMe ? "end" : "start"} className="rounded-xl min-w-[110px] p-1">
-                                                                        {!isImage && (
-                                                                            <DropdownMenuItem onClick={() => handleCopyMessage(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
-                                                                                <Copy className="w-3.5 h-3.5" /> {isZh ? '复制' : 'Copy'}
-                                                                            </DropdownMenuItem>
-                                                                        )}
-                                                                        <DropdownMenuItem onClick={() => setReplyingTo(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
-                                                                            <Reply className="w-3.5 h-3.5" /> {isZh ? '引用' : 'Reply'}
-                                                                        </DropdownMenuItem>
-                                                                        {!isImage && (
-                                                                            <DropdownMenuItem onClick={() => handleTranslateMessage(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
-                                                                                <Languages className="w-3.5 h-3.5" /> {translations[msg.id] ? (isZh ? '隐藏翻译' : 'Hide Translation') : (isZh ? '翻译' : 'Translate')}
-                                                                            </DropdownMenuItem>
-                                                                        )}
-                                                                        {canRecall(msg) && (
-                                                                            <DropdownMenuItem onClick={() => handleRecallMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
-                                                                                <Undo2 className="w-3.5 h-3.5" /> {isZh ? '撤回' : 'Recall'}
-                                                                            </DropdownMenuItem>
-                                                                        )}
-                                                                        <DropdownMenuItem onClick={() => handleDeleteMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold text-red-500 focus:text-red-500">
-                                                                            <Trash2 className="w-3.5 h-3.5" /> {isZh ? '删除' : 'Delete'}
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </div>
                                                             <div className={cn(
                                                                 "px-3 py-2 rounded-2xl shadow-sm text-sm",
                                                                 isMe
@@ -1022,6 +988,42 @@ const Chat = () => {
                                                                         />
                                                                     </div>
                                                                 )}
+                                                                {/* Message actions — always visible (not hover-only):
+                                                                    this page runs inside a touch-only WeChat Mini
+                                                                    Program web-view with no mouse, where a hover-reveal
+                                                                    control would be unreachable. Sits inline with the
+                                                                    timestamp rather than floating beside the bubble, so
+                                                                    it never risks clipping off a narrow phone screen. */}
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <button className="w-4 h-4 rounded-full hover:bg-muted flex items-center justify-center">
+                                                                            <MoreVertical className="w-3 h-3 text-muted-foreground/60" />
+                                                                        </button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align={isMe ? "end" : "start"} className="rounded-xl min-w-[110px] p-1">
+                                                                        {!isImage && (
+                                                                            <DropdownMenuItem onClick={() => handleCopyMessage(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                                <Copy className="w-3.5 h-3.5" /> {isZh ? '复制' : 'Copy'}
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        <DropdownMenuItem onClick={() => setReplyingTo(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                            <Reply className="w-3.5 h-3.5" /> {isZh ? '引用' : 'Reply'}
+                                                                        </DropdownMenuItem>
+                                                                        {!isImage && (
+                                                                            <DropdownMenuItem onClick={() => handleTranslateMessage(msg)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                                <Languages className="w-3.5 h-3.5" /> {translations[msg.id] ? (isZh ? '隐藏翻译' : 'Hide Translation') : (isZh ? '翻译' : 'Translate')}
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        {canRecall(msg) && (
+                                                                            <DropdownMenuItem onClick={() => handleRecallMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
+                                                                                <Undo2 className="w-3.5 h-3.5" /> {isZh ? '撤回' : 'Recall'}
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        <DropdownMenuItem onClick={() => handleDeleteMessage(msg.id)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold text-red-500 focus:text-red-500">
+                                                                            <Trash2 className="w-3.5 h-3.5" /> {isZh ? '删除' : 'Delete'}
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
                                                             </div>
                                                         </div>
                                                     </div>
