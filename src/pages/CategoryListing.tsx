@@ -190,6 +190,24 @@ const CategoryListing = () => {
         }
     }, [selectedCategoryId, selectedIndustryId, refCodes]);
 
+    // Picking a different category/industry from the search bar's dropdown
+    // (CategoryMenu.tsx) navigates to the same /category/:type route with a
+    // new ?categoryId=/?industryId= — since the pathname doesn't change,
+    // this component never remounts, so the lazy useState initializers
+    // above (which only ever run once, on first mount) silently kept
+    // showing the OLD filter until a hard reload. Re-sync whenever the
+    // URL's categoryId/industryId actually changes — but not on every
+    // searchParams change (e.g. typing a ?q= search), which would wipe out
+    // a category picked locally via the in-page filter chips (those only
+    // call setSelectedCategoryId directly, they don't touch the URL).
+    const urlCategoryId = searchParams.get('categoryId') || undefined;
+    const urlIndustryId = searchParams.get('industryId') || undefined;
+    useEffect(() => {
+        setSelectedCategoryId(urlCategoryId);
+        setSelectedIndustryId(urlIndustryId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlCategoryId, urlIndustryId]);
+
     // "products" and "secondhand" are both really GOODS underneath — split
     // by which form created the listing (see 2026-09-06), not a real type
     // of their own. Every other segment maps straight to its ListingType.
