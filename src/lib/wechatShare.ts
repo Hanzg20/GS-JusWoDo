@@ -293,6 +293,31 @@ export function isWeChatMiniProgramWebview(): boolean {
     return (window as any).__wxjs_environment === 'miniprogram';
 }
 
+// Runs WeChat's own free content-security check (msgSecCheck/imgSecCheck)
+// against a piece of UGC before it's published — only meaningful inside
+// the Mini Program (see wechat-content-check Edge Function's header
+// comment for why this can't cover the regular website). Fails open
+// (never flags) on any error, missing config, or when called outside the
+// Mini Program — this is a best-effort layer on top of the existing
+// report/admin-review system, not the only line of defense, so an infra
+// hiccup here must never block a legitimate post.
+export async function checkMiniProgramContent(
+    userId: string,
+    input: { type: 'text'; content: string } | { type: 'image'; imageUrl: string }
+): Promise<{ flagged: boolean; reason?: string }> {
+    if (!isWeChatMiniProgramWebview()) return { flagged: false };
+    try {
+        const { data, error } = await supabase.functions.invoke('wechat-content-check', {
+            body: { userId, ...input },
+        });
+        if (error) throw error;
+        return { flagged: !!data?.flagged, reason: data?.reason };
+    } catch (err) {
+        console.error('[checkMiniProgramContent] check failed, failing open:', err);
+        return { flagged: false };
+    }
+}
+
 /**
  * 检测是否在移动端
  */

@@ -84,18 +84,29 @@ serve(async (req) => {
         const syntheticEmail = `mp_${openid}@wechat.justwedo.com`;
 
         // 2. Find the existing account, if any — unionid first (shared
-        // identity with 公众号 login), openid as a fallback.
+        // identity with 公众号 login), then either openid column as a
+        // fallback (wechat_openid.eq. matches accounts created before
+        // wechat_mp_openid existed, back when this function wrote into
+        // the shared column).
         const { data: existingProfile } = await supabase
             .from('user_profiles')
-            .select('id, wechat_unionid')
-            .or(unionid ? `wechat_openid.eq.${openid},wechat_unionid.eq.${unionid}` : `wechat_openid.eq.${openid}`)
+            .select('id, wechat_unionid, wechat_mp_openid')
+            .or(unionid
+                ? `wechat_mp_openid.eq.${openid},wechat_openid.eq.${openid},wechat_unionid.eq.${unionid}`
+                : `wechat_mp_openid.eq.${openid},wechat_openid.eq.${openid}`)
             .maybeSingle();
 
         let userId: string;
         if (existingProfile) {
             userId = existingProfile.id;
-            if (unionid && !existingProfile.wechat_unionid) {
-                await supabase.from('user_profiles').update({ wechat_unionid: unionid }).eq('id', userId);
+            const updates: Record<string, string> = {};
+            if (unionid && !existingProfile.wechat_unionid) updates.wechat_unionid = unionid;
+            // Dedicated Mini-Program-scoped openid — see wechat_mp_openid's
+            // column comment. Keep it current in case WeChat ever rotates
+            // it (doesn't normally happen, but cheap to guard against).
+            if (existingProfile.wechat_mp_openid !== openid) updates.wechat_mp_openid = openid;
+            if (Object.keys(updates).length > 0) {
+                await supabase.from('user_profiles').update(updates).eq('id', userId);
             }
         } else if (!createIfMissing) {
             return new Response(JSON.stringify({ found: false }), {
@@ -119,7 +130,7 @@ serve(async (req) => {
 
             const { error: linkError } = await supabase
                 .from('user_profiles')
-                .update({ wechat_openid: openid, ...(unionid ? { wechat_unionid: unionid } : {}) })
+                .update({ wechat_mp_openid: openid, ...(unionid ? { wechat_unionid: unionid } : {}) })
                 .eq('id', userId);
             if (linkError) throw new Error(`Failed to link wechat identity: ${linkError.message}`);
         }

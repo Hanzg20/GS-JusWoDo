@@ -122,6 +122,26 @@ async function getAccessToken() {
     return accessToken;
 }
 
+let cachedMiniprogramAccessToken = null; // { value, expiresAt } — separate
+// cache and separate credentials from the 公众号's getAccessToken() above.
+// Content-security checks (msgSecCheck/imgSecCheck) are scoped to the
+// calling app, so they need an access_token minted with the Mini
+// Program's own appid/secret, not the 公众号's.
+async function fetchMiniprogramAccessToken() {
+    const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${miniprogramAppId}&secret=${miniprogramAppSecret}`;
+    const data = await httpsGetJson(url);
+    if (!data.access_token) throw new Error(`WeChat miniprogram token error: ${JSON.stringify(data)}`);
+    return data.access_token;
+}
+
+async function getMiniprogramAccessToken() {
+    const now = Date.now();
+    if (cachedMiniprogramAccessToken && cachedMiniprogramAccessToken.expiresAt > now) return cachedMiniprogramAccessToken.value;
+    const accessToken = await fetchMiniprogramAccessToken();
+    cachedMiniprogramAccessToken = { value: accessToken, expiresAt: now + 7000 * 1000 };
+    return accessToken;
+}
+
 async function fetchJsApiTicket(accessToken) {
     const url = `https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=${accessToken}&type=jsapi`;
     const data = await httpsGetJson(url);
@@ -233,6 +253,105 @@ async function fetchMiniProgramSession(code) {
     // it's what lets a mini-program login recognize an existing 公众号 user
     // as the same person instead of creating a second account.
     return { openid: data.openid, unionid: data.unionid || null };
+}
+
+// Content security checks (msgSecCheck for text, imgSecCheck for images) —
+// only valid for content actually generated through a Mini Program
+// session: both APIs require the acting user's Mini-Program-scoped
+// openid, and WeChat rejects an openid with no recent mini-program
+// activity. This is why these only cover the Mini Program channel, not
+// every UGC path on the site (see project memory on this scoping call).
+//
+// msgSecCheck (v2, semantic): POST JSON, returns {errcode, result:{suggest}}.
+// scene 3 (论坛/forum) fits both community posts and listing descriptions
+// reasonably well — there's no scene enum specific to "product listing".
+async function checkMsgSec(openid, content) {
+    const accessToken = await getMiniprogramAccessToken();
+    const apiUrl = `https://api.weixin.qq.com/wxa/msg_sec_check?access_token=${accessToken}`;
+    const body = JSON.stringify({ openid, scene: 3, version: 2, content });
+    return new Promise((resolve, reject) => {
+        const req = https.request(apiUrl, {
+            method: 'POST',
+            agent: noKeepAliveAgent,
+            timeout: HTTPS_TIMEOUT_MS,
+            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        }, (res) => {
+            let respBody = '';
+            res.on('data', (chunk) => (respBody += chunk));
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(respBody));
+                } catch (err) {
+                    reject(new Error(`Non-JSON response from msg_sec_check: ${err.message}`));
+                }
+            });
+        });
+        req.on('timeout', () => req.destroy(new Error(`Request to ${apiUrl} timed out after ${HTTPS_TIMEOUT_MS}ms`)));
+        req.on('error', reject);
+        req.write(body);
+        req.end();
+    });
+}
+
+function httpsGetBuffer(url) {
+    return new Promise((resolve, reject) => {
+        const req = https.get(url, { agent: noKeepAliveAgent, timeout: HTTPS_TIMEOUT_MS }, (res) => {
+            if (res.statusCode !== 200) {
+                reject(new Error(`Fetching image for img_sec_check failed: HTTP ${res.statusCode}`));
+                res.resume();
+                return;
+            }
+            const chunks = [];
+            res.on('data', (chunk) => chunks.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+        req.on('timeout', () => req.destroy(new Error(`Request to ${url} timed out after ${HTTPS_TIMEOUT_MS}ms`)));
+        req.on('error', reject);
+    });
+}
+
+// imgSecCheck (v1, binary pass/fail): WeChat needs the actual image bytes
+// as multipart/form-data, not a URL — so this fetches the image (already
+// hosted on our own Supabase Storage) first, then re-uploads it to
+// WeChat. No multipart library in this dependency-free relay, so the body
+// is built by hand — one file field is all this endpoint needs.
+async function checkImgSec(imageUrl) {
+    const imageBuffer = await httpsGetBuffer(imageUrl);
+    const accessToken = await getMiniprogramAccessToken();
+    const apiUrl = `https://api.weixin.qq.com/wxa/img_sec_check?access_token=${accessToken}`;
+
+    const boundary = `----wxaImgSecCheck${randomNonceStr(16)}`;
+    const head = Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="check.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`
+    );
+    const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+    const body = Buffer.concat([head, imageBuffer, tail]);
+
+    return new Promise((resolve, reject) => {
+        const req = https.request(apiUrl, {
+            method: 'POST',
+            agent: noKeepAliveAgent,
+            timeout: HTTPS_TIMEOUT_MS,
+            headers: {
+                'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                'Content-Length': body.length,
+            },
+        }, (res) => {
+            let respBody = '';
+            res.on('data', (chunk) => (respBody += chunk));
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(respBody));
+                } catch (err) {
+                    reject(new Error(`Non-JSON response from img_sec_check: ${err.message}`));
+                }
+            });
+        });
+        req.on('timeout', () => req.destroy(new Error(`Request to ${apiUrl} timed out after ${HTTPS_TIMEOUT_MS}ms`)));
+        req.on('error', reject);
+        req.write(body);
+        req.end();
+    });
 }
 
 function randomNonceStr(len = 16) {
@@ -391,6 +510,52 @@ const server = http.createServer(async (req, res) => {
             finish(200);
         } catch (err) {
             log('ERROR', `[${requestId}] /send-template-message failed: ${err.stack || err}`);
+            sendJson(res, 500, { error: String(err.message || err) });
+            finish(500);
+        }
+        return;
+    }
+
+    if (req.url === '/msg-sec-check') {
+        try {
+            const { openid, content } = parsedBody;
+            if (!openid || !content) {
+                sendJson(res, 400, { error: "Missing 'openid' or 'content'" });
+                finish(400);
+                return;
+            }
+
+            const result = await checkMsgSec(openid, content);
+            if (result.errcode !== 0) {
+                log('WARN', `[${requestId}] /msg-sec-check WeChat error: ${JSON.stringify(result)}`);
+            }
+            sendJson(res, 200, result);
+            finish(200);
+        } catch (err) {
+            log('ERROR', `[${requestId}] /msg-sec-check failed: ${err.stack || err}`);
+            sendJson(res, 500, { error: String(err.message || err) });
+            finish(500);
+        }
+        return;
+    }
+
+    if (req.url === '/img-sec-check') {
+        try {
+            const { imageUrl } = parsedBody;
+            if (!imageUrl) {
+                sendJson(res, 400, { error: "Missing 'imageUrl'" });
+                finish(400);
+                return;
+            }
+
+            const result = await checkImgSec(imageUrl);
+            if (result.errcode !== 0) {
+                log('WARN', `[${requestId}] /img-sec-check WeChat error: ${JSON.stringify(result)}`);
+            }
+            sendJson(res, 200, result);
+            finish(200);
+        } catch (err) {
+            log('ERROR', `[${requestId}] /img-sec-check failed: ${err.stack || err}`);
             sendJson(res, 500, { error: String(err.message || err) });
             finish(500);
         }

@@ -14,6 +14,7 @@ import { FormData, ListingType } from "@/types/listingFields";
 import { communityPostRepository } from "@/services/repositories/supabase/CommunityPostRepository";
 import { CommunityPostType } from "@/types/community";
 import { supabase } from "@/lib/supabase";
+import { checkMiniProgramContent } from "@/lib/wechatShare";
 
 // Every config's 'location' field type (LocationPicker) stores an object
 // ({lat, lng, address, ...}), not a plain string — under different field
@@ -61,6 +62,8 @@ const Publish = () => {
         editSuccess: language === 'zh' ? '修改成功！' : 'Changes saved!',
         publishSuccess: language === 'zh' ? '发布成功！' : 'Published!',
         publishFailed: language === 'zh' ? '发布失败，请重试' : 'Publish failed, please try again',
+        contentFlaggedText: language === 'zh' ? '内容涉及违规，请修改后重试' : 'This content violates platform rules — please revise and try again',
+        contentFlaggedImage: language === 'zh' ? '图片涉及违规，请更换后重试' : 'One of these images violates platform rules — please replace it and try again',
         selectListingType: language === 'zh' ? '选择发布类型' : 'Choose a Listing Type',
         selectCategoryHint: language === 'zh' ? '选择合适的分类让邻居更容易找到' : 'Pick the right category so neighbors can find it easily',
         // "Secondhand" dropped — Sell Items above already covers it directly,
@@ -299,6 +302,27 @@ const Publish = () => {
             const title = formData.title as string;
             const description = formData.description as string;
             const images = formData.images as string[];
+
+            // Mini-Program-only content check (no-op everywhere else) —
+            // see checkMiniProgramContent's comment for why this can't
+            // cover the regular website too.
+            const textToCheck = [title, description].filter(Boolean).join('\n');
+            if (textToCheck) {
+                const textCheck = await checkMiniProgramContent(currentUser.id, { type: 'text', content: textToCheck });
+                if (textCheck.flagged) {
+                    toast.error(t.contentFlaggedText);
+                    setIsLoadingData(false);
+                    return;
+                }
+            }
+            for (const imageUrl of (images || [])) {
+                const imageCheck = await checkMiniProgramContent(currentUser.id, { type: 'image', imageUrl });
+                if (imageCheck.flagged) {
+                    toast.error(t.contentFlaggedImage);
+                    setIsLoadingData(false);
+                    return;
+                }
+            }
 
             // See getLocationDisplayText above — same object-vs-string shape
             // applies here when building the record to save, not just when

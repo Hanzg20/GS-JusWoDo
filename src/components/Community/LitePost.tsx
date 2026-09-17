@@ -14,6 +14,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { toast } from "sonner";
 import { CommunityPostType, FactType, FactData, FACT_TYPE_CONFIG } from "@/types/community";
 import { MediaEmbed } from "./MediaEmbed";
+import { checkMiniProgramContent } from "@/lib/wechatShare";
 
 interface LitePostProps {
     onSuccess?: () => void;
@@ -132,6 +133,27 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
         setIsSubmitting(true);
         try {
+            // Mini-Program-only content check (no-op everywhere else) —
+            // see checkMiniProgramContent's comment for why this can't
+            // cover the regular website too.
+            const textToCheck = [title, description].filter(Boolean).join('\n');
+            if (textToCheck) {
+                const textCheck = await checkMiniProgramContent(currentUser.id, { type: 'text', content: textToCheck });
+                if (textCheck.flagged) {
+                    toast.error(isZh ? "内容涉及违规，请修改后重试" : "This content violates platform rules — please revise and try again");
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+            for (const imageUrl of images) {
+                const imageCheck = await checkMiniProgramContent(currentUser.id, { type: 'image', imageUrl });
+                if (imageCheck.flagged) {
+                    toast.error(isZh ? "图片涉及违规，请更换后重试" : "One of these images violates platform rules — please replace it and try again");
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             const finalTitle = title.trim() || description.slice(0, 30) || (isEditMode ? (isZh ? "编辑动态" : "Edited post") : (isZh ? "邻里分享" : "Neighbor share"));
             const priceInCents = price ? Math.floor(parseFloat(price) * 100) : undefined;
             const nodeId = currentUser.nodeId || 'NODE_LEES';
