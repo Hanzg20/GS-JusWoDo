@@ -72,7 +72,7 @@ export function BentoHero({ featuredListings = [] }: BentoHeroProps) {
                     in favor of something that says what JWD actually is: neighbors
                     helping neighbors, not just a services directory. */}
                 <p className="text-center text-sm font-semibold text-slate-600">
-                    {isZh ? '远亲不如近邻，渥帮伴你左右' : 'Good neighbors, close to home'}
+                    {isZh ? '生活有事渥帮来帮，邻里有问大家来答' : 'Good neighbors, close to home'}
                 </p>
 
                 {/* Featured (top-rated, not paid) listings carousel */}
