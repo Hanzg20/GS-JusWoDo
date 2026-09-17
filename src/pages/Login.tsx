@@ -75,6 +75,10 @@ const Login = () => {
         orDivider: language === 'zh' ? '或使用手机/邮箱' : 'Or use phone / email',
         noAccount: language === 'zh' ? '还没有账号？' : "Don't have an account?",
         startExperience: language === 'zh' ? '开启体验' : 'Sign Up',
+        consentBefore: language === 'zh' ? '登录即代表您同意' : 'By logging in, you agree to our ',
+        consentAnd: language === 'zh' ? '和' : ' and ',
+        consentTerms: language === 'zh' ? '《用户协议》' : 'Terms of Service',
+        consentPrivacy: language === 'zh' ? '《隐私政策》' : 'Privacy Policy',
         errInvalidIdentifier: language === 'zh' ? '请输入有效的手机号或邮箱' : 'Please enter a valid phone number or email',
         errInvalid6Digit: language === 'zh' ? '请输入6位验证码' : 'Please enter the 6-digit code',
         errSendFailed: language === 'zh' ? '发送失败' : 'Failed to send',
@@ -628,12 +632,18 @@ const Login = () => {
                             )}
 
                             {/* Bottom tier */}
-                            <div className="pt-6 text-center">
+                            <div className="pt-6 text-center space-y-3">
                                 <p className="text-slate-500 font-medium">
                                     {t.noAccount}{" "}
                                     <Link to="/register" className="text-primary font-black hover:underline inline-flex items-center gap-1 group">
                                         <UserPlus className="w-4 h-4" /> {t.startExperience}
                                     </Link>
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                    {t.consentBefore}
+                                    <Link to="/legal/terms" className="underline hover:text-primary">{t.consentTerms}</Link>
+                                    {t.consentAnd}
+                                    <Link to="/legal/privacy" className="underline hover:text-primary">{t.consentPrivacy}</Link>
                                 </p>
                             </div>
                         </div>
