@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, Camera, ShieldCheck, Mail, Phone, UserRound } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -34,6 +34,9 @@ const PersonalProfile = () => {
         bioLabel: language === 'zh' ? '个人简介' : 'Short Bio',
         emailLabel: language === 'zh' ? '电子邮箱' : 'Email Address',
         phoneLabel: language === 'zh' ? '电话号码' : 'Phone Number',
+        phoneConsentBefore: language === 'zh' ? '提交即表示同意《' : 'By submitting, you agree to how we collect and use contact info in our ',
+        phoneConsentAfter: language === 'zh' ? '》中关于联系方式收集与使用的说明' : '',
+        privacyPolicyLink: language === 'zh' ? '隐私政策' : 'Privacy Policy',
         placeholderBio: language === 'zh' ? '介绍一下你自己...' : 'Tell neighbors a bit about yourself...',
         success: language === 'zh' ? '基本资料已更新' : 'Profile updated successfully',
         error: language === 'zh' ? '更新失败，请稍后重试' : 'Failed to update profile. Please try again.',
@@ -231,6 +234,11 @@ const PersonalProfile = () => {
                                 placeholder="+1 (___) ___-____"
                                 className="h-12 rounded-xl border-muted-foreground/10 bg-muted/30 focus:bg-background transition-all font-semibold"
                             />
+                            <p className="text-[11px] text-muted-foreground px-1">
+                                {t.phoneConsentBefore}
+                                <Link to="/legal/privacy" className="underline hover:text-primary">{t.privacyPolicyLink}</Link>
+                                {t.phoneConsentAfter}
+                            </p>
                         </div>
                     </div>
 
