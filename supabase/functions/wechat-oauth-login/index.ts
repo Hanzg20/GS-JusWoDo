@@ -90,15 +90,32 @@ serve(async (req) => {
         // registered there first should land on that same account here too.
         const { data: existingProfile } = await supabase
             .from('user_profiles')
-            .select('id, wechat_unionid')
+            .select('id, wechat_openid, wechat_unionid')
             .or(unionid ? `wechat_openid.eq.${openid},wechat_unionid.eq.${unionid}` : `wechat_openid.eq.${openid}`)
             .maybeSingle();
 
         let userId: string;
         if (existingProfile) {
             userId = existingProfile.id;
+            const updates: Record<string, string> = {};
             if (unionid && !existingProfile.wechat_unionid) {
-                await supabase.from('user_profiles').update({ wechat_unionid: unionid }).eq('id', userId);
+                updates.wechat_unionid = unionid;
+            }
+            // wechat-miniprogram-login writes the Mini Program's OWN
+            // openid into this same column for accounts that registered
+            // there first — that value can never receive a 公众号 template
+            // message (openids are scoped per-AppID, and notify-offline-
+            // message's push always calls the 公众号 template-send API).
+            // Matched here via unionid means this really is the same
+            // person in a genuine 公众号 context, so (re)stamp
+            // wechat_openid with the 公众号-scoped value now — the fix
+            // that actually makes WeChat push work for anyone who came
+            // through the Mini Program first.
+            if (existingProfile.wechat_openid !== openid) {
+                updates.wechat_openid = openid;
+            }
+            if (Object.keys(updates).length > 0) {
+                await supabase.from('user_profiles').update(updates).eq('id', userId);
             }
         } else if (mode === 'silent') {
             return new Response(JSON.stringify({ notFound: true }), {
