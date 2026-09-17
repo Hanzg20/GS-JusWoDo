@@ -26,7 +26,7 @@ const Footer = () => {
 
     slogan: language === 'zh' ? '连接邻里，发现专业，让生活更轻松' : 'Connecting neighbors, surfacing pros, making life easier.',
     brandName: language === 'zh' ? '渥帮 JWD' : 'JustWeDo',
-    copyright: language === 'zh' ? '© 2026 金麟科技. 版权所有' : '© 2026 GoldSky Tech. All rights reserved.',
+    copyright: language === 'zh' ? '© 2026 金宏天科技. 版权所有' : '© 2026 GoldSky Tech. All rights reserved.',
   };
 
   return (
