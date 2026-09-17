@@ -75,10 +75,12 @@ const Login = () => {
         orDivider: language === 'zh' ? '或使用手机/邮箱' : 'Or use phone / email',
         noAccount: language === 'zh' ? '还没有账号？' : "Don't have an account?",
         startExperience: language === 'zh' ? '开启体验' : 'Sign Up',
-        consentBefore: language === 'zh' ? '登录即代表您同意' : 'By logging in, you agree to our ',
-        consentAnd: language === 'zh' ? '和' : ' and ',
-        consentTerms: language === 'zh' ? '《用户协议》' : 'Terms of Service',
-        consentPrivacy: language === 'zh' ? '《隐私政策》' : 'Privacy Policy',
+        consentPrefix: language === 'zh' ? '我已阅读并同意' : 'I have read and agree to the ',
+        consentMiddle: language === 'zh' ? '和' : ' and ',
+        consentSuffix: language === 'zh' ? '' : '',
+        termsOfService: language === 'zh' ? '《用户协议》' : 'Terms of Service',
+        privacyPolicy: language === 'zh' ? '《隐私政策》' : 'Privacy Policy',
+        errNoConsent: language === 'zh' ? '请先同意用户协议与隐私政策' : 'Please agree to the Terms of Service and Privacy Policy',
         errInvalidIdentifier: language === 'zh' ? '请输入有效的手机号或邮箱' : 'Please enter a valid phone number or email',
         errInvalid6Digit: language === 'zh' ? '请输入6位验证码' : 'Please enter the 6-digit code',
         errSendFailed: language === 'zh' ? '发送失败' : 'Failed to send',
@@ -96,6 +98,12 @@ const Login = () => {
     const [identifier, setIdentifier] = useState("");
     const [identifierType, setIdentifierType] = useState<'phone' | 'email' | null>(null);
     const [otpCode, setOtpCode] = useState("");
+    // This page can silently register a brand-new account (OTP/social/
+    // WeChat login all auto-create a user on first use — see Register.tsx
+    // for the equivalent, already-enforced checkbox) — password login is
+    // the one exception, since a password-based account can only exist by
+    // having already gone through Register.tsx's own consent flow.
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [step, setStep] = useState<'INPUT' | 'VERIFY'>('INPUT');
     const [timer, setTimer] = useState(0);
     const [error, setError] = useState<string | null>(null);
@@ -163,6 +171,11 @@ const Login = () => {
     const handleSendOtp = async (e: React.FormEvent) => {
         if (e) e.preventDefault();
         setError(null);
+        if (!agreedToTerms) {
+            setError(t.errNoConsent);
+            toast.error(t.errNoConsent);
+            return;
+        }
         if (!identifierType) {
             setError(t.errInvalidIdentifier);
             return;
@@ -252,6 +265,11 @@ const Login = () => {
     };
 
     const handleSocialLogin = async (provider: 'google' | 'apple') => {
+        if (!agreedToTerms) {
+            setError(t.errNoConsent);
+            toast.error(t.errNoConsent);
+            return;
+        }
         try {
             setLoading(true);
             const { error } = await supabase.auth.signInWithOAuth({
@@ -273,6 +291,11 @@ const Login = () => {
     // no wx.login() of its own, so the tap has to hand off to that native
     // page instead of logging in directly from here.
     const handleWeChatLoginClick = async () => {
+        if (!agreedToTerms) {
+            setError(t.errNoConsent);
+            toast.error(t.errNoConsent);
+            return;
+        }
         if (!inMiniProgram) {
             startWeChatLogin();
             return;
@@ -360,6 +383,29 @@ const Login = () => {
 
                         <div className="hidden lg:block mb-10">
                             <h1 className="text-3xl font-black text-slate-900">{t.loginTitle}</h1>
+                        </div>
+
+                        {/* Prominent, always-visible consent checkbox — this page can
+                            silently register a brand-new account (OTP/social/WeChat all
+                            auto-create on first use), so it needs the same enforced
+                            agreement Register.tsx already has, not just a passive footer
+                            link. Placed first, above every login method, so it applies
+                            regardless of which one is used below. */}
+                        <div className="flex items-start gap-2.5 mb-6 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                            <input
+                                type="checkbox"
+                                id="login-tos-consent"
+                                checked={agreedToTerms}
+                                onChange={(e) => { setAgreedToTerms(e.target.checked); setError(null); }}
+                                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary shrink-0"
+                            />
+                            <label htmlFor="login-tos-consent" className="text-sm text-slate-700 leading-snug font-medium select-none cursor-pointer">
+                                {t.consentPrefix}
+                                <Link to="/legal/terms" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.termsOfService}</Link>
+                                {t.consentMiddle}
+                                <Link to="/legal/privacy" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.privacyPolicy}</Link>
+                                {t.consentSuffix}
+                            </label>
                         </div>
 
                         <div className="space-y-6">
@@ -632,18 +678,12 @@ const Login = () => {
                             )}
 
                             {/* Bottom tier */}
-                            <div className="pt-6 text-center space-y-3">
+                            <div className="pt-6 text-center">
                                 <p className="text-slate-500 font-medium">
                                     {t.noAccount}{" "}
                                     <Link to="/register" className="text-primary font-black hover:underline inline-flex items-center gap-1 group">
                                         <UserPlus className="w-4 h-4" /> {t.startExperience}
                                     </Link>
-                                </p>
-                                <p className="text-[11px] text-slate-400">
-                                    {t.consentBefore}
-                                    <Link to="/legal/terms" className="underline hover:text-primary">{t.consentTerms}</Link>
-                                    {t.consentAnd}
-                                    <Link to="/legal/privacy" className="underline hover:text-primary">{t.consentPrivacy}</Link>
                                 </p>
                             </div>
                         </div>
