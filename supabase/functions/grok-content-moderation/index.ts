@@ -130,6 +130,7 @@ serve(async (req) => {
         let aiResponseText = "";
 
         // 1. Try Grok / xAI API
+        // NOTE: grok-2-mini was retired — use grok-4.5 (current stable model)
         if (XAI_API_KEY) {
             const res = await fetch("https://api.x.ai/v1/chat/completions", {
                 method: "POST",
@@ -138,7 +139,7 @@ serve(async (req) => {
                     "Authorization": `Bearer ${XAI_API_KEY}`,
                 },
                 body: JSON.stringify({
-                    model: "grok-2-mini",
+                    model: "grok-4.5",
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: textToAudit }
@@ -149,6 +150,10 @@ serve(async (req) => {
             if (res.ok) {
                 const data = await res.json();
                 aiResponseText = data.choices?.[0]?.message?.content || "";
+            } else {
+                // Log the error so silent failures are visible in Supabase logs
+                const errBody = await res.text().catch(() => "(unreadable)");
+                console.error(`[grok-moderation] xAI API error ${res.status}: ${errBody}`);
             }
         }
 
