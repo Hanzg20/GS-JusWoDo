@@ -1,8 +1,8 @@
 import { ListingMaster, ListingItem, User, ProviderProfile } from "@/types/domain";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageCircle, ShoppingBag, Truck, ShieldCheck, MapPin, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, MessageCircle, ShoppingBag, Truck, ShieldCheck, MapPin, Share2, ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { getTranslation } from "@/stores/listingStore";
 import { useConfigStore } from "@/stores/configStore";
@@ -20,10 +20,12 @@ interface GoodsDetailViewProps {
 }
 
 export const GoodsDetailView = ({ master, item, items = [], provider, onBuy, onChat, onSelect }: GoodsDetailViewProps) => {
+    const navigate = useNavigate();
     const [currentImage, setCurrentImage] = useState(0);
     const { language } = useConfigStore();
 
     const t = {
+        home: language === 'zh' ? '首页' : 'Home',
         back: language === 'zh' ? '返回' : 'Back',
         verified: language === 'zh' ? '认证' : 'Verified',
         delivery: language === 'zh' ? '配送方式' : 'Delivery',
@@ -198,18 +200,38 @@ export const GoodsDetailView = ({ master, item, items = [], provider, onBuy, onC
             </div>
 
             {/* Fixed Bottom Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 glass-sticky-bar border-t border-border/10 z-50">
-                <div className="container max-w-lg flex gap-3">
-                    <Button variant="outline" size="lg" className="flex-1 rounded-2xl font-bold gap-2" onClick={onChat}>
-                        <MessageCircle className="w-5 h-5 text-primary" />
-                        {t.chat}
-                    </Button>
+            <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-4 glass-sticky-bar border-t border-border/10 z-50 safe-area-bottom">
+                <div className="container max-w-lg flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex flex-col items-center gap-0.5 group min-w-[36px] active:scale-95 transition-transform"
+                        >
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                <Home className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
+                            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                                {t.home}
+                            </span>
+                        </button>
+                        <button
+                            onClick={onChat}
+                            className="flex flex-col items-center gap-0.5 group min-w-[36px] active:scale-95 transition-transform"
+                        >
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                <MessageCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
+                            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                                {t.chat}
+                            </span>
+                        </button>
+                    </div>
 
-                    <Button size="lg" className="flex-[2] rounded-2xl font-black shadow-warm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-none" onClick={() => {
+                    <Button size="lg" className="flex-1 h-11 sm:h-12 rounded-2xl font-black shadow-warm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-none text-white text-xs sm:text-sm" onClick={() => {
                         console.log('🛒 [GoodsDetailView] Buying item:', item.id, item.nameEn);
                         onBuy();
                     }}>
-                        <ShoppingBag className="w-5 h-5 mr-2" />
+                        <ShoppingBag className="w-4 h-4 mr-1.5" />
                         {t.buyNow}
                     </Button>
                 </div>

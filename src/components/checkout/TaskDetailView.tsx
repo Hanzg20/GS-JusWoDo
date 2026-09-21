@@ -1,6 +1,6 @@
 import { ListingMaster, ListingItem, User, ProviderProfile } from "@/types/domain";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, MessageCircle, FileText } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Calendar, MapPin, MessageCircle, FileText, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfigStore } from "@/stores/configStore";
@@ -15,6 +15,7 @@ interface TaskDetailViewProps {
 }
 
 export const TaskDetailView = ({ master, item, author, onQuote, onChat }: TaskDetailViewProps) => {
+    const navigate = useNavigate();
     const { language } = useConfigStore();
 
     const t = {
@@ -22,9 +23,10 @@ export const TaskDetailView = ({ master, item, author, onQuote, onChat }: TaskDe
         postedBy: language === 'zh' ? '发布者' : 'Posted by',
         deadline: language === 'zh' ? '截止日期' : 'Deadline',
         location: language === 'zh' ? '地点' : 'Location',
-        chat: language === 'zh' ? '聊一聊' : "Let's Chat",
+        chat: language === 'zh' ? '聊一聊' : "Chat",
         submitQuote: language === 'zh' ? '我来报价' : "I'll Quote This",
         taskDetails: language === 'zh' ? '任务详情' : 'Task Details',
+        home: language === 'zh' ? '首页' : 'Home',
     };
 
     return (
@@ -86,14 +88,35 @@ export const TaskDetailView = ({ master, item, author, onQuote, onChat }: TaskDe
             </div>
 
             {/* Fixed Bottom Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 glass-sticky-bar border-t border-border/10 z-50">
-                <div className="container max-w-lg flex gap-3">
-                    <Button variant="outline" size="lg" className="flex-1 rounded-2xl font-bold gap-2" onClick={onChat}>
-                        <MessageCircle className="w-5 h-5 text-primary" />
-                        {t.chat}
-                    </Button>
-                    <Button size="lg" className="flex-[2] rounded-2xl font-black shadow-warm bg-primary hover:bg-primary/90 border-none" onClick={onQuote}>
-                        <FileText className="w-5 h-5 mr-2" />
+            <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-4 glass-sticky-bar border-t border-border/10 z-50 safe-area-bottom">
+                <div className="container max-w-lg flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex flex-col items-center gap-0.5 group min-w-[36px] active:scale-95 transition-transform"
+                        >
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                <Home className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
+                            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                                {t.home}
+                            </span>
+                        </button>
+                        <button
+                            onClick={onChat}
+                            className="flex flex-col items-center gap-0.5 group min-w-[36px] active:scale-95 transition-transform"
+                        >
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                <MessageCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
+                            <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                                {t.chat}
+                            </span>
+                        </button>
+                    </div>
+
+                    <Button size="lg" className="flex-1 h-11 sm:h-12 rounded-2xl font-black shadow-warm bg-primary hover:bg-primary/90 border-none text-xs sm:text-sm" onClick={onQuote}>
+                        <FileText className="w-4 h-4 mr-1.5" />
                         {t.submitQuote}
                     </Button>
                 </div>

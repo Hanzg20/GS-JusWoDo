@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Home } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ListingMaster, ListingItem } from "@/types/domain";
 import { useConfigStore } from "@/stores/configStore";
 
@@ -12,8 +13,10 @@ interface ServiceActionsProps {
 }
 
 export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAction }: ServiceActionsProps) {
+    const navigate = useNavigate();
     const { language } = useConfigStore();
     const t = {
+        home: language === 'zh' ? '首页' : 'Home',
         chat: language === 'zh' ? '聊一聊' : "Let's Chat",
         contactPrice: language === 'zh' ? '要个报价' : 'Get a Quote',
         requestQuote: language === 'zh' ? '要个报价' : 'Get a Quote',
@@ -49,22 +52,22 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
         return (
             <div className="flex flex-col">
                 {isUnpriced ? (
-                    <span className="text-2xl font-black text-primary tracking-tighter">{t.negotiable}</span>
+                    <span className="text-xl sm:text-2xl font-black text-primary tracking-tighter truncate">{t.negotiable}</span>
                 ) : isFree ? (
-                    <span className="text-2xl font-black text-primary tracking-tighter">{t.free}</span>
+                    <span className="text-xl sm:text-2xl font-black text-primary tracking-tighter truncate">{t.free}</span>
                 ) : (
                     <div className="flex items-baseline gap-1">
                         <span className="text-xs font-bold text-muted-foreground">$</span>
-                        <span className="text-2xl font-black text-primary tracking-tighter">
+                        <span className="text-xl sm:text-2xl font-black text-primary tracking-tighter">
                             {selectedItem.pricing.price.amount / 100}
                         </span>
-                        <span className="text-xs font-bold text-muted-foreground uppercase">
+                        <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase truncate">
                             /{selectedItem.pricing.unit || 'unit'}
                         </span>
                     </div>
                 )}
                 {selectedItem.pricing.deposit && selectedItem.pricing.deposit.amount > 0 && (
-                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md w-fit">
+                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md w-fit truncate">
                         {t.deposit}: ${selectedItem.pricing.deposit.amount / 100}
                     </span>
                 )}
@@ -73,38 +76,54 @@ export function ServiceActions({ master, selectedItem, pricingNode, onChat, onAc
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 glass-sticky-bar px-4 py-5 z-50 safe-area-bottom">
-            <div className="container max-w-4xl flex items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <button onClick={onChat} className="flex flex-col items-center gap-1 group">
-                        <div className="w-10 h-10 rounded-2xl bg-muted flex items-center justify-center group-hover:bg-primary/5 transition-all">
-                            <MessageCircle className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+        <div className="fixed bottom-0 left-0 right-0 glass-sticky-bar px-4 py-3 sm:py-4 z-50 safe-area-bottom">
+            <div className="container max-w-4xl flex items-center justify-between gap-3 sm:gap-6">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex flex-col items-center gap-0.5 group min-w-[36px] active:scale-95 transition-transform"
+                    >
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <Home className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                        <span className="text-[10px] font-black text-muted-foreground uppercase group-hover:text-primary">{t.chat}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                            {t.home}
+                        </span>
+                    </button>
+                    <button
+                        onClick={onChat}
+                        className="flex flex-col items-center gap-0.5 group min-w-[36px] active:scale-95 transition-transform"
+                    >
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <MessageCircle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <span className="text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                            {t.chat}
+                        </span>
                     </button>
                 </div>
-                <div className="flex-1 flex items-center justify-between gap-4">
+                <div className="flex-1 flex items-center justify-between gap-3 sm:gap-4 min-w-0">
                     {pricingNode || renderPricingCard()}
 
                     {/* Action Button */}
                     {master.attributes?.pricingMode === 'NEGOTIABLE' ? (
                         <Button
                             onClick={onAction}
-                            className="btn-action h-14 flex-1 max-w-[200px] text-sm font-black uppercase tracking-widest shadow-elevated rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                            className="btn-action h-11 sm:h-12 flex-1 max-w-[170px] sm:max-w-[200px] text-xs sm:text-sm font-black uppercase tracking-wider shadow-elevated rounded-2xl bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                         >
                             {t.contactPrice}
                         </Button>
                     ) : master.attributes?.pricingMode === 'QUOTE' ? (
                         <Button
                             onClick={onAction}
-                            className="btn-action h-14 flex-1 max-w-[200px] text-sm font-black uppercase tracking-widest shadow-elevated rounded-2xl bg-blue-600 hover:bg-blue-700"
+                            className="btn-action h-11 sm:h-12 flex-1 max-w-[170px] sm:max-w-[200px] text-xs sm:text-sm font-black uppercase tracking-wider shadow-elevated rounded-2xl bg-blue-600 hover:bg-blue-700 text-white"
                         >
                             {t.requestQuote}
                         </Button>
                     ) : (
                         <Button
                             onClick={onAction}
-                            className="btn-action h-14 flex-1 max-w-[200px] text-sm font-black uppercase tracking-widest shadow-elevated rounded-2xl"
+                            className="btn-action h-11 sm:h-12 flex-1 max-w-[170px] sm:max-w-[200px] text-xs sm:text-sm font-black uppercase tracking-wider shadow-elevated rounded-2xl text-white"
                         >
                             {getActionButtonText()}
                         </Button>

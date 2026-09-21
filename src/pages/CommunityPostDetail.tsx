@@ -6,7 +6,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Clock, Heart, MessageCircle, Share2, MoreVertical, Briefcase, Trash2, Edit2, Shield, Calendar, Bookmark, ChevronLeft, ChevronRight, Send, X, Ban } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Heart, MessageCircle, Share2, MoreVertical, Briefcase, Trash2, Edit2, Shield, Calendar, Bookmark, ChevronLeft, ChevronRight, Send, X, Ban, Home } from "lucide-react";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -672,7 +672,20 @@ const CommunityPostDetail = () => {
 
             {/* RED-Style Sticky Bottom Action Bar */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-border/50 z-50 safe-area-bottom">
-                <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-4">
+                <div className="max-w-lg mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-3">
+                    {/* Home Shortcut Button */}
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex flex-col items-center gap-0.5 group shrink-0 min-w-[34px] active:scale-95 transition-transform"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-muted/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <Home className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <span className="text-[9px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
+                            {language === 'zh' ? '首页' : 'Home'}
+                        </span>
+                    </button>
+
                     {/* Compact Comment Input */}
                     <div className="flex-1 relative flex items-center">
                         <Input
@@ -681,29 +694,29 @@ const CommunityPostDetail = () => {
                             onChange={(e) => setCommentText(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmitComment()}
                             placeholder={language === 'zh' ? '说点什么...' : 'Say something...'}
-                            className="bg-muted/60 border-none rounded-full h-10 pl-4 pr-10 text-sm font-bold focus-visible:ring-1 focus-visible:ring-primary/20"
+                            className="bg-muted/60 border-none rounded-full h-9 pl-3.5 pr-9 text-xs sm:text-sm font-medium focus-visible:ring-1 focus-visible:ring-primary/20"
                         />
                         <button
                             disabled={!commentText.trim() || isSubmittingComment}
                             onClick={handleSubmitComment}
-                            className="absolute right-3 text-primary disabled:opacity-30 p-1"
+                            className="absolute right-2 text-primary disabled:opacity-30 p-1"
                         >
-                            <Send className="w-5 h-5" />
+                            <Send className="w-4 h-4" />
                         </button>
                     </div>
 
                     {/* Stats Icons */}
-                    <div className="flex items-center gap-5 pr-2">
-                        <button onClick={handleLike} className="group flex flex-col items-center gap-0.5">
-                            <Heart className={`w-[22px] h-[22px] transition-all ${currentPost.isLikedByMe ? 'fill-red-500 text-red-500 scale-110' : 'text-foreground'}`} />
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                        <button onClick={handleLike} className="group flex flex-col items-center gap-0.5 min-w-[28px]">
+                            <Heart className={`w-[20px] h-[20px] transition-all ${currentPost.isLikedByMe ? 'fill-red-500 text-red-500 scale-110' : 'text-foreground'}`} />
                             <span className="text-[9px] font-black">{currentPost.likeCount || (language === 'zh' ? '点赞' : 'Like')}</span>
                         </button>
-                        <button onClick={handleSave} className="group flex flex-col items-center gap-0.5">
-                            <Bookmark className={`w-[22px] h-[22px] transition-all ${currentPost.isSavedByMe ? 'fill-[#FFD700] text-[#FFD700] scale-110' : 'text-foreground'}`} />
+                        <button onClick={handleSave} className="group flex flex-col items-center gap-0.5 min-w-[28px]">
+                            <Bookmark className={`w-[20px] h-[20px] transition-all ${currentPost.isSavedByMe ? 'fill-[#FFD700] text-[#FFD700] scale-110' : 'text-foreground'}`} />
                             <span className="text-[9px] font-black">{currentPost.saveCount || (language === 'zh' ? '收藏' : 'Save')}</span>
                         </button>
-                        <button onClick={focusCommentInput} className="group flex flex-col items-center gap-0.5">
-                            <MessageCircle className="w-[22px] h-[22px] text-foreground" />
+                        <button onClick={focusCommentInput} className="group flex flex-col items-center gap-0.5 min-w-[28px]">
+                            <MessageCircle className="w-[20px] h-[20px] text-foreground" />
                             <span className="text-[9px] font-black">{currentPost.commentCount || (language === 'zh' ? '评论' : 'Chat')}</span>
                         </button>
                     </div>
