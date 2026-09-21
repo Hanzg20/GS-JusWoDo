@@ -93,10 +93,8 @@ export default function MobileBottomNav() {
         {
             id: "me",
             icon: User,
-            label: currentUser
-                ? (language === 'zh' ? '我' : 'Me')
-                : (language === 'zh' ? '注册' : 'Sign up'),
-            path: currentUser ? "/profile" : "/login",
+            label: language === 'zh' ? '我' : 'Me',
+            path: "/profile",
             showAvatar: !!currentUser && !!currentUser.avatar && !avatarFailed,
         },
     ];

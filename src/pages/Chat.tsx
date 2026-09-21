@@ -23,6 +23,7 @@ import { LocationShare } from "@/components/chat/LocationShare";
 import { userRepository } from "@/services/repositories/supabase/UserRepository";
 import { supabase } from "@/lib/supabase";
 import { ReportDialog } from "@/components/common/ReportDialog";
+import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -382,12 +383,20 @@ const Chat = () => {
         return (
             <div className="min-h-screen bg-background flex flex-col">
                 <Header />
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
+                <div className="flex-1 flex items-center justify-center p-4">
+                    <div className="text-center max-w-xs">
                         <MessageCircle className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                        <p className="text-muted-foreground mb-4">Please login to view messages</p>
-                        <Button onClick={() => navigate('/login')} className="rounded-xl">
-                            Login
+                        <p className="text-muted-foreground mb-4 font-medium">
+                            {isZh ? '请登录后查看聊天消息' : 'Please login to view messages'}
+                        </p>
+                        <Button
+                            onClick={() => {
+                                setPostLoginRedirect('/chat');
+                                navigate('/login');
+                            }}
+                            className="rounded-2xl font-bold px-6 h-11"
+                        >
+                            {isZh ? '去登录' : 'Login'}
                         </Button>
                     </div>
                 </div>

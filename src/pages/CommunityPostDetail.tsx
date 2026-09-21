@@ -6,8 +6,8 @@ import { useConfigStore } from "@/stores/configStore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, MapPin, Clock, Heart, MessageCircle, Share2, MoreVertical, Briefcase, Trash2, Edit2, Shield, Calendar, Bookmark, ChevronLeft, ChevronRight, Send, X } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Heart, MessageCircle, Share2, MoreVertical, Briefcase, Trash2, Edit2, Shield, Calendar, Bookmark, ChevronLeft, ChevronRight, Send, X, Ban } from "lucide-react";
+import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -248,6 +248,23 @@ const CommunityPostDetail = () => {
         navigate(`/publish?from_post=${currentPost.id}`);
     };
 
+    const handleBlockAuthor = async () => {
+        if (!currentUser) {
+            toast.info(language === 'zh' ? '请先登录' : 'Please log in first');
+            setPostLoginRedirect(window.location.pathname + window.location.search);
+            navigate('/login');
+            return;
+        }
+        if (!currentPost?.authorId) return;
+        try {
+            await userRepository.blockUser(currentUser.id, currentPost.authorId);
+            toast.success(language === 'zh' ? '已拉黑该作者' : 'Author blocked');
+            navigate('/community');
+        } catch (err: any) {
+            toast.error(err.message || 'Action failed');
+        }
+    };
+
     const handleVote = async (voteType: ConsensusVoteType) => {
         if (!currentUser) {
             toast.error(language === 'zh' ? '请先登录' : 'Please login first');
@@ -386,15 +403,20 @@ const CommunityPostDetail = () => {
                                         </DropdownMenuItem>
                                     </>
                                 ) : (
-                                    <ReportDialog
-                                        targetType="COMMUNITY_POST"
-                                        targetId={currentPost.id}
-                                        trigger={
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
-                                                <Shield className="w-4 h-4" /> {language === 'zh' ? '投诉举报' : 'Report'}
-                                            </DropdownMenuItem>
-                                        }
-                                    />
+                                    <>
+                                        <ReportDialog
+                                            targetType="COMMUNITY_POST"
+                                            targetId={currentPost.id}
+                                            trigger={
+                                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
+                                                    <Shield className="w-4 h-4" /> {language === 'zh' ? '投诉举报' : 'Report'}
+                                                </DropdownMenuItem>
+                                            }
+                                        />
+                                        <DropdownMenuItem onClick={handleBlockAuthor} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm text-red-500 focus:text-red-500">
+                                            <Ban className="w-4 h-4" /> {language === 'zh' ? '拉黑作者' : 'Block Author'}
+                                        </DropdownMenuItem>
+                                    </>
                                 )}
                             </DropdownMenuContent>
                         </DropdownMenu>

@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 
-interface MenuItem {
+export interface MenuItem {
     icon: any;
     label: string;
-    path: string;
+    path?: string;
+    onClick?: () => void;
     badge?: number | string;
 }
 
@@ -31,7 +32,10 @@ export function MenuLinks({ groups }: MenuLinksProps) {
                         {group.items.map((item, itemIdx) => (
                             <button
                                 key={itemIdx}
-                                onClick={() => navigate(item.path)}
+                                onClick={() => {
+                                    if (item.onClick) item.onClick();
+                                    else if (item.path) navigate(item.path);
+                                }}
                                 className="w-full flex items-center gap-4 px-6 py-4 hover:bg-black/5 transition-colors border-b last:border-none border-black/[0.03] group"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
