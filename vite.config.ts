@@ -154,10 +154,29 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    optimizeDeps: {
+      // @tiptap/pm is ESM-only with sub-path-only exports; exclude from
+      // commonjs pre-bundling to avoid the "Missing '.' specifier" error.
+      exclude: ['@tiptap/pm'],
+    },
     // 不同模式使用不同的输出目录
     build: {
       outDir: isPWAEnabled ? 'dist-pwa' : 'dist',
       rollupOptions: {
+        plugins: [
+          {
+            // @tiptap/pm has no root "." export — only sub-paths like ./model, ./state.
+            // This plugin intercepts ONLY the exact bare "@tiptap/pm" import and
+            // redirects it to the model sub-path. Sub-path imports like
+            // "@tiptap/pm/model" are intentionally left untouched.
+            name: 'fix-tiptap-pm-root-export',
+            resolveId(id: string) {
+              if (id === '@tiptap/pm') {
+                return path.resolve(__dirname, 'node_modules/@tiptap/pm/dist/model/index.js');
+              }
+            },
+          },
+        ],
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
@@ -165,7 +184,9 @@ export default defineConfig(({ mode }) => {
             'supabase-vendor': ['@supabase/supabase-js'],
             'map-vendor': ['leaflet', 'react-leaflet'],
             'utils-vendor': ['date-fns', 'zod', 'react-hook-form'],
-            'tiptap-vendor': ['@tiptap/react', '@tiptap/pm', '@tiptap/starter-kit', '@tiptap/extension-placeholder', '@tiptap/extension-character-count'],
+            // Note: @tiptap/pm is excluded from manual chunks — it has no root export;
+            // only sub-paths like @tiptap/pm/model are valid and resolve transitively.
+            'tiptap-vendor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-placeholder', '@tiptap/extension-character-count'],
           }
         }
       }
