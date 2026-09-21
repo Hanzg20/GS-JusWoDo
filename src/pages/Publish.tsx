@@ -15,6 +15,7 @@ import { communityPostRepository } from "@/services/repositories/supabase/Commun
 import { CommunityPostType } from "@/types/community";
 import { supabase } from "@/lib/supabase";
 import { checkMiniProgramContent } from "@/lib/wechatShare";
+import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 
 // Every config's 'location' field type (LocationPicker) stores an object
 // ({lat, lng, address, ...}), not a plain string — under different field
@@ -308,9 +309,9 @@ const Publish = () => {
             // cover the regular website too.
             const textToCheck = [title, description].filter(Boolean).join('\n');
             if (textToCheck) {
-                const textCheck = await checkMiniProgramContent(currentUser.id, { type: 'text', content: textToCheck });
+                const textCheck = await checkGrokContentSafety(currentUser.id, textToCheck);
                 if (textCheck.flagged) {
-                    toast.error(t.contentFlaggedText);
+                    toast.error(textCheck.reason || t.contentFlaggedText);
                     setIsLoadingData(false);
                     return;
                 }

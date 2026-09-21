@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { CommunityPostType, FactType, FactData, FACT_TYPE_CONFIG } from "@/types/community";
 import { MediaEmbed } from "./MediaEmbed";
 import { checkMiniProgramContent } from "@/lib/wechatShare";
+import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 
 interface LitePostProps {
     onSuccess?: () => void;
@@ -138,9 +139,9 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
             // cover the regular website too.
             const textToCheck = [title, description].filter(Boolean).join('\n');
             if (textToCheck) {
-                const textCheck = await checkMiniProgramContent(currentUser.id, { type: 'text', content: textToCheck });
+                const textCheck = await checkGrokContentSafety(currentUser.id, textToCheck);
                 if (textCheck.flagged) {
-                    toast.error(isZh ? "内容涉及违规，请修改后重试" : "This content violates platform rules — please revise and try again");
+                    toast.error(textCheck.reason || (isZh ? "内容涉及敏感或违规信息，请修改后重试" : "This content violates platform rules — please revise and try again"));
                     setIsSubmitting(false);
                     return;
                 }

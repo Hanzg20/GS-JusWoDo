@@ -21,6 +21,7 @@ import { ConsensusBar } from "@/components/Community/ConsensusBar";
 import { FactVoteButtons } from "@/components/Community/FactVoteButtons";
 import { UserLevelBadge } from "@/components/Community/UserLevelBadge";
 import { CommentItem } from "@/components/Community/CommentItem";
+import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 import { parseEmbedLink } from "@/lib/embedUtils";
 import { userRepository } from "@/services/repositories/supabase/UserRepository";
 import { updateOpenGraphTags, configWxShare, isWeChatBrowser } from "@/lib/wechatShare";
@@ -212,6 +213,12 @@ const CommunityPostDetail = () => {
 
         setIsSubmittingComment(true);
         try {
+            const check = await checkGrokContentSafety(currentUser.id, commentText);
+            if (check.flagged) {
+                toast.error(check.reason || (language === 'zh' ? '评论包含敏感或违规信息' : 'Comment contains restricted text'));
+                setIsSubmittingComment(false);
+                return;
+            }
             await addComment(currentUser.id, {
                 postId: currentPost.id,
                 content: commentText
@@ -614,6 +621,11 @@ const CommunityPostDetail = () => {
                                         onReply={async (pid, txt) => {
                                             if (!currentUser) {
                                                 toast.error(language === 'zh' ? '请先登录' : 'Login');
+                                                return;
+                                            }
+                                            const check = await checkGrokContentSafety(currentUser.id, txt);
+                                            if (check.flagged) {
+                                                toast.error(check.reason || (language === 'zh' ? '回复包含敏感或违规信息' : 'Reply contains restricted text'));
                                                 return;
                                             }
                                             await addComment(currentUser.id, { postId: currentPost.id, content: txt, parentCommentId: pid });
