@@ -330,6 +330,74 @@ const Login = () => {
         }
     };
 
+    if (inMiniProgram) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 relative">
+                <SEO title={language === 'zh' ? '登录' : 'Login'} />
+                {/* Background Orbs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[100px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/10 rounded-full blur-[100px] animate-pulse" />
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full max-w-sm bg-white rounded-[32px] p-8 shadow-2xl border border-slate-100/80 backdrop-blur-sm relative z-10 text-center space-y-6"
+                >
+                    {/* Logo & Welcome Header */}
+                    <div className="text-center space-y-3">
+                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto shadow-xl border border-slate-100 p-3">
+                            <img src="/logo.png" alt="JWD" className="w-full h-full object-contain" />
+                        </div>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t.welcomeBackMobile}</h1>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">JUSTWEDO 社区生活服务</p>
+                    </div>
+
+                    {/* 1. 同意服务协议和隐私的勾选 */}
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-primary/5 border border-primary/10 text-left">
+                        <input
+                            type="checkbox"
+                            id="mp-login-tos-consent"
+                            checked={agreedToTerms}
+                            onChange={(e) => { setAgreedToTerms(e.target.checked); setError(null); }}
+                            className="mt-0.5 w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary shrink-0 cursor-pointer"
+                        />
+                        <label htmlFor="mp-login-tos-consent" className="text-xs text-slate-700 leading-relaxed font-medium select-none cursor-pointer">
+                            {t.consentPrefix}
+                            <Link to="/legal/terms" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.termsOfService}</Link>
+                            {t.consentMiddle}
+                            <Link to="/legal/privacy" target="_blank" className="underline font-bold hover:text-primary" onClick={(e) => e.stopPropagation()}>{t.privacyPolicy}</Link>
+                            {t.consentSuffix}
+                        </label>
+                    </div>
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs flex items-center gap-2 text-left"
+                        >
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span>{error}</span>
+                        </motion.div>
+                    )}
+
+                    {/* 2. 名为“快捷登录”的按钮 */}
+                    <Button
+                        onClick={handleWeChatLoginClick}
+                        disabled={loading}
+                        className="w-full py-7 rounded-2xl font-black text-lg bg-primary hover:bg-primary/90 text-white shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98]"
+                    >
+                        {loading ? (
+                            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                        ) : (
+                            <span>{language === 'zh' ? '快捷登录' : 'Quick Log In'}</span>
+                        )}
+                    </Button>
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 sm:p-6 overflow-hidden relative">
             <SEO title={language === 'zh' ? '登录' : 'Login'} />
