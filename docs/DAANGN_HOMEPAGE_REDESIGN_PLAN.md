@@ -4,7 +4,7 @@
 
 > **“不是大而全，而是小而精、轻量、好用、好访问。”**
 
-借鉴韩国现象级社区服务平台 **Daangn Market (당근마켓 / Karrot)** 的 UI/UX 精髓，将 **渥帮 (JWD)** 首页重新打造为**“渥太华华人社区生活服务平台”**（商户服务 + 邻里互助 + 闲置流转）。
+借鉴韩国现象级社区服务平台 **Daangn Market (당근마켓 / Karrot)** 的 UI/UX 精髓，将 **渥帮 (JWD)** 首页重新打造为**“渥太华JWD-社区生活服务平台”**（商户服务 + 邻里互助 + 闲置流转）。
 
 ---
 
@@ -29,18 +29,13 @@ graph TD
     D --> D2[ 真实邻里贴: 实时时间/互动数 ]
 ```
 
-- **品牌色彩 (Color Palette)**：
-  - **主 Accent 色**：胡萝卜暖橙 (`#FF6F0F` / `#FF7E36`) + 极简柔和淡暖灰 (`#FAFAFA`)。
-  - **对比度与阴影**：大面积纯白卡片，配柔和圆角 (`rounded-2xl`) 与微阴影，零视觉杂讯。
-
----
 
 ## 🛠️ 首页版块重构方案 (Component Breakdown)
 
 ### 1. 暖色超本地 Hero ([BentoHero.tsx](file:///d:/MYAPP/Justwedo/src/components/home/BentoHero.tsx))
 - **设计重点**：从原本复杂的 Bento 拼接，重构为 **Daangn 式超本地暖心 Header**。
 - **文案**：
-  - 主标题：**“📍 渥太华华人社区生活服务”**
+  - 主标题：**“📍 渥太华社区生活服务”**
   - 副标题：**“商户服务 · 邻里互助 · 二手闲置 · 靠谱生活帮助”**
 - **功能**：
   - 核心社区节点切选（Kanata Lakes / Barrhaven / Nepean / Downtown）。

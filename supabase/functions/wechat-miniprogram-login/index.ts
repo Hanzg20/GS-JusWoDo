@@ -60,6 +60,8 @@ serve(async (req) => {
         const body = await req.json().catch(() => ({}));
         const code: string | undefined = body.code;
         const createIfMissing: boolean = body.createIfMissing === true;
+        const nickname: string | undefined = body.nickname;
+        const avatarUrl: string | undefined = body.avatarUrl;
         if (!code) {
             return new Response(JSON.stringify({ error: "Missing 'code'" }), {
                 status: 400,
@@ -105,6 +107,8 @@ serve(async (req) => {
             // column comment. Keep it current in case WeChat ever rotates
             // it (doesn't normally happen, but cheap to guard against).
             if (existingProfile.wechat_mp_openid !== openid) updates.wechat_mp_openid = openid;
+            if (nickname && nickname.trim()) updates.full_name = nickname.trim();
+            if (avatarUrl) updates.avatar_url = avatarUrl;
             if (Object.keys(updates).length > 0) {
                 await supabase.from('user_profiles').update(updates).eq('id', userId);
             }
@@ -113,14 +117,13 @@ serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         } else {
+            const fullName = nickname && nickname.trim() ? nickname.trim() : `邻居${openid.slice(-4)}`;
             const { data: created, error: createError } = await supabase.auth.admin.createUser({
                 email: syntheticEmail,
                 email_confirm: true,
                 user_metadata: {
-                    // jscode2session carries no profile info — generic
-                    // placeholder name, matching the "邻居" naming spirit
-                    // used elsewhere; the user can set a real nickname later.
-                    full_name: `邻居${openid.slice(-4)}`,
+                    full_name: fullName,
+                    ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
                 },
             });
             if (createError || !created?.user) {
@@ -128,9 +131,15 @@ serve(async (req) => {
             }
             userId = created.user.id;
 
+            const profileFields: Record<string, string> = {
+                wechat_mp_openid: openid,
+                full_name: fullName,
+                ...(unionid ? { wechat_unionid: unionid } : {}),
+                ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+            };
             const { error: linkError } = await supabase
                 .from('user_profiles')
-                .update({ wechat_mp_openid: openid, ...(unionid ? { wechat_unionid: unionid } : {}) })
+                .update(profileFields)
                 .eq('id', userId);
             if (linkError) throw new Error(`Failed to link wechat identity: ${linkError.message}`);
         }

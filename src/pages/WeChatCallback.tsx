@@ -58,9 +58,9 @@ const WeChatCallback = () => {
     const [success, setSuccess] = useState(false);
 
     const t = {
-        signingIn: language === 'zh' ? '正在用微信登录…' : 'Signing in with WeChat…',
+        signingIn: language === 'zh' ? '正在登录…' : 'Signing in…',
         signedIn: language === 'zh' ? '登录成功！' : 'Signed in!',
-        failed: language === 'zh' ? '微信登录失败' : 'WeChat login failed',
+        failed: language === 'zh' ? '登录失败' : 'Login failed',
         backToLogin: language === 'zh' ? '返回登录页' : 'Back to login',
     };
 
