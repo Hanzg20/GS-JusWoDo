@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { MediaEmbed } from "./MediaEmbed";
 import { RichTextEditor } from "./RichTextEditor";
 import { checkMiniProgramContent } from "@/lib/wechatShare";
 import { checkGrokContentSafety } from "@/lib/grokContentModeration";
+import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 
 /** Strip HTML tags so moderation sees plain text */
 function stripHtml(html: string): string {
@@ -84,6 +86,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
     const { currentUser } = useAuthStore();
     const { createPost, updatePost } = useCommunityPostStore();
     const { language } = useConfigStore();
+    const navigate = useNavigate();
     const isZh = language === 'zh';
 
     // Initialize form when opening in edit mode
@@ -116,7 +119,10 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
     const handlePost = async () => {
         if (!currentUser) {
-            toast.error(isZh ? "请先登录" : "Please log in first");
+            toast.info(isZh ? "发布动态需要登录账号，请先登录" : "Please log in before posting");
+            setPostLoginRedirect(window.location.pathname + window.location.search);
+            setOpen(false);
+            navigate('/login');
             return;
         }
 
@@ -262,6 +268,27 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                 </DialogHeader>
 
                 <div className="p-6 pt-2 space-y-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+                    {!currentUser && (
+                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-2 text-amber-900 dark:text-amber-200 text-xs animate-in fade-in">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-sm shrink-0">💡</span>
+                                <span>{isZh ? '您当前未登录，可试写内容；发布需登录账号' : 'Browsing as guest. Log in when you are ready to post.'}</span>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="shrink-0 h-7 px-2.5 bg-white dark:bg-zinc-900 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-bold text-xs rounded-lg hover:bg-amber-100"
+                                onClick={() => {
+                                    setOpen(false);
+                                    setPostLoginRedirect(window.location.pathname + window.location.search);
+                                    navigate('/login');
+                                }}
+                            >
+                                {isZh ? '去登录' : 'Log In'}
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Tag Selector */}
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                         {LITE_CATEGORIES.map((cat) => (

@@ -17,6 +17,8 @@ import { supabase } from "@/lib/supabase";
 import { checkMiniProgramContent } from "@/lib/wechatShare";
 import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 
+import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
+
 // Every config's 'location' field type (LocationPicker) stores an object
 // ({lat, lng, address, ...}), not a plain string — under different field
 // names depending on category (pickupLocation/location/serviceArea).
@@ -99,19 +101,16 @@ const Publish = () => {
         stepCategory: language === 'zh' ? '1. 分类' : '1. Category',
         stepDetails: language === 'zh' ? '2. 详情' : '2. Details',
         stepPreview: language === 'zh' ? '3. 预览' : '3. Preview',
+        guestNotice: language === 'zh'
+            ? '您当前处于游客浏览模式，可体验填写与预览；正式发布前需登录账号。'
+            : 'You are browsing as guest. You can explore and preview details; log in before publishing.',
+        guestLogin: language === 'zh' ? '去登录' : 'Log In',
     };
 
-    // Posting requires an account (storage RLS alone already blocks an
-    // anonymous image upload, and createListing/updateListing need a real
-    // user id) — send them to log in before they sink effort into a form
-    // they can't submit, rather than only discovering this at the very end.
-    useEffect(() => {
-        if (isAuthLoading) return;
-        if (!currentUser) {
-            toast.error(t.loginRequired);
-            navigate('/login');
-        }
-    }, [currentUser, isAuthLoading, navigate]);
+    // Guests can freely browse the category picker, fill out the form,
+    // and preview their listing without being booted to /login (WeChat compliance:
+    // users must be allowed to explore the page before choosing to log in).
+    // Authentication is only checked at final submission in handleFinalSubmit.
 
     useEffect(() => {
         if (editId) {
@@ -121,20 +120,16 @@ const Publish = () => {
         }
     }, [editId, fromPostId]);
 
-    // Pro hub (MyListings/ProviderDashboard) is a separate, professional-only
-    // surface from this page's own category picker (see 2026-09-05
-    // clarification) — it links straight here with ?type=SERVICE|GOODS|RENTAL
-    // (?pro=1 on GOODS selects the fuller provider field set instead of the
-    // simplified one the picker below always uses), skipping the picker
-    // entirely rather than re-adding a role branch to it.
+    // Pro hub (MyListings/ProviderDashboard) or direct links can specify ?type=SERVICE|GOODS|RENTAL.
+    // Allow guest preview of these forms as well.
     useEffect(() => {
         const presetType = searchParams.get('type');
-        if (!isProvider || editId || fromPostId) return;
+        if (editId || fromPostId) return;
         if (presetType === 'SERVICE' || presetType === 'GOODS' || presetType === 'RENTAL') {
             setSelectedCategory(presetType);
             setStep(2);
         }
-    }, [searchParams, isProvider, editId, fromPostId]);
+    }, [searchParams, editId, fromPostId]);
 
     const loadFromCommunityPost = async (postId: string) => {
         setIsLoadingData(true);
@@ -284,11 +279,9 @@ const Publish = () => {
     };
 
     const handleFinalSubmit = async () => {
-        // The page-entry redirect above handles the normal case; this covers
-        // a session expiring mid-form, so the error actually says why instead
-        // of the unrelated "missing preview data" message.
         if (!currentUser) {
-            toast.error(t.loginRequired);
+            toast.info(t.loginRequired);
+            setPostLoginRedirect(window.location.pathname + window.location.search);
             navigate('/login');
             return;
         }
@@ -676,6 +669,27 @@ const Publish = () => {
             <Header />
 
             <main className="container max-w-2xl mx-auto pt-8 px-4">
+                {/* Guest exploration banner for WeChat compliance: non-blocking notice with clear login entry */}
+                {!currentUser && !isAuthLoading && (
+                    <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200 text-xs sm:text-sm animate-in fade-in">
+                        <div className="flex items-center gap-2">
+                            <span className="text-base shrink-0">💡</span>
+                            <span>{t.guestNotice}</span>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0 h-8 px-3 bg-white dark:bg-zinc-900 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 hover:bg-amber-100 font-bold text-xs rounded-xl shadow-xs"
+                            onClick={() => {
+                                setPostLoginRedirect(window.location.pathname + window.location.search);
+                                navigate('/login');
+                            }}
+                        >
+                            {t.guestLogin}
+                        </Button>
+                    </div>
+                )}
+
                 {/* Progress Header */}
                 <div className="mb-8 flex items-center justify-between">
                     <Button
