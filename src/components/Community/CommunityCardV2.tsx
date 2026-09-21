@@ -14,6 +14,7 @@ import { ImageViewer } from "./ImageViewer";
 import { HashtagText } from "./HashtagText";
 import { MediaEmbed } from "./MediaEmbed";
 import { ShareSheet } from "@/components/common/ShareSheet";
+import { RichTextContent } from "./RichTextContent";
 
 interface CommunityCardV2Props {
   post: CommunityPost;
@@ -203,9 +204,12 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
 
           {/* Snippet - Optional if title exists, or just show snippet if no title */}
           {!post.title && (
-            <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
-              {post.content}
-            </p>
+            <RichTextContent
+              html={post.content}
+              preview
+              previewLength={90}
+              className="text-xs text-muted-foreground leading-snug"
+            />
           )}
 
           {/* Minimal Consensus Strip (if Fact) */}

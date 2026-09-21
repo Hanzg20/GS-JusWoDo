@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -14,8 +13,14 @@ import { useConfigStore } from "@/stores/configStore";
 import { toast } from "sonner";
 import { CommunityPostType, FactType, FactData, FACT_TYPE_CONFIG } from "@/types/community";
 import { MediaEmbed } from "./MediaEmbed";
+import { RichTextEditor } from "./RichTextEditor";
 import { checkMiniProgramContent } from "@/lib/wechatShare";
 import { checkGrokContentSafety } from "@/lib/grokContentModeration";
+
+/** Strip HTML tags so moderation sees plain text */
+function stripHtml(html: string): string {
+    return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 interface LitePostProps {
     onSuccess?: () => void;
@@ -137,7 +142,8 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
             // Mini-Program-only content check (no-op everywhere else) —
             // see checkMiniProgramContent's comment for why this can't
             // cover the regular website too.
-            const textToCheck = [title, description].filter(Boolean).join('\n');
+            // Strip HTML tags before sending to moderation (content is rich HTML now)
+            const textToCheck = [title, stripHtml(description)].filter(Boolean).join('\n');
             if (textToCheck) {
                 const textCheck = await checkGrokContentSafety(currentUser.id, textToCheck);
                 if (textCheck.flagged) {
@@ -420,11 +426,11 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                             onChange={(e) => setTitle(e.target.value)}
                             className="bg-muted/10 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-2xl h-12 p-4 text-base font-bold"
                         />
-                        <Textarea
-                            placeholder={isZh ? "分享点新鲜事..." : "Share what's new..."}
+                        <RichTextEditor
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="min-h-[120px] bg-muted/10 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-2xl p-4 text-base resize-none"
+                            onChange={setDescription}
+                            placeholder={isZh ? "分享点新鲜事..." : "Share what's new..."}
+                            maxLength={2000}
                         />
 
                         {/* Price Row (Optional) */}

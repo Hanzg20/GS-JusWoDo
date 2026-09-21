@@ -25,6 +25,7 @@ import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 import { parseEmbedLink } from "@/lib/embedUtils";
 import { userRepository } from "@/services/repositories/supabase/UserRepository";
 import { updateOpenGraphTags, configWxShare, isWeChatBrowser } from "@/lib/wechatShare";
+import { RichTextContent } from "@/components/Community/RichTextContent";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -485,8 +486,8 @@ const CommunityPostDetail = () => {
                                 {currentPost.title}
                             </h1>
                         )}
-                        <HashtagText
-                            text={currentPost.content}
+                        <RichTextContent
+                            html={currentPost.content}
                             className="text-base text-foreground/90 leading-relaxed font-medium"
                         />
                     </div>

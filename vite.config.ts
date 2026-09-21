@@ -164,7 +164,8 @@ export default defineConfig(({ mode }) => {
             'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-slot', 'framer-motion', 'lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
             'supabase-vendor': ['@supabase/supabase-js'],
             'map-vendor': ['leaflet', 'react-leaflet'],
-            'utils-vendor': ['date-fns', 'zod', 'react-hook-form']
+            'utils-vendor': ['date-fns', 'zod', 'react-hook-form'],
+            'tiptap-vendor': ['@tiptap/react', '@tiptap/pm', '@tiptap/starter-kit', '@tiptap/extension-placeholder', '@tiptap/extension-character-count'],
           }
         }
       }
