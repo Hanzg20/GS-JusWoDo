@@ -16,10 +16,15 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Local fallback regex for high-risk fraud & spam when AI key isn't set
+// Local fallback regex for high-risk fraud, adult content & spam when AI key isn't set
 const HIGH_RISK_LOCAL_PATTERNS = [
+    // 色情 / 黄色 / 招嫖 / 擦边 / 福利引流
+    /色情/i, /招嫖/i, /约炮/i, /约啪/i, /裸聊/i, /黄片/i, /看片/i, /福利视频/i, /私信领福利/i, /妹子上门/i, /上门服务.*微信/i, /情色/i, /成人用品/i, /嫖娼/i, /同城交友约/i, /同城妹子/i,
+    // 地下金融与诈骗
     /私下换汇/i, /高价收加币/i, /低价换RMB/i, /对冲换汇/i, /出加币.*汇率/i,
+    // 兼职与黑产
     /日赚.*元/i, /无门槛兼职/i, /刷单.*兼职/i, /代考.*代写/i, /包吃包住.*高薪/i,
+    // 赌博/黑彩
     /地下赌场/i, /博彩.*网址/i, /彩票.*开挂/i
 ];
 
@@ -28,7 +33,7 @@ function checkLocalFallback(text: string): { flagged: boolean; reason?: string }
         if (pattern.test(text)) {
             return {
                 flagged: true,
-                reason: "内容包含敏感或涉嫌广告/诈骗的信息，请重新编辑后再发布。",
+                reason: "内容包含涉嫌色情、广告或违规的信息，请重新编辑后再发布。",
             };
         }
     }
@@ -53,17 +58,18 @@ serve(async (req) => {
         const textToAudit = content.trim().substring(0, 3000);
 
         // System prompt for Grok / LLM Moderator
-        const systemPrompt = `你是一个加拿大华人社区平台（渥帮JWD）的内容安全与风控审核员。
-请审查用户提交的社区发帖、服务介绍或评论文本。
-重点识别以下违规与高风险分类：
-1. 地下换汇 / 私下买卖外汇 / 汇率套利诈骗；
-2. 兼职刷单 / 日赚千元 / 兼职诈骗套路 / 虚假兼职招聘；
-3. 赌博 / 色情 / 违禁品 / 地下赌场 / 枪支违法物品；
-4. 恶意人身攻击 / 政治敏感 / 仇恨言论；
-5. 垃圾广告刷屏 / 导流非法交易暗号。
+        const systemPrompt = `你是一个加拿大华人社区平台（渥帮JWD）的高级内容安全与风控审核员。
+请严格审查用户提交的社区发帖、服务介绍或评论文本。
+重点识别并拦截以下违规分类：
+1. 【各类黄色与色情信息】：包含色情描写、露骨性暗示、同城招嫖、上门服务暗语、裸聊、色情视频/图片引流（如“看片”、“福利视频”、“私信领福利”）、成人用品违法推销、情色约啪等；
+2. 【地下金融与诈骗】：私下换汇、高价收加币、对冲换汇套利诈骗；
+3. 【兼职与黑产诈骗】：兼职刷单、日赚千元、代考代写、包吃包住高薪套路；
+4. 【违法赌博与毒品】：地下赌场、网赌博彩、彩票开挂、违法物品；
+5. 【垃圾广告与恶意攻击】：批量营销导流暗号、恶意人身攻击、政治敏感言论。
 
+若判定内容存在上述任何违规，请务必设置 flagged 为 true。
 请严格仅输出一个 JSON 对象，不得添加 Markdown 标记（如 \`\`\`json ）或其他前导结尾文字：
-{"flagged": true, "reason": "包含涉嫌地下换汇等敏感信息"} 或 {"flagged": false}`;
+{"flagged": true, "reason": "包含涉嫌色情、招嫖或违规信息"} 或 {"flagged": false}`;
 
         let aiResponseText = "";
 
