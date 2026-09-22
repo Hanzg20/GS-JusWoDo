@@ -15,8 +15,8 @@ import { toast } from "sonner";
 import { CommunityPostType, FactType, FactData, FACT_TYPE_CONFIG } from "@/types/community";
 import { MediaEmbed } from "./MediaEmbed";
 import { RichTextEditor } from "./RichTextEditor";
-import { checkMiniProgramContent } from "@/lib/wechatShare";
-import { checkGrokContentSafety } from "@/lib/grokContentModeration";
+import { checkMiniProgramContent, isWeChatMiniProgramWebview } from "@/lib/wechatShare";
+import { checkGrokContentSafety, checkImageSafety } from "@/lib/grokContentModeration";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 
 /** Strip HTML tags so moderation sees plain text */
@@ -159,13 +159,22 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                 }
             }
             for (const imageUrl of images) {
-                const imageCheck = await checkMiniProgramContent(currentUser.id, { type: 'image', imageUrl });
-                if (imageCheck.flagged) {
-                    toast.error(isZh ? "图片涉及违规，请更换后重试" : "One of these images violates platform rules — please replace it and try again");
-                    setIsSubmitting(false);
-                    return;
-                }
-            }
+    if (isWeChatMiniProgramWebview()) {
+        const imageCheck = await checkMiniProgramContent(currentUser.id, { type: 'image', imageUrl });
+        if (imageCheck.flagged) {
+            toast.error(isZh ? "图片涉及违规，请更换后重试" : "One of these images violates platform rules — please replace it and try again");
+            setIsSubmitting(false);
+            return;
+        }
+    } else {
+        const imageCheck = await checkImageSafety(currentUser.id, imageUrl);
+        if (imageCheck.flagged) {
+            toast.error(isZh ? "图片涉及违规，请更换后重试" : "One of these images violates platform rules — please replace it and try again");
+            setIsSubmitting(false);
+            return;
+        }
+    }
+}
 
             const finalTitle = title.trim() || description.slice(0, 30) || (isEditMode ? (isZh ? "编辑动态" : "Edited post") : (isZh ? "邻里分享" : "Neighbor share"));
             const priceInCents = price ? Math.floor(parseFloat(price) * 100) : undefined;

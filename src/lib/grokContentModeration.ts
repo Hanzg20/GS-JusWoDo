@@ -49,3 +49,29 @@ export async function checkGrokContentSafety(
         return { flagged: false };
     }
 }
+
+// New image safety check
+export async function checkImageSafety(
+    userId: string,
+    imageUrl: string
+): Promise<{ flagged: boolean; reason?: string }> {
+    if (!imageUrl) {
+        return { flagged: false };
+    }
+    try {
+        const { data, error } = await supabase.functions.invoke('grok-image-moderation', {
+            body: { userId, imageUrl },
+        });
+        if (error) {
+            console.warn('[checkImageSafety] Moderation function error, failing open:', error);
+            return { flagged: false };
+        }
+        if (data && data.flagged) {
+            return { flagged: true, reason: data.reason };
+        }
+        return { flagged: false };
+    } catch (err) {
+        console.error('[checkImageSafety] Exception during image check:', err);
+        return { flagged: false };
+    }
+}

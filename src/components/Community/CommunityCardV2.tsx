@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Heart, MessageCircle, Share2, Layers, MapPin, Shield, Calendar, CheckCircle2 } from "lucide-react";
 import { CommunityPost, FACT_TYPE_CONFIG, CONSENSUS_LEVEL_HINTS, ConsensusLevel } from "@/types/community";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -22,7 +22,7 @@ interface CommunityCardV2Props {
 }
 
 export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => {
-  const navigate = useNavigate();
+  // Navigation handled via Link component; useNavigate removed.
   const { currentUser } = useAuthStore();
   const { language } = useConfigStore();
   const { likePost, unlikePost } = useCommunityPostStore();
@@ -131,7 +131,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
       animate={{ opacity: 1, y: 0 }}
       className="masonry-card group"
     >
-      <div
+      <Link
         onClick={() => {
           if (!window.getSelection()?.toString()) {
             navigate(`/community/${post.id}`);
@@ -260,7 +260,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
             </button>
           </div>
         </div>
-      </div>
+      </Link>
 
       <ImageViewer
         images={post.images}
