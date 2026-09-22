@@ -29,7 +29,7 @@ const Cart = () => {
 
     const calculateSubtotal = () => {
         return enrichedCartItems.reduce((sum, ci) => {
-            let price = ci.item?.pricing.price.amount || 0;
+            const price = ci.item?.pricing.price.amount || 0;
             let qty = ci.quantity || 1;
 
             // Handle rental duration

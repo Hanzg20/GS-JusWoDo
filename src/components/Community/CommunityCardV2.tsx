@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Share2, Layers, MapPin, Shield, Calendar, CheckCircle2 } from "lucide-react";
 import { CommunityPost, FACT_TYPE_CONFIG, CONSENSUS_LEVEL_HINTS, ConsensusLevel } from "@/types/community";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +30,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
+  const navigate = useNavigate();
 
   // 处理双击点赞
   const handleDoubleTap = (e: React.MouseEvent) => {
@@ -132,11 +133,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
       className="masonry-card group"
     >
       <Link
-        onClick={() => {
-          if (!window.getSelection()?.toString()) {
-            navigate(`/community/${post.id}`);
-          }
-        }}
+        to={`/community/${post.id}`}
         className={`block cursor-pointer rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 ${post.isFact
           ? 'border-2 border-amber-300 bg-gradient-to-b from-amber-50/30 to-white'
           : 'border border-border/40 bg-white'
@@ -228,20 +225,17 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
                 Previously stopped propagation with no actual navigate,
                 making the author's own profile — and the Follow button
                 that lives there — completely unreachable from the feed. */}
-            <div
-              className="flex items-center gap-1.5 min-w-0"
-              onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}
-            >
-              <Avatar className="w-5 h-5">
-                <AvatarImage src={post.author?.avatar} loading="lazy" />
-                <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
-                  {post.author?.name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-[10px] text-muted-foreground font-semibold truncate">
-                {post.author?.name}
-              </span>
-            </div>
+                              <button type="button" className="flex items-center gap-1.5 min-w-0" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>
+                <Avatar className="w-5 h-5">
+                  <AvatarImage src={post.author?.avatar} loading="lazy" />
+                  <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                    {post.author?.name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-[10px] text-muted-foreground font-semibold truncate">
+                  {post.author?.name}
+                </span>
+              </button>
 
             {/* Like Counter Only (Xiaohongshu style) */}
             <button

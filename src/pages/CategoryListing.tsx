@@ -205,7 +205,7 @@ const CategoryListing = () => {
     useEffect(() => {
         setSelectedCategoryId(urlCategoryId);
         setSelectedIndustryId(urlIndustryId);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [urlCategoryId, urlIndustryId]);
 
     // "products" and "secondhand" are both really GOODS underneath — split

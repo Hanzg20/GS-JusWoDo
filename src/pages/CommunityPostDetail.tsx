@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { Button } from "@/components/ui/button";

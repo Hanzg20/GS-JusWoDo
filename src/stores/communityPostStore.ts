@@ -291,7 +291,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
         const newComment = await repo.createComment(authorId, input);
 
         set(state => {
-            let updatedComments = [...state.currentPostComments];
+            const updatedComments = [...state.currentPostComments];
 
             if (input.parentCommentId) {
                 // Find parent and add reply
