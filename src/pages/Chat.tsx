@@ -379,30 +379,13 @@ const Chat = () => {
         toast.success("Quote sent!");
     };
 
-    if (!currentUser) {
-        return (
-            <div className="min-h-screen bg-background flex flex-col">
-                <Header />
-                <div className="flex-1 flex items-center justify-center p-4">
-                    <div className="text-center max-w-xs">
-                        <MessageCircle className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                        <p className="text-muted-foreground mb-4 font-medium">
-                            {isZh ? '请登录后查看聊天消息' : 'Please login to view messages'}
-                        </p>
-                        <Button
-                            onClick={() => {
-                                setPostLoginRedirect('/chat');
-                                navigate('/login');
-                            }}
-                            className="rounded-2xl font-bold px-6 h-11"
-                        >
-                            {isZh ? '去登录' : 'Login'}
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // Logged-out visitors still get the real chat layout (WeChat review
+    // rejects pages that bounce straight to login) — the login prompt sits
+    // inside it and only fires when they tap it themselves.
+    const goLogin = () => {
+        setPostLoginRedirect('/chat');
+        navigate('/login');
+    };
 
     return (
         <div className="min-h-screen bg-background/50 flex flex-col overflow-hidden">
@@ -452,7 +435,15 @@ const Chat = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {isLoading && visibleConversations.length === 0 ? (
+                        {!currentUser ? (
+                            <div className="p-8 text-center text-muted-foreground">
+                                <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                <p className="text-xs mb-4">{isZh ? '登录后查看你的聊天消息' : 'Log in to see your messages'}</p>
+                                <Button size="sm" className="text-xs h-8 rounded-xl" onClick={goLogin}>
+                                    {isZh ? '去登录' : 'Log In'}
+                                </Button>
+                            </div>
+                        ) : isLoading && visibleConversations.length === 0 ? (
                             <div className="p-8 text-center text-xs text-muted-foreground animate-pulse">Loading conversations...</div>
                         ) : visibleConversations.length === 0 ? (
                             <div className="p-8 text-center text-muted-foreground">
@@ -1162,6 +1153,11 @@ const Chat = () => {
                             <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed">
                                 Connect with your neighbors in Kanata Lakes. Select a conversation to start chatting about services or rentals.
                             </p>
+                            {!currentUser ? (
+                                <Button className="rounded-2xl mt-8" onClick={goLogin}>
+                                    {isZh ? '去登录' : 'Log In'}
+                                </Button>
+                            ) : (
                             <div className="flex gap-3 mt-8">
                                 <Button
                                     className="rounded-2xl gap-2"
@@ -1178,6 +1174,7 @@ const Chat = () => {
                                     View Your Orders
                                 </Button>
                             </div>
+                            )}
                         </div>
                     )}
                 </div>

@@ -14,6 +14,7 @@ import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { toast } from 'sonner';
+import { setPostLoginRedirect } from '@/utils/postLoginRedirect';
 import { ProviderInventoryDashboard } from '@/components/inventory/ProviderInventoryDashboard';
 import { CouponManager } from '@/components/coupon';
 
@@ -140,8 +141,18 @@ export default function ProviderProfile() {
     // memory), so a naive fix passing providerId straight through would
     // still have failed. Mirrors ServiceDetail.tsx's working handleChat.
     const handleContactProvider = async () => {
+        // Logged out: offer login instead of bouncing there — WeChat review
+        // rejects forced-login jumps, and the visitor keeps their place here.
         if (!currentUser) {
-            navigate('/login');
+            toast(language === 'zh' ? '登录后就能和TA聊天啦' : 'Log in to start chatting', {
+                action: {
+                    label: language === 'zh' ? '去登录' : 'Log In',
+                    onClick: () => {
+                        setPostLoginRedirect(window.location.pathname + window.location.search);
+                        navigate('/login');
+                    },
+                },
+            });
             return;
         }
         if (!provider?.userId) {

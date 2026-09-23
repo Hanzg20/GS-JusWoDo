@@ -393,6 +393,16 @@ const Login = () => {
                             <span>{language === 'zh' ? '快捷登录' : 'Quick Log In'}</span>
                         )}
                     </Button>
+
+                    {/* WeChat review rejects forced login — browsing must stay
+                        open to logged-out users, so give them a way out. */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/')}
+                        className="w-full py-2 text-sm font-medium text-slate-500 active:text-primary"
+                    >
+                        {language === 'zh' ? '暂不登录，先逛逛' : 'Not now, just browsing'}
+                    </button>
                 </motion.div>
             </div>
         );
