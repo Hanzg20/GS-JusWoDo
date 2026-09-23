@@ -19,6 +19,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { useEnrichedListings } from "@/hooks/useEnrichedListings";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
 import { cn } from "@/lib/utils";
+import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 
 // Level-1 feed source, modeled on 小红书's 关注/发现/城市 top tabs
 // (reference: rednote.png) — 探索/附近 map onto our existing
@@ -39,6 +40,8 @@ const Community = () => {
     const [activeFilter, setActiveFilter] = useState<'all' | CommunityPostType>('all');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [feedMode, setFeedMode] = useState<FeedMode>('explore');
+    // Mini Program review treats a follow feed as 社交 — hidden there.
+    const inMiniProgram = isWeChatMiniProgramWebview();
     const [followingIds, setFollowingIds] = useState<string[] | null>(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchInput, setSearchInput] = useState('');
@@ -176,7 +179,11 @@ const Community = () => {
                                 { id: 'explore', labelZh: '探索', labelEn: 'Explore' },
                                 { id: 'nearby', labelZh: '附近', labelEn: 'Nearby' },
                                 { id: 'tasks', labelZh: '任务', labelEn: 'Tasks' },
-                            ] as const).map((tab) => (
+                            ] as const).filter(tab => !(inMiniProgram && tab.id === 'following')).map((tab) => ({
+                                ...tab,
+                                // "附近" evokes 附近的人 (a 交友 feature) to review; these are area posts.
+                                labelZh: inMiniProgram && tab.id === 'nearby' ? '本区' : tab.labelZh,
+                            })).map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setFeedMode(tab.id)}

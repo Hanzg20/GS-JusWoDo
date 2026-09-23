@@ -30,6 +30,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 
 const Chat = () => {
     const navigate = useNavigate();
@@ -37,6 +38,10 @@ const Chat = () => {
     const { language } = useConfigStore();
     const isZh = language === 'zh';
     const { onlineUserIds } = usePresenceStore();
+    // Mini Program review classes any follow/free-DM feature as 社交 (needs a
+    // category we don't hold) — there, chat stays strictly 交易咨询 tied to a
+    // listing/order, and social affordances are hidden. Website unchanged.
+    const inMiniProgram = isWeChatMiniProgramWebview();
 
     // 小海狸's user_profiles.name is a single plain-text DB field ("小海狸"),
     // not a bilingual zh/en pair like listing content — every English-UI
@@ -456,14 +461,14 @@ const Chat = () => {
                                     <>
                                         <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-20" />
                                         <p className="text-xs mb-4">No chats yet</p>
-                                        <Button
+                                        {!inMiniProgram && <Button
                                             size="sm"
                                             variant="outline"
                                             className="text-xs h-8"
                                             onClick={() => setShowStartDialog(true)}
                                         >
                                             Start Chat
-                                        </Button>
+                                        </Button>}
                                     </>
                                 )}
                             </div>
@@ -554,7 +559,7 @@ const Chat = () => {
                                                 </button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-xl min-w-[130px] p-1">
-                                                {convOtherUserId !== SUPPORT_USER_ID && (
+                                                {!inMiniProgram && convOtherUserId !== SUPPORT_USER_ID && (
                                                     <DropdownMenuItem onClick={() => handleToggleFollow(convOtherUserId)} className="gap-2 cursor-pointer rounded-lg py-2 text-xs font-bold">
                                                         <UserPlus className="w-3.5 h-3.5" />
                                                         {followingUserIds.includes(convOtherUserId) ? (isZh ? '取消关注' : 'Unfollow') : (isZh ? '关注' : 'Follow')}
@@ -704,7 +709,7 @@ const Chat = () => {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-2xl min-w-[160px] p-2">
-                                                {activeOtherUserId && activeOtherUserId !== SUPPORT_USER_ID && (
+                                                {!inMiniProgram && activeOtherUserId && activeOtherUserId !== SUPPORT_USER_ID && (
                                                     <DropdownMenuItem onClick={() => handleToggleFollow(activeOtherUserId)} className="gap-2 cursor-pointer rounded-xl py-2.5 font-bold text-sm">
                                                         <UserPlus className="w-4 h-4" />
                                                         {followingUserIds.includes(activeOtherUserId) ? (isZh ? '取消关注' : 'Unfollow') : (isZh ? '关注' : 'Follow')}
@@ -1159,13 +1164,13 @@ const Chat = () => {
                                 </Button>
                             ) : (
                             <div className="flex gap-3 mt-8">
-                                <Button
+                                {!inMiniProgram && <Button
                                     className="rounded-2xl gap-2"
                                     onClick={() => setShowStartDialog(true)}
                                 >
                                     <MessageCircle className="w-4 h-4" />
                                     Start New Chat
-                                </Button>
+                                </Button>}
                                 <Button
                                     variant="outline"
                                     className="rounded-2xl border-primary/20 text-primary hover:bg-primary/5"

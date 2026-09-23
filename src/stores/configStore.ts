@@ -95,7 +95,15 @@ export const useConfigStore = create<ConfigState>()(
             language: 'en', // Default language (will be auto-detected on first run)
             isLanguageAutoDetected: false,
             setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
-            setRefCodes: (codes) => set({ refCodes: codes }),
+            // "聊家常" reads as social chat to Mini Program review (社交 category
+            // we don't hold), so the Mini Program shows a help/Q&A-framed pillar
+            // name instead. Done here so every place that renders it agrees.
+            setRefCodes: (codes) => set({
+                // Inline check (not wechatShare's helper): wechatShare imports this store.
+                refCodes: (window as any).__wxjs_environment === 'miniprogram'
+                    ? codes.map(c => c.codeId === 'PILLAR_HELP' ? { ...c, zhName: '问邻里·助友邻' } : c)
+                    : codes,
+            }),
             setLanguage: (lang) => set({ language: lang, isLanguageAutoDetected: true }),
             initializeLanguage: () => {
                 const state = get();

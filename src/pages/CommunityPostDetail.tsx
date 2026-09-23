@@ -33,6 +33,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { promptLogin } from "@/components/common/LoginRequired";
+import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 
 const CommunityPostDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -337,7 +338,8 @@ const CommunityPostDetail = () => {
                                 )}
                             </div>
                         </div>
-                        {!isOwner && (
+                        {/* Follow is hidden in the Mini Program — review treats it as 社交. */}
+                        {!isOwner && !isWeChatMiniProgramWebview() && (
                             <Button
                                 variant="outline"
                                 size="sm"

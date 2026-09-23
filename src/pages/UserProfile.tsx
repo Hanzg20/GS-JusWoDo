@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
     ArrowLeft, Settings, Grid3X3, Bookmark, UserPlus,
     UserMinus, MessageCircle, Heart, Share2, Layout, Shield,
@@ -26,6 +25,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { promptLogin } from "@/components/common/LoginRequired";
+import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 
 const UserProfile = () => {
     const { userId } = useParams<{ userId: string }>();
@@ -42,6 +42,7 @@ const UserProfile = () => {
     const [isBlockLoading, setIsBlockLoading] = useState(false);
 
     const isOwnProfile = currentUser?.id === userId;
+    const inMiniProgram = isWeChatMiniProgramWebview();
 
     // Fetch profile data
     useEffect(() => {
@@ -159,7 +160,6 @@ const UserProfile = () => {
         liked: language === 'zh' ? '赞过' : 'Liked',
         following: language === 'zh' ? '关注' : 'Following',
         followers: language === 'zh' ? '粉丝' : 'Followers',
-        totalLikes: language === 'zh' ? '获赞与收藏' : 'Total Likes',
         edit: language === 'zh' ? '编辑资料' : 'Edit Profile'
     };
 
@@ -225,10 +225,6 @@ const UserProfile = () => {
                         <div className="flex-1 space-y-1 pt-1">
                             <h1 className="text-2xl font-black">{profile.name}</h1>
                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ID: {profile.id.slice(0, 8)}</p>
-                            <div className="flex gap-2 pt-2">
-                                <Badge variant="secondary" className="bg-primary/5 text-primary border-none text-[9px] font-black px-2 py-0.5">Lv.1 Explorer</Badge>
-                                <Badge variant="secondary" className="bg-amber-500/5 text-amber-600 border-none text-[9px] font-black px-2 py-0.5">Pro Helper</Badge>
-                            </div>
                         </div>
                     </div>
 
@@ -236,8 +232,9 @@ const UserProfile = () => {
                         {profile.bio || (language === 'zh' ? '这家伙很懒，什么都没留下...' : 'No bio yet')}
                     </p>
 
-                    {/* Interaction Stats */}
-                    <div className="flex items-center gap-8 py-2">
+                    {/* Interaction Stats — follow counts hidden in the Mini Program,
+                        where review treats follow/DM as 社交. */}
+                    {!inMiniProgram && <div className="flex items-center gap-8 py-2">
                         <div className="flex flex-col">
                             <span className="text-lg font-black leading-none">{profile.followingCount}</span>
                             <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1.5">{t.following}</span>
@@ -246,11 +243,7 @@ const UserProfile = () => {
                             <span className="text-lg font-black leading-none">{profile.followerCount}</span>
                             <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1.5">{t.followers}</span>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-lg font-black leading-none">32.1k</span>
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase mt-1.5">{t.totalLikes}</span>
-                        </div>
-                    </div>
+                    </div>}
 
                     {/* Actions */}
                     <div className="flex gap-2">
@@ -262,7 +255,7 @@ const UserProfile = () => {
                             >
                                 {t.edit}
                             </Button>
-                        ) : (
+                        ) : !inMiniProgram && (
                             <>
                                 <Button
                                     className={`flex-1 rounded-full h-10 text-xs font-black shadow-lg shadow-primary/20 transition-all active:scale-95 ${profile.isFollowedByMe ? 'bg-muted text-foreground' : 'bg-primary text-white'}`}
