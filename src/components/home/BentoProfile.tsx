@@ -4,6 +4,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { Link } from "react-router-dom";
 import { User, CreditCard, ChevronRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { thumbUrl } from "@/lib/imageUrl";
 
 export function BentoProfile() {
     const { currentUser } = useAuthStore();
@@ -39,7 +40,7 @@ export function BentoProfile() {
         <BentoItem colSpan={1} className="p-5 flex flex-col justify-between bg-gradient-to-b from-white to-gray-50">
             <div className="flex items-center gap-3">
                 <img
-                    src={currentUser.avatar}
+                    src={thumbUrl(currentUser.avatar, 96)}
                     alt={currentUser.name}
                     className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
                 />

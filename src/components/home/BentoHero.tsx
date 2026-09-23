@@ -11,6 +11,7 @@ import {
     CarouselItem,
     type CarouselApi,
 } from "@/components/ui/carousel";
+import { thumbUrl } from "@/lib/imageUrl";
 
 interface BentoHeroProps {
     featuredListings?: ListingMaster[];
@@ -88,8 +89,9 @@ export function BentoHero({ featuredListings = [] }: BentoHeroProps) {
                                         <div className="aspect-[4/3] bg-muted overflow-hidden">
                                             {item.images?.[0] ? (
                                                 <img
-                                                    src={item.images[0]}
+                                                    src={thumbUrl(item.images[0], 320)}
                                                     alt=""
+                                                    loading="lazy"
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                 />
                                             ) : (

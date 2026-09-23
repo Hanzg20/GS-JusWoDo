@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { IAuthRepository } from '../interfaces';
 import { User } from '@/types/domain';
+import { compressImage } from '@/lib/compressImage';
 
 export class SupabaseAuthRepository implements IAuthRepository {
     async login(email: string, password: string): Promise<User | null> {
@@ -128,7 +129,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
         return updatedUser;
     }
 
-    async uploadAvatar(userId: string, file: File): Promise<string> {
+    async uploadAvatar(userId: string, original: File): Promise<string> {
+        // Avatars only ever render small — 512px is plenty.
+        const file = await compressImage(original, { maxDim: 512 });
         const fileExt = file.name.split('.').pop();
         const fileName = `${userId}/${Date.now()}.${fileExt}`;
         const filePath = `avatars/${fileName}`;

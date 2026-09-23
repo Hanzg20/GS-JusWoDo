@@ -1,5 +1,6 @@
 import { BentoItem } from "./BentoItem";
 import { Plus } from "lucide-react";
+import { thumbUrl } from "@/lib/imageUrl";
 
 /**
  * Mock Stories Data
@@ -29,12 +30,12 @@ export function StoriesSection() {
                     <button key={story.id} className="flex-shrink-0 flex flex-col items-center gap-1 group relative">
                         <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${story.hasUnseen ? 'border-primary p-0.5' : 'border-transparent'}`}>
                             <img
-                                src={story.image}
+                                src={thumbUrl(story.image, 320)}
                                 alt={story.name}
                                 className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-500"
                             />
                             <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full border border-white bg-white overflow-hidden">
-                                <img src={story.avatar} alt="" className="w-full h-full" />
+                                <img src={thumbUrl(story.avatar, 96)} alt="" className="w-full h-full" />
                             </div>
                         </div>
                         <span className="text-xs font-medium text-gray-600 group-hover:text-primary transition-colors">

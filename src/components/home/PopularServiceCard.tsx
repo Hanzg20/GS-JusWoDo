@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { useListingStore, getTranslation } from "@/stores/listingStore";
 import { useProviderStore } from "@/stores/providerStore";
 import { useConfigStore } from "@/stores/configStore";
+import { thumbUrl } from "@/lib/imageUrl";
 
 interface PopularServiceCardProps {
   listing: ListingMaster;
@@ -84,7 +85,8 @@ export function PopularServiceCard({
       {/* Image */}
       <div className="relative aspect-video sm:aspect-square md:aspect-video overflow-hidden bg-muted/50">
         <img
-          src={listing.images[0] || '/placeholder.svg'}
+          src={listing.images[0] ? thumbUrl(listing.images[0], 640) : '/placeholder.svg'}
+          loading="lazy"
           alt={getTranslation(listing, 'title')}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useNavigate } from "react-router-dom";
 import { promptLogin } from "@/components/common/LoginRequired";
+import { compressImage } from "@/lib/compressImage";
 
 interface ImageUploaderProps {
     bucketName: string;
@@ -63,7 +64,10 @@ const ImageUploader = ({
         const newUrls: string[] = [];
 
         try {
-            for (const file of files) {
+            for (const original of files) {
+                // Downscale/re-encode first — a 6 MB phone photo usually ends up
+                // well under 1 MB, so the size limit below rarely bites.
+                const file = await compressImage(original);
                 if (file.size > 5 * 1024 * 1024) { // Increased to 5MB
                     toast.error(`${file.name} is too large. Max size is 5MB.`);
                     continue;

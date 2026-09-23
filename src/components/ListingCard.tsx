@@ -8,6 +8,7 @@ import { VerificationBadge } from "./ui/VerificationBadge";
 import { Badge } from "./ui/badge";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { thumbUrl } from "@/lib/imageUrl";
 
 export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: number } }) => {
     const navigate = useNavigate();
@@ -171,7 +172,7 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                     )}
 
                     <img
-                        src={item.images[0]}
+                        src={thumbUrl(item.images[0], 480)}
                         alt={displayTitle}
                         onLoad={() => setImageLoaded(true)}
                         loading="lazy"

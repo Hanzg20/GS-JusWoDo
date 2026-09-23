@@ -4,6 +4,7 @@ import { MapPin, Heart, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { thumbUrl } from "@/lib/imageUrl";
 
 interface NearbyHotServicesProps {
   listings: ListingMaster[];
@@ -86,7 +87,8 @@ export function NearbyHotServices({
                   {/* Image */}
                   <div className="relative aspect-video overflow-hidden bg-muted/50">
                     <img
-                      src={listing.images[0] || '/placeholder.svg'}
+                      src={listing.images[0] ? thumbUrl(listing.images[0], 640) : '/placeholder.svg'}
+                      loading="lazy"
                       alt={listing.titleEn || listing.titleZh}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

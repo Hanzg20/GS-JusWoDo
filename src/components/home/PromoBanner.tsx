@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useConfigStore } from "@/stores/configStore";
+import { thumbUrl } from "@/lib/imageUrl";
 
 interface PromoSlide {
     id: string;
@@ -97,7 +98,7 @@ export const PromoBanner = () => {
                     {/* Background Image */}
                     <div className="absolute inset-0">
                         <img
-                            src={currentSlideData.imageUrl}
+                            src={thumbUrl(currentSlideData.imageUrl, 1080)}
                             alt={language === 'zh' ? currentSlideData.titleZh : currentSlideData.titleEn}
                             className="w-full h-full object-cover"
                         />
