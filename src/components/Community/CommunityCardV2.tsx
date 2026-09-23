@@ -15,6 +15,7 @@ import { MediaEmbed } from "./MediaEmbed";
 import { ShareSheet } from "@/components/common/ShareSheet";
 import { RichTextContent } from "./RichTextContent";
 import { promptLogin } from "@/components/common/LoginRequired";
+import { thumbUrl } from "@/lib/imageUrl";
 
 interface CommunityCardV2Props {
   post: CommunityPost;
@@ -227,7 +228,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
                 that lives there — completely unreachable from the feed. */}
                               <button type="button" className="flex items-center gap-1.5 min-w-0" onClick={(e) => { e.stopPropagation(); navigate(`/user/${post.authorId}`); }}>
                 <Avatar className="w-5 h-5">
-                  <AvatarImage src={post.author?.avatar} loading="lazy" />
+                  <AvatarImage src={post.author?.avatar && thumbUrl(post.author.avatar, 64)} loading="lazy" />
                   <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
                     {post.author?.name?.[0]}
                   </AvatarFallback>

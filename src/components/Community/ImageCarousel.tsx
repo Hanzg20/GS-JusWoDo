@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { thumbUrl } from '@/lib/imageUrl';
+
+// Feed cards are ~half the phone width; 480px covers 2x-density screens.
+// Tapping opens the post detail, which loads the full image.
+const CARD_WIDTH = 480;
 
 interface ImageCarouselProps {
   images: string[];
@@ -75,7 +80,7 @@ export const ImageCarousel = ({ images, onImageClick, showArrows = true }: Image
           <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse" />
         )}
         <img
-          src={images[0]}
+          src={thumbUrl(images[0], CARD_WIDTH)}
           alt="Post image"
           loading="lazy"
           decoding="async"
@@ -103,7 +108,7 @@ export const ImageCarousel = ({ images, onImageClick, showArrows = true }: Image
                 <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse" />
               )}
               <img
-                src={image}
+                src={thumbUrl(image, CARD_WIDTH)}
                 alt={`Image ${index + 1}`}
                 loading={index === 0 ? "eager" : "lazy"}
                 decoding="async"

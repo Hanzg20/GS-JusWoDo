@@ -184,9 +184,10 @@ export default defineConfig(({ mode }) => {
             'supabase-vendor': ['@supabase/supabase-js'],
             'map-vendor': ['leaflet', 'react-leaflet'],
             'utils-vendor': ['date-fns', 'zod', 'react-hook-form'],
-            // Note: @tiptap/pm is excluded from manual chunks — it has no root export;
-            // only sub-paths like @tiptap/pm/model are valid and resolve transitively.
-            'tiptap-vendor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-placeholder', '@tiptap/extension-character-count'],
+            // No tiptap manual chunk: it pulled shared helpers (used by avatar,
+            // Community, etc.) into the tiptap bundle, so every page loaded
+            // ~400 KB of editor. Left to Rollup, tiptap lands in the lazily
+            // imported RichTextEditor chunk only.
           }
         }
       }

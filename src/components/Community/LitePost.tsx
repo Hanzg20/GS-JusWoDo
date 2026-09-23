@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import { useConfigStore } from "@/stores/configStore";
 import { toast } from "sonner";
 import { CommunityPostType, FactType, FactData, FACT_TYPE_CONFIG } from "@/types/community";
 import { MediaEmbed } from "./MediaEmbed";
-import { RichTextEditor } from "./RichTextEditor";
+// Tiptap is ~400 KB of JS; loading it only when the post dialog opens keeps
+// it off the 邻里圈 feed's critical path (LitePost's trigger button renders there).
+const RichTextEditor = lazy(() => import("./RichTextEditor").then(m => ({ default: m.RichTextEditor })));
 import { checkMiniProgramContent, isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 import { checkGrokContentSafety, checkImageSafety } from "@/lib/grokContentModeration";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
@@ -460,12 +462,14 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
                             onChange={(e) => setTitle(e.target.value)}
                             className="bg-muted/10 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-2xl h-12 p-4 text-base font-bold"
                         />
-                        <RichTextEditor
-                            value={description}
-                            onChange={setDescription}
-                            placeholder={isZh ? "分享点新鲜事..." : "Share what's new..."}
-                            maxLength={2000}
-                        />
+                        <Suspense fallback={<div className="h-40 rounded-2xl bg-muted/10 animate-pulse" />}>
+                            <RichTextEditor
+                                value={description}
+                                onChange={setDescription}
+                                placeholder={isZh ? "分享点新鲜事..." : "Share what's new..."}
+                                maxLength={2000}
+                            />
+                        </Suspense>
 
                         {/* Price Row (Optional) */}
                         {(selectedCat.id === 'ACTION' || selectedCat.id === 'HELP') && (
