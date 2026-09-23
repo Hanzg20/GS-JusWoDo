@@ -9,8 +9,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { SmartSearchBar } from "./SmartSearchBar";
 import { NodePicker } from "./NodePicker";
 
-// hideBrand: drop the logo/home link on phone widths, where MobileBottomNav's
-// 首页 tab already covers it. Desktop has no bottom nav, so it stays there.
+// hideBrand: drop the logo/home link (e.g. on 邻里圈, per product decision).
 const Header = ({ hideBrand = false }: { hideBrand?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,7 +48,7 @@ const Header = ({ hideBrand = false }: { hideBrand?: boolean }) => {
       <div className="container flex items-center justify-between h-16 px-4 max-w-7xl mx-auto gap-2 sm:gap-4">
         {/* Logo & Location */}
         <div className="flex items-center gap-3 shrink-0">
-          <Link to="/" className={`${hideBrand ? 'hidden md:flex' : 'flex'} items-center gap-2.5 focus:scale-95 transition-transform`}>
+          <Link to="/" className={`${hideBrand ? 'hidden' : 'flex'} items-center gap-2.5 focus:scale-95 transition-transform`}>
             <img src="/logo.png" alt="渥帮 JWD Logo" className="w-9 h-9 rounded-xl object-cover shadow-sm" />
             <div className="flex flex-col">
               <h1 className="text-base font-black tracking-tight text-slate-900 leading-none">{t.brandName}</h1>
