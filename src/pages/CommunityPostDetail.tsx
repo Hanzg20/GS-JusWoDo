@@ -309,17 +309,8 @@ const CommunityPostDetail = () => {
                         <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8 rounded-full hover:bg-muted">
                             <ChevronLeft className="w-6 h-6" />
                         </Button>
-                        {/* Visible brand mark so a visitor arriving from a
-                            shared card/Moments link can tell this is 渥帮's
-                            own site, and has a one-tap way home. A text
-                            wordmark, not the logo image — the post author's
-                            own avatar sits right next to this, and 小百灵
-                            (a real, common author) uses that same logo
-                            image as her avatar, so an icon here looked like
-                            a duplicated/broken icon rather than a brand mark. */}
-                        <button onClick={() => navigate('/')} className="shrink-0 text-xs font-black text-primary tracking-tight">
-                            {language === 'zh' ? '渥帮' : 'JWD'}
-                        </button>
+                        {/* No brand/home link here — the bottom action bar's 首页
+                            button already gives shared-link visitors a way home. */}
                     </div>
 
                     <div className="flex items-center gap-2 flex-grow mx-2">
