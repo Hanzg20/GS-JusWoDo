@@ -18,6 +18,7 @@ import { RichTextEditor } from "./RichTextEditor";
 import { checkMiniProgramContent, isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 import { checkGrokContentSafety, checkImageSafety } from "@/lib/grokContentModeration";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 /** Strip HTML tags so moderation sees plain text */
 function stripHtml(html: string): string {
@@ -119,10 +120,7 @@ export function LitePost({ onSuccess, trigger, postId, initialData }: LitePostPr
 
     const handlePost = async () => {
         if (!currentUser) {
-            toast.info(isZh ? "发布动态需要登录账号，请先登录" : "Please log in before posting");
-            setPostLoginRedirect(window.location.pathname + window.location.search);
-            setOpen(false);
-            navigate('/login');
+            promptLogin(navigate, isZh, isZh ? "发布动态需要登录账号" : "Log in to post");
             return;
         }
 

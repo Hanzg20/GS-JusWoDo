@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCheck, X, HelpCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface FactVoteButtonsProps {
     postId: string;
@@ -80,13 +82,14 @@ export function FactVoteButtons({
     className = '',
 }: FactVoteButtonsProps) {
     const { language } = useConfigStore();
+    const navigate = useNavigate();
     const { currentUser } = useAuthStore();
     const [isVoting, setIsVoting] = useState(false);
     const [hoveredType, setHoveredType] = useState<ConsensusVoteType | null>(null);
 
     const handleVote = async (voteType: ConsensusVoteType) => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录后再投票' : 'Please login to vote');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录后再投票' : 'Please login to vote');
             return;
         }
 
@@ -195,12 +198,13 @@ export function FactVoteButtonsCompact({
     className = '',
 }: FactVoteButtonsProps) {
     const { language } = useConfigStore();
+    const navigate = useNavigate();
     const { currentUser } = useAuthStore();
     const [isVoting, setIsVoting] = useState(false);
 
     const handleVote = async (voteType: ConsensusVoteType) => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login');
             return;
         }
 

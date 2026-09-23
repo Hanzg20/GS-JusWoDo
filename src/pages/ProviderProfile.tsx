@@ -14,7 +14,6 @@ import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useMessageStore } from '@/stores/messageStore';
 import { toast } from 'sonner';
-import { setPostLoginRedirect } from '@/utils/postLoginRedirect';
 import { ProviderInventoryDashboard } from '@/components/inventory/ProviderInventoryDashboard';
 import { CouponManager } from '@/components/coupon';
 
@@ -23,6 +22,7 @@ import { ProviderHero } from '@/components/provider-profile/ProviderHero';
 import { ProviderServicesTab } from '@/components/provider-profile/ProviderServicesTab';
 import { ProviderReviewsTab } from '@/components/provider-profile/ProviderReviewsTab';
 import { ProviderAboutTab } from '@/components/provider-profile/ProviderAboutTab';
+import { promptLogin } from "@/components/common/LoginRequired";
 
 export default function ProviderProfile() {
     const { providerId } = useParams<{ providerId: string }>();
@@ -144,15 +144,7 @@ export default function ProviderProfile() {
         // Logged out: offer login instead of bouncing there — WeChat review
         // rejects forced-login jumps, and the visitor keeps their place here.
         if (!currentUser) {
-            toast(language === 'zh' ? '登录后就能和TA聊天啦' : 'Log in to start chatting', {
-                action: {
-                    label: language === 'zh' ? '去登录' : 'Log In',
-                    onClick: () => {
-                        setPostLoginRedirect(window.location.pathname + window.location.search);
-                        navigate('/login');
-                    },
-                },
-            });
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '登录后就能和TA聊天啦' : 'Log in to start chatting');
             return;
         }
         if (!provider?.userId) {

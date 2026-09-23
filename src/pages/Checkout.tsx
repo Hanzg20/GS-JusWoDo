@@ -21,6 +21,7 @@ import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { repositoryFactory } from '@/services/repositories/factory';
+import { LoginRequired } from '@/components/common/LoginRequired';
 
 const Checkout = () => {
     const navigate = useNavigate();
@@ -42,10 +43,7 @@ const Checkout = () => {
     const consultHours = searchParams.get('hours');
 
     useEffect(() => {
-        if (!currentUser) {
-            navigate('/login?redirect=/checkout');
-            return;
-        }
+        if (!currentUser) return;
 
         const loadMissingData = async () => {
             if (directItemId) {
@@ -365,6 +363,10 @@ const Checkout = () => {
                 </motion.div>
             </div>
         );
+    }
+
+    if (!currentUser) {
+        return <LoginRequired />;
     }
 
     return (

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, Clock, Heart, MessageCircle, Share2, MoreVertical, Briefcase, Trash2, Edit2, Shield, Calendar, Bookmark, ChevronLeft, ChevronRight, Send, X, Ban, Home } from "lucide-react";
-import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -33,6 +32,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 const CommunityPostDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -101,7 +101,7 @@ const CommunityPostDetail = () => {
 
     const handleFollowAuthor = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
         if (!currentPost || currentUser.id === currentPost.authorId || isFollowLoading) return;
@@ -190,7 +190,7 @@ const CommunityPostDetail = () => {
     };
 
     const handleLike = async () => {
-        if (!currentUser) return toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+        if (!currentUser) return promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
 
         // Trigger animation
         setIsLikeAnimating(true);
@@ -210,7 +210,7 @@ const CommunityPostDetail = () => {
     };
 
     const handleSubmitComment = async () => {
-        if (!currentUser) return toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+        if (!currentUser) return promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
         if (!commentText.trim()) return;
 
         setIsSubmittingComment(true);
@@ -251,9 +251,7 @@ const CommunityPostDetail = () => {
 
     const handleBlockAuthor = async () => {
         if (!currentUser) {
-            toast.info(language === 'zh' ? '请先登录' : 'Please log in first');
-            setPostLoginRedirect(window.location.pathname + window.location.search);
-            navigate('/login');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '登录后才能拉黑' : 'Log in to block users');
             return;
         }
         if (!currentPost?.authorId) return;
@@ -268,7 +266,7 @@ const CommunityPostDetail = () => {
 
     const handleVote = async (voteType: ConsensusVoteType) => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
         await voteOnFact(currentPost.id, currentUser.id, voteType);
@@ -276,7 +274,7 @@ const CommunityPostDetail = () => {
 
     const handleSave = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
         if (currentPost.isSavedByMe) {
@@ -632,7 +630,7 @@ const CommunityPostDetail = () => {
                                         comment={comment}
                                         onLike={async (cid) => {
                                             if (!currentUser) {
-                                                toast.error(language === 'zh' ? '请先登录' : 'Login');
+                                                promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please log in first');
                                                 return;
                                             }
                                             const target = currentPostComments.find(c => c.id === cid);
@@ -644,7 +642,7 @@ const CommunityPostDetail = () => {
                                         }}
                                         onReply={async (pid, txt) => {
                                             if (!currentUser) {
-                                                toast.error(language === 'zh' ? '请先登录' : 'Login');
+                                                promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please log in first');
                                                 return;
                                             }
                                             const check = await checkGrokContentSafety(currentUser.id, txt);

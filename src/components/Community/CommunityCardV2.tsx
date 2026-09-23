@@ -8,13 +8,13 @@ import { useState } from "react";
 import { useCommunityPostStore } from "@/stores/communityPostStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
-import { toast } from "sonner";
 import { ImageCarousel } from "./ImageCarousel";
 import { ImageViewer } from "./ImageViewer";
 import { HashtagText } from "./HashtagText";
 import { MediaEmbed } from "./MediaEmbed";
 import { ShareSheet } from "@/components/common/ShareSheet";
 import { RichTextContent } from "./RichTextContent";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface CommunityCardV2Props {
   post: CommunityPost;
@@ -38,7 +38,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
     e.stopPropagation();
 
     if (!currentUser) {
-      toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+      promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
       return;
     }
 
@@ -61,7 +61,7 @@ export const CommunityCardV2 = ({ post, onDoubleTap }: CommunityCardV2Props) => 
     e.stopPropagation();
 
     if (!currentUser) {
-      toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+      promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
       return;
     }
 

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, X, Camera, ShieldCheck, UserPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface JWDScannerProps {
     onClose: () => void;
@@ -91,7 +92,7 @@ export function JWDScanner({ onClose }: JWDScannerProps) {
 
     async function handleEventCheckIn(eventId: string) {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
 

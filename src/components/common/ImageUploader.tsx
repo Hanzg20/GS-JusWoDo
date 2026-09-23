@@ -5,6 +5,8 @@ import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useNavigate } from "react-router-dom";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface ImageUploaderProps {
     bucketName: string;
@@ -25,6 +27,7 @@ const ImageUploader = ({
 }: ImageUploaderProps) => {
     const { currentUser } = useAuthStore();
     const { language } = useConfigStore();
+    const navigate = useNavigate();
     const [uploading, setUploading] = useState(false);
     const [previews, setPreviews] = useState<string[]>(existingImages);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +48,7 @@ const ImageUploader = ({
         // upload silently fails with a generic "row-level security policy"
         // error that gives the visitor no idea logging in would fix it.
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录后再上传图片' : 'Please log in to upload images');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录后再上传图片' : 'Please log in to upload images');
             if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }

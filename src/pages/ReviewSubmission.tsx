@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import ImageUploader from "@/components/common/ImageUploader";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 const ReviewSubmission = () => {
     const { id } = useParams();
@@ -53,8 +54,7 @@ const ReviewSubmission = () => {
 
     const handleSubmit = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录后再提交评价' : 'Please log in to submit a review');
-            navigate('/login');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '登录后才能提交评价' : 'Log in to submit a review');
             return;
         }
         if (!order) return;

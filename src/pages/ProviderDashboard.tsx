@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { formatMoney } from "@/stores/listingStore";
 
 import { useProviderStore } from "@/stores/providerStore";
+import { LoginRequired } from "@/components/common/LoginRequired";
 
 const ProviderDashboard = () => {
     const navigate = useNavigate();
@@ -140,8 +141,7 @@ const ProviderDashboard = () => {
     };
 
     if (!currentUser) {
-        navigate('/login');
-        return null;
+        return <LoginRequired />;
     }
 
     if (!isProvider) {

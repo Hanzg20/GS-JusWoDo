@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { LoginRequired } from "@/components/common/LoginRequired";
 
 const MyListings = () => {
     const navigate = useNavigate();
@@ -47,8 +48,7 @@ const MyListings = () => {
     }, [currentUser?.providerProfileId]);
 
     if (!currentUser) {
-        navigate('/login');
-        return null;
+        return <LoginRequired />;
     }
 
     // Use the providerProfileId directly from the authenticated user session.

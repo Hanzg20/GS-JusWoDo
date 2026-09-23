@@ -13,7 +13,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 
 // Sub-components
@@ -21,6 +20,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { DashboardCards } from "@/components/profile/DashboardCards";
 import { MenuLinks, MenuItem } from "@/components/profile/MenuLinks";
 import { PAYMENTS_ENABLED } from "@/config/launchFlags";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -36,9 +36,7 @@ const Profile = () => {
 
     const gatePrivate = (path: string) => {
         if (!currentUser) {
-            toast.info(language === 'zh' ? '请先登录' : 'Please log in first');
-            setPostLoginRedirect(path);
-            navigate('/login');
+            promptLogin(navigate, language === 'zh', undefined, path);
             return;
         }
         navigate(path);

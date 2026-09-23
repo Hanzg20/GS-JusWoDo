@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Package, Calendar, MapPin, MessageCircle, DollarSign, Clock, CheckCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { QuoteDialog } from "@/components/orders/QuoteDialog";
 import { PAYMENTS_ENABLED } from "@/config/launchFlags";
+import { LoginRequired } from "@/components/common/LoginRequired";
 
 const OrderDetail = () => {
     const { id } = useParams();
@@ -79,14 +80,8 @@ const OrderDetail = () => {
     // Find order in store (assuming loaded)
     const order = orders.find(o => o.id === id);
 
-    useEffect(() => {
-        if (!currentUser) {
-            navigate('/login');
-        }
-    }, [currentUser, navigate]);
-
     if (!currentUser) {
-        return null; // Don't render anything while waiting for the effect
+        return <LoginRequired />;
     }
 
     if (!order) {

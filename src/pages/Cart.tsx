@@ -6,6 +6,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useListingStore } from "@/stores/listingStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
+import { LoginRequired } from "@/components/common/LoginRequired";
 
 const Cart = () => {
     const navigate = useNavigate();
@@ -14,8 +15,7 @@ const Cart = () => {
     const { listings, listingItems } = useListingStore();
 
     if (!currentUser) {
-        navigate('/login');
-        return null;
+        return <LoginRequired />;
     }
 
     const userCartItems = cartItems;

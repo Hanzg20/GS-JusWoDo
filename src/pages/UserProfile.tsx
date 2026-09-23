@@ -25,6 +25,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 const UserProfile = () => {
     const { userId } = useParams<{ userId: string }>();
@@ -86,7 +87,7 @@ const UserProfile = () => {
 
     const handleFollow = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
         if (!profile) return;

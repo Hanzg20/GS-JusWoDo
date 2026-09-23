@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import { reportRepository, ReportTargetType } from "@/services/repositories/supabase/ReportRepository";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface ReportDialogProps {
     targetType: ReportTargetType;
@@ -39,8 +40,7 @@ export function ReportDialog({ targetType, targetId, trigger }: ReportDialogProp
 
     const handleOpenChange = (next: boolean) => {
         if (next && !currentUser) {
-            toast.error(isZh ? "请先登录" : "Please login first");
-            navigate("/login");
+            promptLogin(navigate, isZh, isZh ? "登录后才能举报" : "Log in to report");
             return;
         }
         setOpen(next);

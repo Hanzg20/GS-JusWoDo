@@ -18,6 +18,7 @@ import { checkMiniProgramContent } from "@/lib/wechatShare";
 import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 // Every config's 'location' field type (LocationPicker) stores an object
 // ({lat, lng, address, ...}), not a plain string — under different field
@@ -280,9 +281,7 @@ const Publish = () => {
 
     const handleFinalSubmit = async () => {
         if (!currentUser) {
-            toast.info(t.loginRequired);
-            setPostLoginRedirect(window.location.pathname + window.location.search);
-            navigate('/login');
+            promptLogin(navigate, language === 'zh', t.loginRequired);
             return;
         }
         if (!previewData) {

@@ -15,6 +15,7 @@ import { useMessageStore } from "@/stores/messageStore";
 import { Order } from "@/types/orders";
 import { PAYMENTS_ENABLED } from "@/config/launchFlags";
 import { useConfigStore } from "@/stores/configStore";
+import { LoginRequired } from "@/components/common/LoginRequired";
 
 const Orders = () => {
     const navigate = useNavigate();
@@ -52,10 +53,7 @@ const Orders = () => {
     );
 
     useEffect(() => {
-        if (!currentUser) {
-            navigate('/login');
-            return;
-        }
+        if (!currentUser) return;
 
         if (paymentStatus === 'success') {
             toast.success(isZh ? '支付成功！订单正在处理中。' : 'Payment Successful! Your order is being processed.', {
@@ -71,7 +69,7 @@ const Orders = () => {
     }, [currentUser, navigate, paymentStatus, isZh]);
 
     if (!currentUser) {
-        return null; // Don't render anything while waiting for the effect
+        return <LoginRequired />;
     }
 
     const filteredOrders = userOrders.filter(order => {

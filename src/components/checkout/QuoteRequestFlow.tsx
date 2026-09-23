@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PAYMENTS_ENABLED } from "@/config/launchFlags";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface QuoteRequestFlowProps {
     isOpen: boolean;
@@ -44,7 +45,7 @@ export const QuoteRequestFlow = ({ isOpen, onClose, master, item, providerUserId
 
     const handleSubmit = async () => {
         if (!currentUser) {
-            toast.error(isZh ? "请先登录" : "Please login to continue");
+            promptLogin(navigate, isZh, isZh ? "请先登录" : "Please login to continue");
             return;
         }
 

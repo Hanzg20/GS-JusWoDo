@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface EventDetailViewProps {
     master: ListingMaster;
@@ -60,8 +61,7 @@ export function EventDetailView({ master, item, provider, onChat }: EventDetailV
 
     const handleRSVP = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
-            navigate('/login');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '登录后才能报名' : 'Log in to RSVP');
             return;
         }
 

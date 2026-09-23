@@ -13,6 +13,8 @@ import { Heart, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { UserLevelBadge } from "./UserLevelBadge";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { promptLogin } from "@/components/common/LoginRequired";
 
 interface CommentItemProps {
     comment: CommunityComment;
@@ -32,6 +34,7 @@ export function CommentItem({
     className = '',
 }: CommentItemProps) {
     const { language } = useConfigStore();
+    const navigate = useNavigate();
     const { currentUser } = useAuthStore();
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState("");
@@ -56,7 +59,7 @@ export function CommentItem({
 
     const handleLike = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
         if (isLiking) return;
@@ -73,7 +76,7 @@ export function CommentItem({
 
     const handleSubmitReply = async () => {
         if (!currentUser) {
-            toast.error(language === 'zh' ? '请先登录' : 'Please login first');
+            promptLogin(navigate, language === 'zh', language === 'zh' ? '请先登录' : 'Please login first');
             return;
         }
         if (!replyContent.trim()) return;
