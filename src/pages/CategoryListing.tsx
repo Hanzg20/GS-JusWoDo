@@ -224,7 +224,8 @@ const CategoryListing = () => {
             categoryId: selectedCategoryId,
             type: resolvedType,
             goodsTier,
-            sortBy
+            // 'distance' is sorted client-side below; the server just needs an order.
+            sortBy: sortBy === 'distance' ? 'newest' : sortBy
         });
     }, [type, query, isSmartSearch, selectedCategoryId, sortBy, currentUser?.nodeId, activeNodeId]);
 

@@ -53,6 +53,8 @@ export interface OrderSnapshot {
     };
     providerName: string;
     providerBadges: string[];
+    coupon_code?: string;
+    coupon_discount?: number; // cents
 }
 
 /**

@@ -340,7 +340,7 @@ export const ListingCard = ({ item }: { item: ListingMaster & { similarity?: num
                                 </>
                             ) : (
                                 <span className="text-muted-foreground text-[10px] font-black italic opacity-60">
-                                    {priceLabel.text}
+                                    {'text' in priceLabel && priceLabel.text}
                                 </span>
                             )}
                         </div>

@@ -90,10 +90,6 @@ const ServiceDetail = () => {
         if (!foundProvider) {
           const pRepo = repositoryFactory.getProviderRepository();
           foundProvider = await pRepo.getById(foundMaster.providerId);
-          if (!foundProvider) {
-            const uRepo = repositoryFactory.getUserRepository();
-            foundProvider = await uRepo.getById(foundMaster.providerId);
-          }
         }
         setProvider(foundProvider);
       }
@@ -180,7 +176,7 @@ const ServiceDetail = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.6, ease: "easeOut" as const }
     }
   };
 

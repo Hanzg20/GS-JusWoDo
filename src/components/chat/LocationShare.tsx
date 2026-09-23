@@ -9,15 +9,15 @@ interface LocationShareProps {
 }
 
 export function LocationShare({ onLocationShare }: LocationShareProps) {
-    const { coords, loading, error, getCurrentLocation } = useLocation();
+    // useLocation() requests the position itself on mount; there's no
+    // separate getCurrentLocation() — calling one threw and blocked the address lookup.
+    const { coords, loading, error } = useLocation();
     const [gettingLocation, setGettingLocation] = useState(false);
     const [address, setAddress] = useState<string>('');
 
     const handleGetLocation = async () => {
         setGettingLocation(true);
         try {
-            await getCurrentLocation();
-
             if (coords) {
                 // Reverse geocode to get address
                 try {
@@ -95,14 +95,13 @@ export function LocationShare({ onLocationShare }: LocationShareProps) {
                         <div className="space-y-3">
                             {/* Mini Map Preview */}
                             <div className="relative h-32 bg-muted rounded-xl overflow-hidden border border-border/50">
+                                {/* OSM static map — this used to call Mapbox with Mapbox's own public
+                                    docs demo token hardcoded (not ours, rate-limited, and flagged by
+                                    GitHub push protection), falling back to this same URL on error. */}
                                 <img
-                                    src={`https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+3b82f6(${coords.lng},${coords.lat})/${coords.lng},${coords.lat},14,0/320x128@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`}
+                                    src={`https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lng}&zoom=14&size=320x128&markers=${coords.lat},${coords.lng},red-pushpin`}
                                     alt="Location preview"
                                     className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        // Fallback to OSM static map
-                                        e.currentTarget.src = `https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lng}&zoom=14&size=320x128&markers=${coords.lat},${coords.lng},red-pushpin`;
-                                    }}
                                 />
                                 <div className="absolute bottom-2 left-2 right-2 bg-background/80 backdrop-blur-sm rounded-lg p-2">
                                     <p className="text-[10px] font-bold text-foreground line-clamp-2">

@@ -192,6 +192,7 @@ export const useStore = create<AppState>((set, get) => ({
     providers: [
         {
             id: 'p1',
+            isActive: true,
             userId: 'u_p1',
             businessNameZh: '李阿姨',
             businessNameEn: 'Auntie Li',
@@ -215,6 +216,7 @@ export const useStore = create<AppState>((set, get) => ({
         },
         {
             id: 'p2',
+            isActive: true,
             userId: 'u_p2',
             businessNameZh: '极速数码租赁',
             businessNameEn: 'Speedy Digital Rental',
@@ -238,6 +240,7 @@ export const useStore = create<AppState>((set, get) => ({
         },
         {
             id: 'p3',
+            isActive: true,
             userId: 'u_p3',
             businessNameZh: '王律师',
             businessNameEn: 'Lawyer Wang',

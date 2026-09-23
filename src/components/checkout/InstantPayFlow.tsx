@@ -96,8 +96,7 @@ export const InstantPayFlow = ({ isOpen, onClose, master, item, dateRange, consu
                     model: item.pricing.model,
                     price: item.pricing.price,
                     unit: item.pricing.unit,
-                    deposit: item.pricing.deposit,
-                    serviceCallFee: item.pricing.serviceCallFee
+                    deposit: item.pricing.deposit
                 },
                 providerName: 'Provider',
                 providerBadges: []
@@ -105,7 +104,7 @@ export const InstantPayFlow = ({ isOpen, onClose, master, item, dateRange, consu
             rentalStartDate: dateRange?.from?.toISOString(),
             rentalEndDate: dateRange?.to?.toISOString(),
             depositAmount: item.pricing.deposit?.amount || 0,
-            depositStatus: item.pricing.deposit ? 'NONE' : 'NONE',
+            depositStatus: 'NONE' as const,
             serviceCallFee: item.pricing.model === 'VISIT_FEE' ? item.pricing.price.amount : 0
         };
 

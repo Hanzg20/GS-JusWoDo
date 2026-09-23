@@ -1,4 +1,4 @@
-import { Achievement } from '@/types/gamification';
+import { Achievement, UserLevel } from '@/types/gamification';
 
 /**
  * 成就系统配置

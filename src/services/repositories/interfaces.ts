@@ -114,6 +114,11 @@ export interface Conversation {
     metadata?: Record<string, any>;
     archivedFor?: string[]; // user ids this conversation is archived for
     deletedFor?: string[]; // user ids this conversation is hidden from (delete-for-me only)
+    // Joined in by getConversations() for the list view
+    otherUserName?: string;
+    otherUserAvatar?: string;
+    lastMessagePreview?: string;
+    unreadCount?: number;
 }
 
 export interface Message {

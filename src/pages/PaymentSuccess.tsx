@@ -358,12 +358,11 @@ const PaymentSuccess = () => {
                             {fromScan ? (
                                 <Button
                                     onClick={() => {
-                                        // Try to close window (works for popups/new tabs)
-                                        const closed = window.close();
-                                        // Fallback: navigate home if close fails (regular tabs)
-                                        if (!closed) {
-                                            setTimeout(() => navigate('/'), 150);
-                                        }
+                                        // Try to close window (works for popups/new tabs).
+                                        // window.close() returns nothing; if the page is
+                                        // still here 150ms later, it didn't close — go home.
+                                        window.close();
+                                        setTimeout(() => navigate('/'), 150);
                                     }}
                                     className="w-full rounded-xl"
                                 >

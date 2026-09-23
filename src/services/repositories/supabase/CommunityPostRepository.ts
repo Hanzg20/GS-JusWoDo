@@ -670,41 +670,28 @@ export class SupabaseCommunityPostRepository {
     }
 
     async getTrendingTags(limit: number = 10): Promise<{ tag: string; count: number; trending?: boolean }[]> {
-        // In a real app, this would be a materialized view or a complex query.
-        // For now, we'll fetch recent posts and count tags manually or use a simple RPC if available.
-        // Let's assume we have a 'get_trending_tags' RPC.
-        const { data, error } = await supabase.rpc('get_trending_tags', { p_limit: limit });
+        // Counted client-side from recent posts. There is no get_trending_tags
+        // RPC in the database — calling one 404'd on every 邻里圈 load.
+        const { data: posts, error: fetchError } = await supabase
+            .from('community_posts')
+            .select('tags')
+            .in('status', ['ACTIVE', 'RESOLVED'])
+            .order('created_at', { ascending: false })
+            .limit(100);
 
-        if (error) {
-            console.warn('RPC get_trending_tags failed, falling back to basic count:', error);
-            // Fallback: Fetch all tags from active posts
-            const { data: posts, error: fetchError } = await supabase
-                .from('community_posts')
-                .select('tags')
-                .in('status', ['ACTIVE', 'RESOLVED'])
-                .order('created_at', { ascending: false })
-                .limit(100);
+        if (fetchError) return [];
 
-            if (fetchError) return [];
-
-            const tagCounts: Record<string, number> = {};
-            posts?.forEach(p => {
-                p.tags?.forEach((tag: string) => {
-                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-                });
+        const tagCounts: Record<string, number> = {};
+        posts?.forEach(p => {
+            p.tags?.forEach((tag: string) => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
             });
+        });
 
-            return Object.entries(tagCounts)
-                .map(([tag, count]) => ({ tag, count }))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, limit);
-        }
-
-        return (data || []).map((row: any) => ({
-            tag: row.tag,
-            count: row.count,
-            trending: row.is_trending
-        }));
+        return Object.entries(tagCounts)
+            .map(([tag, count]) => ({ tag, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, limit);
     }
 }
 

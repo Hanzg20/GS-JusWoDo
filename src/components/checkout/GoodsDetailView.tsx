@@ -68,7 +68,7 @@ export const GoodsDetailView = ({ master, item, items = [], provider, onBuy, onC
                             // Duck typing check for ProviderProfile vs User
                             (provider && 'businessNameEn' in provider)
                                 ? (provider.businessNameEn || provider.businessNameZh || t.postedBy)
-                                : (provider?.name || 'Neighbor')
+                                : ((provider as User | undefined)?.name || 'Neighbor')
                         }
                         authorAvatar={provider?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${provider?.id || 'default'}`}
                         nativeShareReady
@@ -192,7 +192,7 @@ export const GoodsDetailView = ({ master, item, items = [], provider, onBuy, onC
                             <p className="font-black text-foreground">
                                 {(provider && 'businessNameEn' in provider)
                                     ? (provider.businessNameEn || provider.businessNameZh || 'Neighbor')
-                                    : (provider?.name || 'Neighbor')}
+                                    : ((provider as User | undefined)?.name || 'Neighbor')}
                             </p>
                         </div>
                     </Link>
