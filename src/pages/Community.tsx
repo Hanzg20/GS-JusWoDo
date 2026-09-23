@@ -149,7 +149,7 @@ const Community = () => {
                 progress={pullToRefresh.progress}
             />
 
-            <Header />
+            <Header hideBrand />
 
             {/* Tab header, modeled directly on 小红书's 关注/发现/城市/搜索 top
                 bar + per-tab sub-filter row (reference: rednote.png). No
