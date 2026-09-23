@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { promptLogin } from "@/components/common/LoginRequired";
 import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
+import { thumbUrl } from "@/lib/imageUrl";
 
 const CommunityPostDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -319,7 +320,7 @@ const CommunityPostDetail = () => {
                             onClick={() => navigate(`/user/${currentPost.authorId}`)}
                         >
                             <Avatar className="w-8 h-8 border border-white shadow-sm">
-                                <AvatarImage src={currentPost.author?.avatar} />
+                                <AvatarImage src={currentPost.author?.avatar && thumbUrl(currentPost.author.avatar, 96)} />
                                 <AvatarFallback>{currentPost.author?.name?.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col min-w-0">
@@ -427,7 +428,7 @@ const CommunityPostDetail = () => {
                                     key={currentImageIndex}
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    src={currentPost.images![currentImageIndex]}
+                                    src={thumbUrl(currentPost.images![currentImageIndex], 1080, 80)}
                                     alt=""
                                     className="w-full h-full object-cover"
                                 />

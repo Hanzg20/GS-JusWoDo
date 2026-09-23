@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { promptLogin } from "@/components/common/LoginRequired";
+import { thumbUrl } from "@/lib/imageUrl";
 
 interface CommentItemProps {
     comment: CommunityComment;
@@ -102,7 +103,7 @@ export function CommentItem({
             <div className="flex gap-3">
                 {/* Avatar */}
                 <Avatar className={`${depth === 0 ? 'w-9 h-9' : 'w-7 h-7'} mt-0.5 shrink-0`}>
-                    <AvatarImage src={comment.author?.avatar} />
+                    <AvatarImage src={comment.author?.avatar && thumbUrl(comment.author.avatar, 96)} />
                     <AvatarFallback className="text-xs">
                         {comment.author?.name?.charAt(0)}
                     </AvatarFallback>

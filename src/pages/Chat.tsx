@@ -31,6 +31,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
+import { thumbUrl } from "@/lib/imageUrl";
 
 const Chat = () => {
     const navigate = useNavigate();
@@ -491,7 +492,7 @@ const Chat = () => {
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center border border-primary/10">
                                             {conv.otherUserAvatar ? (
                                                 <img
-                                                    src={conv.otherUserAvatar}
+                                                    src={thumbUrl(conv.otherUserAvatar, 96)}
                                                     alt={getDisplayName(convOtherUserId, conv.otherUserName)}
                                                     className="w-full h-full rounded-full object-cover"
                                                 />
@@ -618,7 +619,7 @@ const Chat = () => {
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/10">
                                                 {activeConversation?.otherUserAvatar ? (
                                                     <img
-                                                        src={activeConversation.otherUserAvatar}
+                                                        src={thumbUrl(activeConversation.otherUserAvatar, 96)}
                                                         alt={getDisplayName(activeOtherUserId, activeConversation?.otherUserName)}
                                                         className="w-full h-full rounded-full object-cover"
                                                     />
@@ -758,7 +759,7 @@ const Chat = () => {
                                             {/* Order Image */}
                                             <div className="w-12 h-12 rounded-xl bg-white overflow-hidden border-2 border-amber-200/50 shadow-sm flex-shrink-0">
                                                 <img
-                                                    src={activeOrder.snapshot.masterImages[0]}
+                                                    src={thumbUrl(activeOrder.snapshot.masterImages[0], 96)}
                                                     className="w-full h-full object-cover"
                                                     alt={activeOrder.snapshot.masterTitle}
                                                 />
@@ -870,7 +871,7 @@ const Chat = () => {
                                                         {/* Avatar */}
                                                         <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary/10 to-primary/20 border border-primary/10 mb-4">
                                                             {avatarUrl ? (
-                                                                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                                                                <img src={thumbUrl(avatarUrl, 96)} alt="" className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-primary/70">
                                                                     {avatarInitial}
@@ -919,7 +920,7 @@ const Chat = () => {
                                                                 ) : isImage ? (
                                                                     <div className="space-y-1">
                                                                         <img
-                                                                            src={msg.metadata?.imageUrl || msg.content}
+                                                                            src={thumbUrl(msg.metadata?.imageUrl || msg.content, 640)}
                                                                             alt="Shared image"
                                                                             className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                                                                             onClick={() => window.open(msg.metadata?.imageUrl || msg.content, '_blank')}

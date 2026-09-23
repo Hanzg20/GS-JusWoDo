@@ -2,67 +2,23 @@ import { supabase } from '@/lib/supabase';
 import { IMessageRepository, Conversation, Message, AdminConversation } from '../interfaces';
 
 export class SupabaseMessageRepository implements IMessageRepository {
-    async getConversations(userId: string): Promise<Conversation[]> {
-        const { data, error } = await supabase
-            .from('conversations')
-            .select(`
-                id,
-                participant_a,
-                participant_b,
-                order_id,
-                last_message_at,
-                created_at,
-                metadata,
-                archived_for,
-                deleted_for
-            `)
-            .or(`participant_a.eq.${userId},participant_b.eq.${userId}`)
-            .order('last_message_at', { ascending: false });
-
+    // One RPC instead of 1 + 3-per-conversation queries (profile, latest
+    // message, unread count) — see 20260923_get_conversation_summaries.sql.
+    // The RPC scopes to auth.uid(); userId is kept for the interface and must
+    // be the signed-in user (it always is — the chat list is "my" chats).
+    async getConversations(_userId: string): Promise<Conversation[]> {
+        const { data, error } = await supabase.rpc('get_conversation_summaries');
         if (error) throw error;
 
-        console.log(`[getConversations] Found ${data?.length || 0} conversations for user ${userId}`);
-
-        // Enrich conversations with user info and latest message
-        const enrichedConversations = await Promise.all(
-            (data || []).map(async (conv) => {
-                const otherUserId = conv.participant_a === userId ? conv.participant_b : conv.participant_a;
-
-                // Get other user's profile
-                const { data: userProfile } = await supabase
-                    .from('user_profiles')
-                    .select('name, avatar')
-                    .eq('id', otherUserId)
-                    .maybeSingle();
-
-                // Get latest message preview
-                const { data: latestMessage } = await supabase
-                    .from('messages')
-                    .select('content, message_type')
-                    .eq('conversation_id', conv.id)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-
-                // Get unread count
-                const { count: unreadCount } = await supabase
-                    .from('messages')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('conversation_id', conv.id)
-                    .eq('is_read', false)
-                    .neq('sender_id', userId);
-
-                return {
-                    ...this.mapConversation(conv),
-                    otherUserName: userProfile?.name || 'User',
-                    otherUserAvatar: userProfile?.avatar,
-                    lastMessagePreview: latestMessage ? this.formatMessagePreview(latestMessage) : undefined,
-                    unreadCount: unreadCount || 0
-                };
-            })
-        );
-
-        return enrichedConversations;
+        return (data || []).map((row: any) => ({
+            ...this.mapConversation(row),
+            otherUserName: row.other_user_name || 'User',
+            otherUserAvatar: row.other_user_avatar,
+            lastMessagePreview: row.last_message_type
+                ? this.formatMessagePreview({ content: row.last_message_content, message_type: row.last_message_type })
+                : undefined,
+            unreadCount: Number(row.unread_count) || 0
+        }));
     }
 
     /** Admin-only: relies on the "Admins can view all conversations" RLS
