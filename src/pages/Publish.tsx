@@ -19,6 +19,7 @@ import { checkGrokContentSafety } from "@/lib/grokContentModeration";
 
 import { setPostLoginRedirect } from "@/utils/postLoginRedirect";
 import { promptLogin } from "@/components/common/LoginRequired";
+import { htmlToPlainText } from "@/lib/htmlText";
 
 // Every config's 'location' field type (LocationPicker) stores an object
 // ({lat, lng, address, ...}), not a plain string — under different field
@@ -148,8 +149,8 @@ const Publish = () => {
             if (postType === 'WANTED' || postType === 'HELP') suggestedCategory = 'TASK';
 
             setInitialData({
-                title: post.title || post.content.slice(0, 20),
-                description: post.content,
+                title: post.title || htmlToPlainText(post.content).slice(0, 20),
+                description: htmlToPlainText(post.content, true),
                 images: post.images,
                 price: post.priceHint ? (post.priceHint / 100).toString() : undefined,
                 pickupLocation: post.locationText

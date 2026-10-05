@@ -35,6 +35,7 @@ import {
 import { promptLogin } from "@/components/common/LoginRequired";
 import { isWeChatMiniProgramWebview } from "@/lib/wechatShare";
 import { thumbUrl } from "@/lib/imageUrl";
+import { htmlToPlainText, plainTextExcerpt } from "@/lib/htmlText";
 
 const CommunityPostDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -134,8 +135,8 @@ const CommunityPostDetail = () => {
             : embed?.thumbnailUrl || `${window.location.origin}/logo.png`;
 
         const shareData = {
-            title: currentPost.title || currentPost.content.slice(0, 30) + '...',
-            description: currentPost.content.slice(0, 100) + (currentPost.content.length > 100 ? '...' : ''),
+            title: currentPost.title || plainTextExcerpt(currentPost.content, 30),
+            description: plainTextExcerpt(currentPost.content, 100),
             imageUrl: shareImageUrl,
             url: window.location.href
         };
@@ -352,7 +353,7 @@ const CommunityPostDetail = () => {
                     <div className="flex items-center gap-1">
                         <ShareSheet
                             title={currentPost.title || "分享内容"}
-                            content={currentPost.content}
+                            content={htmlToPlainText(currentPost.content)}
                             url={window.location.href}
                             imageUrl={currentPost.images?.[0]}
                             authorName={currentPost.author?.name}
