@@ -18,6 +18,10 @@ export const thumbUrl = (url: string, width: number, quality = 70): string => {
             const u = new URL(url.replace(SUPABASE_OBJECT, SUPABASE_RENDER));
             u.searchParams.set('width', String(width));
             u.searchParams.set('quality', String(quality));
+            // Without this, a width-only request keeps the ORIGINAL height
+            // and center-crops (default resize=cover): a 1104×1426 photo came
+            // back as a 480×1426 strip. contain scales proportionally (480×620).
+            u.searchParams.set('resize', 'contain');
             return u.toString();
         }
         if (url.includes('images.unsplash.com')) {
