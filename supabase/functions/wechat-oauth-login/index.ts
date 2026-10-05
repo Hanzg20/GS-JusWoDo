@@ -88,11 +88,16 @@ serve(async (req) => {
         // present) is checked first — it's the identity shared with the
         // Mini Program (see wechat-miniprogram-login), so someone who
         // registered there first should land on that same account here too.
-        const { data: existingProfile } = await supabase
+        // Not maybeSingle(): if the openid and the unionid each match a
+        // different row, maybeSingle() errors, existingProfile comes back
+        // null, and we'd try to createUser() an email that already exists.
+        // Prefer the row that already carries this 公众号 openid.
+        const { data: matches, error: lookupError } = await supabase
             .from('user_profiles')
             .select('id, wechat_openid, wechat_unionid')
-            .or(unionid ? `wechat_openid.eq.${openid},wechat_unionid.eq.${unionid}` : `wechat_openid.eq.${openid}`)
-            .maybeSingle();
+            .or(unionid ? `wechat_openid.eq.${openid},wechat_unionid.eq.${unionid}` : `wechat_openid.eq.${openid}`);
+        if (lookupError) throw new Error(`Profile lookup failed: ${lookupError.message}`);
+        const existingProfile = matches?.find((p) => p.wechat_openid === openid) ?? matches?.[0] ?? null;
 
         let userId: string;
         if (existingProfile) {
@@ -145,17 +150,31 @@ serve(async (req) => {
             if (linkError) throw new Error(`Failed to link wechat_openid: ${linkError.message}`);
         }
 
-        // 3. Mint a magic-link token the frontend can redeem for a real session.
+        // 3. Resolve the account's real email. A fresh signup uses the
+        // synthetic one just created, but an existing match (via unionid)
+        // may be a Mini Program account (mp_<openid>@…) or a normal email
+        // signup, so a guessed wx_<openid>@… link would fail with a 500.
+        // Same approach as wechat-miniprogram-login.
+        let emailForLink = syntheticEmail;
+        if (existingProfile) {
+            const { data: userRecord, error: getUserErr } = await supabase.auth.admin.getUserById(userId);
+            if (getUserErr || !userRecord?.user?.email) {
+                throw new Error(getUserErr?.message || "Could not resolve account email");
+            }
+            emailForLink = userRecord.user.email;
+        }
+
+        // 4. Mint a magic-link token the frontend can redeem for a real session.
         const { data: linkData, error: linkGenError } = await supabase.auth.admin.generateLink({
             type: 'magiclink',
-            email: syntheticEmail,
+            email: emailForLink,
         });
         if (linkGenError || !linkData) {
             throw new Error(linkGenError?.message || "Failed to generate session link");
         }
 
         return new Response(JSON.stringify({
-            email: syntheticEmail,
+            email: emailForLink,
             tokenHash: linkData.properties.hashed_token,
         }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

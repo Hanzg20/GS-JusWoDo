@@ -105,7 +105,16 @@ const WeChatCallback = () => {
                     body: { code, mode: currentMode },
                 });
                 if (fnError || !data || data.error) {
-                    throw new Error(data?.error || fnError?.message || 'Unknown error');
+                    // On a non-2xx, invoke() leaves data null and fnError.message
+                    // is just "Edge Function returned a non-2xx status code" —
+                    // the function's real {error} is in the response body.
+                    let detail: string | undefined = data?.error;
+                    if (!detail && fnError && 'context' in fnError) {
+                        detail = await (fnError as { context: Response }).context.json()
+                            .then((b: { error?: string }) => b?.error)
+                            .catch(() => undefined);
+                    }
+                    throw new Error(detail || fnError?.message || 'Unknown error');
                 }
 
                 // Silent check found no matching account — nothing to log
