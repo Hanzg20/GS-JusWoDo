@@ -207,7 +207,9 @@ const CommunityPostDetail = () => {
     };
 
     const handleDoubleTapLike = () => {
-        if (!currentPost.isLikedByMe && currentUser) {
+        // Logged out: handleLike() shows the 去登录 prompt (same as the feed
+        // card's double-tap) instead of silently doing nothing.
+        if (!currentUser || !currentPost.isLikedByMe) {
             handleLike();
         }
     };
