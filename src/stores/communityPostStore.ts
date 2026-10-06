@@ -66,6 +66,17 @@ interface CommunityPostState {
     fetchUserActivity: (userId: string) => Promise<void>;
 }
 
+// getFeed() rows carry no per-user state (is_liked_by_me isn't a column),
+// so without this every heart showed empty after a refresh even though the
+// like was saved. One extra query per page, only when logged in.
+async function withMyLikes(posts: CommunityPost[]): Promise<CommunityPost[]> {
+    const userId = useAuthStore.getState().currentUser?.id;
+    if (!userId || posts.length === 0) return posts;
+    const repo = repositoryFactory.getCommunityPostRepository();
+    const liked = await repo.getLikedPostIds(userId, posts.map(p => p.id));
+    return posts.map(p => ({ ...p, isLikedByMe: liked.has(p.id) }));
+}
+
 export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
     posts: [],
     isLoading: false,
@@ -86,9 +97,9 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
         try {
             const repo = repositoryFactory.getCommunityPostRepository();
             const [posts, liked, saved] = await Promise.all([
-                repo.getByAuthor(userId),
-                repo.getLikedPosts(userId),
-                repo.getSavedPosts(userId)
+                repo.getByAuthor(userId).then(withMyLikes),
+                repo.getLikedPosts(userId).then(withMyLikes),
+                repo.getSavedPosts(userId).then(withMyLikes)
             ]);
             set({
                 userPosts: posts,
@@ -118,7 +129,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
         try {
             const repo = repositoryFactory.getCommunityPostRepository();
             const { pageSize } = get();
-            const posts = await repo.getFeed({
+            const posts = await withMyLikes(await repo.getFeed({
                 nodeId: options.nodeId,
                 postType: options.postType,
                 query: options.query,
@@ -126,7 +137,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
                 authorIds: options.authorIds,
                 limit: pageSize,
                 offset: 0
-            });
+            }));
             set({
                 posts,
                 isLoading: false,
@@ -151,7 +162,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
             const nextPage = page + 1;
             const offset = page * pageSize;
 
-            const newPosts = await repo.getFeed({
+            const newPosts = await withMyLikes(await repo.getFeed({
                 nodeId: options.nodeId,
                 postType: options.postType,
                 query: options.query,
@@ -159,7 +170,7 @@ export const useCommunityPostStore = create<CommunityPostState>((set, get) => ({
                 authorIds: options.authorIds,
                 limit: pageSize,
                 offset
-            });
+            }));
 
             set({
                 posts: [...currentPosts, ...newPosts],
